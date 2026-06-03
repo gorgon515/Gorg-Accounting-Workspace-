@@ -65,31 +65,41 @@
             <li>Entity selection and check-the-box planning</li>
           </ul>
         </div>
-        <figure class="figure reveal">
-          <span class="figure-tag">FIG · HOLDING STRUCTURE</span>
-          <img src="assets/img/structure.svg" alt="A cross-border holding structure: HoldCo over OpCo, IP Co and Fin Co, with a treaty node." width="560" height="360" loading="lazy" />
+        <figure class="diagram reveal" aria-label="Representative cross-border holding structure">
+          <figcaption class="dg-head">FIG · REPRESENTATIVE HOLDING STRUCTURE</figcaption>
+          <div class="dg-top"><div class="dg-node">HOLDCO · LU</div></div>
+          <div class="dg-connector"></div>
+          <div class="dg-tier">
+            <div><div class="dg-node">OPCO · US</div></div>
+            <div><div class="dg-node">IP CO · IE</div></div>
+            <div><div class="dg-node">FIN CO · NL</div></div>
+          </div>
+          <div class="dg-sub">
+            <div class="dg-cell"><div class="dg-connector"></div><div class="dg-node">BRANCH</div></div>
+            <div class="dg-cell empty"><div class="dg-node">—</div></div>
+            <div class="dg-cell"><div class="dg-connector"></div><div class="dg-node is-gold">TREATY</div></div>
+          </div>
         </figure>
       </div>
     </section>
 
     <!-- 02 Transactions -->
     <section class="disc" id="transactions" style="padding-top:0;">
-      <div class="wrap media-row media-row--rev">
-        <div class="media-text reveal">
-          <p class="eyebrow" style="margin-bottom:1rem;">02 · Transaction Advisory</p>
-          <h2 style="margin-bottom:1.5rem;">Modeled before it is signed.</h2>
-          <p>We model tax consequences before a deal closes: acquisitions, carve-outs, dispositions, and internal reorganizations across jurisdictions.</p>
-          <ul class="disc-list">
-            <li>Buy-side and sell-side structuring</li>
-            <li>Carve-out and step-plan design</li>
-            <li>Earn-out and rollover taxation</li>
-            <li>Post-close integration and reorganization</li>
-          </ul>
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow">02 · Transaction Advisory</p>
+          <h2>Modeled before it is signed.</h2>
         </div>
-        <figure class="figure reveal">
-          <span class="figure-tag">FIG · DEAL PERSPECTIVE</span>
-          <img src="assets/img/corridor.svg" alt="An empty corridor in one-point perspective, a lit doorway at the end." width="640" height="440" loading="lazy" />
-        </figure>
+        <div class="lead-row" style="margin-bottom:3rem;">
+          <div class="reveal"><hr class="rule--short" /></div>
+          <div class="reveal"><p>We model tax consequences before a deal closes: acquisitions, carve-outs, dispositions, and internal reorganizations across jurisdictions. We are least useful once the structure is set.</p></div>
+        </div>
+        <div class="grid grid--2 reveal">
+          <div class="cell"><span class="num">i</span><h3>Buy-side &amp; sell-side</h3><p>Structuring the acquisition or disposition before the term sheet, not after the close.</p></div>
+          <div class="cell"><span class="num">ii</span><h3>Carve-outs &amp; step plans</h3><p>Sequencing the steps so each one stands on its own and the whole holds together.</p></div>
+          <div class="cell"><span class="num">iii</span><h3>Earn-outs &amp; rollovers</h3><p>The taxation of contingent and rolled consideration, modeled before it is agreed.</p></div>
+          <div class="cell"><span class="num">iv</span><h3>Post-close reorganization</h3><p>Integration and internal restructuring once the transaction has closed.</p></div>
+        </div>
       </div>
     </section>
 

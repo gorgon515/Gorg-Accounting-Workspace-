@@ -23,14 +23,21 @@ Insights articles open real pages via `article.html?id=<slug>` (content in
 `assets/js/articles.js`). Practice cards deep-link to anchored discipline
 sections (`practice.html#cross-border`, etc.).
 
-### Graphics & interaction
+### Visual approach & interaction
 
-- **Custom SVG line-art** in `assets/img/` (no stock photos, no gradients):
-  a glass-tower `facade`, a one-point-perspective `corridor`, a cross-border
-  holding-`structure` diagram, and a `skyline` divider.
+Strictly typographic and structural — **no imagery, no gradients, no AI art**,
+per the brand brief ("not anything with a gradient or a hero video").
+
+- **Hairline specimen panel** in the hero and a **holding-structure diagram**
+  on the Practice page — both built in HTML/CSS (mono labels, hairline rules),
+  treated as data/structural elements rather than decoration.
+- **Marque bands** (monospace location lines between hairline rules) as dividers.
 - **Nav preview** ("precursor highlight") — hovering a tab reveals a hairline
   bar describing what that tab opens before you click.
 - **Portal downloads** generate real letterhead text files locally (Blob).
+
+If real architectural photography (stone, glass, steel — no people) becomes
+available, it can be dropped into the hero/marque slots later.
 
 ## Design system
 
