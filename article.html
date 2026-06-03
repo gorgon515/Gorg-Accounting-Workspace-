@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Insight — Verum Advisory</title>
+  <meta name="description" content="An insight from Verum Advisory." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;1,300&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <nav class="nav" aria-label="Primary">
+      <a class="wordmark" href="index.html" aria-label="Verum Advisory — home">
+        <span class="mark">VERUM</span>
+        <span class="mark-rule"></span>
+        <span class="sub">ADVISORY</span>
+      </a>
+      <ul class="tabs" id="tabs">
+        <li><a href="practice.html" data-key="Practice" data-preview="Cross-border structuring, transactions, controversy, private capital">Practice</a></li>
+        <li><a href="firm.html" data-key="The Firm" data-preview="Principles — and the partners who work every file">The Firm</a></li>
+        <li><a href="insights.html" data-key="Insights" data-preview="Notes on structure, controversy, and consequence" aria-current="page">Insights</a></li>
+        <li><a href="portal.html" data-key="Client Portal" data-preview="Documents, deadlines, statements, secure messages">Client Portal</a></li>
+        <li><a href="crm.html" data-key="CRM" data-preview="Internal engagement register — the book of business">CRM</a></li>
+        <li><a href="contact.html" data-key="Contact" data-preview="Begin a conversation with a partner">Contact</a></li>
+      </ul>
+      <a class="nav-cta" href="portal.html">Client Login</a>
+      <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="tabs">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+    <div class="nav-preview" id="nav-preview" aria-hidden="true">
+      <div class="np-inner">
+        <span class="np-key"></span>
+        <span class="np-sep"></span>
+        <span class="np-desc"></span>
+        <span class="np-go">open <span class="arrow">&#8594;</span></span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article>
+      <section class="article-head">
+        <div class="wrap">
+          <p class="a-kicker"><a href="insights.html" style="color:var(--warm-gray);font-size:0.75rem;letter-spacing:0.06em;">← Insights</a></p>
+          <div class="a-kicker">
+            <span class="a-cat" id="a-cat">Insight</span>
+            <span class="np-sep"></span>
+            <span class="a-date" id="a-date"></span>
+          </div>
+          <h1 id="a-title">Insight</h1>
+          <p class="a-standfirst" id="a-standfirst"></p>
+        </div>
+      </section>
+
+      <section style="padding-top:1rem;">
+        <div class="wrap">
+          <div class="article-body" id="a-body"></div>
+          <nav class="article-nav" aria-label="More insights">
+            <a id="a-prev" href="insights.html">Previous</a>
+            <a id="a-next" href="insights.html">Next</a>
+          </nav>
+        </div>
+      </section>
+
+      <section class="cta-band">
+        <div class="wrap">
+          <h2>Engagements begin with a conversation.</h2>
+          <a class="btn" href="contact.html">Request an introduction <span class="arrow">→</span></a>
+        </div>
+      </section>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-top">
+        <div class="footer-col">
+          <a class="wordmark" href="index.html" aria-label="Verum Advisory">
+            <span class="mark">VERUM</span>
+            <span class="mark-rule"></span>
+            <span class="sub">ADVISORY</span>
+          </a>
+          <p style="margin-top:1.75rem;font-size:0.875rem;max-width:32ch;">Truth. Precision. Discretion. International tax advisory for the modern enterprise.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Practice</h4>
+          <ul>
+            <li><a href="practice.html#cross-border">Cross-Border Structuring</a></li>
+            <li><a href="practice.html#transactions">Transaction Advisory</a></li>
+            <li><a href="practice.html#controversy">Controversy &amp; Audit</a></li>
+            <li><a href="practice.html#private-capital">Private Capital</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Firm</h4>
+          <ul>
+            <li><a href="firm.html">The Firm</a></li>
+            <li><a href="insights.html">Insights</a></li>
+            <li><a href="portal.html">Client Portal</a></li>
+            <li><a href="crm.html">CRM</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Office</h4>
+          <address>
+            One Bryant Park<br />
+            Suite 3900<br />
+            New York, NY 10036<br />
+            <span class="mono">+1 212 000 0000</span>
+          </address>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© <span data-year>2026</span> Verum Advisory Group, Inc. All rights reserved.</p>
+        <p class="mono">REF · VA-NYC-001</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/articles.js"></script>
+  <script src="assets/js/article.js"></script>
+  <script src="assets/js/main.js"></script>
+</body>
+</html>
