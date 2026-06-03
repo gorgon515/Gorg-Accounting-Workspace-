@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRM — Verum Advisory</title>
+  <meta name="description" content="Internal engagement register. Client-side only." />
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;1,300&family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <nav class="nav" aria-label="Primary">
+      <a class="wordmark" href="index.html" aria-label="Verum Advisory — home">
+        <span class="mark">VERUM</span>
+        <span class="mark-rule"></span>
+        <span class="sub">ADVISORY</span>
+      </a>
+      <ul class="tabs" id="tabs">
+        <li><a href="practice.html">Practice</a></li>
+        <li><a href="firm.html">The Firm</a></li>
+        <li><a href="insights.html">Insights</a></li>
+        <li><a href="portal.html">Client Portal</a></li>
+        <li><a href="crm.html" aria-current="page">CRM</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <a class="nav-cta" href="portal.html">Client Login</a>
+      <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="tabs">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page-hero">
+      <div class="wrap">
+        <p class="eyebrow reveal">Internal · Engagement Register</p>
+        <h1 class="reveal">The book of <em class="serif-italic">business.</em></h1>
+        <p class="reveal">Every prospect, conversation, and active file in one quiet register. Records stay in this browser — nothing is transmitted.</p>
+      </div>
+    </section>
+
+    <section style="padding-top:1rem;">
+      <div class="wrap">
+
+        <!-- Stats -->
+        <div class="crm-stats reveal" id="crm-stats"></div>
+
+        <!-- Add / edit form -->
+        <form class="crm-form reveal" id="crm-form" autocomplete="off">
+          <div class="crm-form-head">
+            <h3 id="crm-form-title">Add an engagement</h3>
+            <button type="button" class="crm-link" id="crm-reset">Restore example data</button>
+          </div>
+          <input type="hidden" id="f-id" />
+          <div class="crm-form-grid">
+            <div class="field">
+              <label for="f-name">Client</label>
+              <input class="crm-input" id="f-name" type="text" required placeholder="Halsted Maritime Group" />
+            </div>
+            <div class="field">
+              <label for="f-org">Organization / type</label>
+              <input class="crm-input" id="f-org" type="text" placeholder="Holding — Luxembourg" />
+            </div>
+            <div class="field">
+              <label for="f-juris">Jurisdiction</label>
+              <input class="crm-input" id="f-juris" type="text" placeholder="LU / US" />
+            </div>
+            <div class="field">
+              <label for="f-area">Practice</label>
+              <select class="crm-select" id="f-area"></select>
+            </div>
+            <div class="field">
+              <label for="f-stage">Stage</label>
+              <select class="crm-select" id="f-stage"></select>
+            </div>
+            <div class="field">
+              <label for="f-value">Engagement value (USD)</label>
+              <input class="crm-input" id="f-value" type="number" min="0" step="1000" placeholder="0" />
+            </div>
+            <div class="field">
+              <label for="f-email">Email</label>
+              <input class="crm-input" id="f-email" type="email" placeholder="office@client.example" />
+            </div>
+            <div class="field">
+              <label for="f-phone">Phone</label>
+              <input class="crm-input" id="f-phone" type="tel" placeholder="+1 212 000 0000" />
+            </div>
+            <div class="field field--wide">
+              <label for="f-notes">Notes</label>
+              <input class="crm-input" id="f-notes" type="text" placeholder="One line. Where the file stands." />
+            </div>
+          </div>
+          <div class="crm-form-actions">
+            <button class="btn" type="submit" id="crm-submit">Add engagement <span class="arrow">→</span></button>
+            <button class="crm-link" type="button" id="crm-cancel" hidden>Cancel edit</button>
+          </div>
+        </form>
+
+        <!-- Toolbar -->
+        <div class="crm-toolbar reveal">
+          <div class="grow">
+            <input class="crm-input" id="crm-search" type="search" placeholder="Search name, jurisdiction, notes…" aria-label="Search register" />
+          </div>
+          <select class="crm-select" id="crm-filter-stage" aria-label="Filter by stage"></select>
+          <select class="crm-select" id="crm-filter-area" aria-label="Filter by practice"></select>
+          <button class="crm-link crm-link--gold" id="crm-export" type="button">Export CSV</button>
+        </div>
+
+        <!-- Table -->
+        <div class="crm-table-wrap reveal">
+          <table class="crm-table">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Jurisdiction</th>
+                <th>Practice</th>
+                <th>Stage</th>
+                <th>Value</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="crm-body"></tbody>
+          </table>
+        </div>
+
+        <p class="mono reveal" style="margin-top:1.5rem;font-size:0.72rem;color:var(--warm-gray);">
+          LOCAL REGISTER · STORED IN THIS BROWSER ONLY · NOT TRANSMITTED
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-top">
+        <div class="footer-col">
+          <a class="wordmark" href="index.html" aria-label="Verum Advisory">
+            <span class="mark">VERUM</span>
+            <span class="mark-rule"></span>
+            <span class="sub">ADVISORY</span>
+          </a>
+          <p style="margin-top:1.75rem;font-size:0.875rem;max-width:32ch;">Truth. Precision. Discretion. International tax advisory for the modern enterprise.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Practice</h4>
+          <ul>
+            <li><a href="practice.html">Cross-Border Structuring</a></li>
+            <li><a href="practice.html">Transaction Advisory</a></li>
+            <li><a href="practice.html">Controversy &amp; Audit</a></li>
+            <li><a href="practice.html">Private Capital</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Firm</h4>
+          <ul>
+            <li><a href="firm.html">The Firm</a></li>
+            <li><a href="insights.html">Insights</a></li>
+            <li><a href="crm.html">CRM</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Office</h4>
+          <address>
+            One Bryant Park<br />
+            Suite 3900<br />
+            New York, NY 10036<br />
+            <span class="mono">+1 212 000 0000</span>
+          </address>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© <span data-year>2026</span> Verum Advisory Group, Inc. All rights reserved.</p>
+        <p class="mono">REF · VA-NYC-001</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/crm.js"></script>
+</body>
+</html>
