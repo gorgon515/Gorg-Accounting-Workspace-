@@ -20,18 +20,26 @@
         <span class="sub">ADVISORY</span>
       </a>
       <ul class="tabs" id="tabs">
-        <li><a href="practice.html">Practice</a></li>
-        <li><a href="firm.html">The Firm</a></li>
-        <li><a href="insights.html">Insights</a></li>
-        <li><a href="portal.html" aria-current="page">Client Portal</a></li>
-        <li><a href="crm.html">CRM</a></li>
-        <li><a href="contact.html">Contact</a></li>
+        <li><a href="practice.html" data-key="Practice" data-preview="Cross-border structuring, transactions, controversy, private capital">Practice</a></li>
+        <li><a href="firm.html" data-key="The Firm" data-preview="Principles — and the partners who work every file">The Firm</a></li>
+        <li><a href="insights.html" data-key="Insights" data-preview="Notes on structure, controversy, and consequence">Insights</a></li>
+        <li><a href="portal.html" data-key="Client Portal" data-preview="Documents, deadlines, statements, secure messages" aria-current="page">Client Portal</a></li>
+        <li><a href="crm.html" data-key="CRM" data-preview="Internal engagement register — the book of business">CRM</a></li>
+        <li><a href="contact.html" data-key="Contact" data-preview="Begin a conversation with a partner">Contact</a></li>
       </ul>
       <a class="nav-cta" href="portal.html">Client Login</a>
       <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="tabs">
         <span></span><span></span><span></span>
       </button>
     </nav>
+    <div class="nav-preview" id="nav-preview" aria-hidden="true">
+      <div class="np-inner">
+        <span class="np-key"></span>
+        <span class="np-sep"></span>
+        <span class="np-desc"></span>
+        <span class="np-go">open <span class="arrow">&#8594;</span></span>
+      </div>
+    </div>
   </header>
 
   <main>
@@ -75,23 +83,23 @@
               <p class="panel-sub">Shared by the partners on your file. Encrypted at rest.</p>
               <div class="doc-row">
                 <span class="doc-name">2025 Cross-Border Structure Memorandum</span>
-                <span class="doc-meta">PDF · 2.4 MB</span>
-                <a class="doc-action" href="#" aria-label="Download memorandum">Download</a>
+                <span class="doc-meta">TXT · demo</span>
+                <a class="doc-action" href="#" data-file="Verum-Structure-Memorandum.txt" data-file-title="Cross-Border Structure Memorandum" data-file-body="Summary of the current holding structure: HoldCo (LU) over OpCo (US), IP Co (IE) and Fin Co (NL), with treaty access analyzed and documented. No open items.">Download</a>
               </div>
               <div class="doc-row">
                 <span class="doc-name">Treaty Position — Supporting Documentation</span>
-                <span class="doc-meta">PDF · 5.1 MB</span>
-                <a class="doc-action" href="#">Download</a>
+                <span class="doc-meta">TXT · demo</span>
+                <a class="doc-action" href="#" data-file="Verum-Treaty-Position.txt" data-file-title="Treaty Position — Supporting Documentation" data-file-body="Beneficial-ownership analysis and treaty-access support, dated contemporaneously with the structure. Prepared to withstand examination.">Download</a>
               </div>
               <div class="doc-row">
                 <span class="doc-name">Entity Chart — Current Holding Structure</span>
-                <span class="doc-meta">PDF · 0.9 MB</span>
-                <a class="doc-action" href="#">Download</a>
+                <span class="doc-meta">TXT · demo</span>
+                <a class="doc-action" href="#" data-file="Verum-Entity-Chart.txt" data-file-title="Entity Chart — Current Holding Structure" data-file-body="HOLDCO (LU)&#10; -- OPCO (US) -- BRANCH&#10; -- IP CO (IE)&#10; -- FIN CO (NL) -- TREATY">Download</a>
               </div>
               <div class="doc-row">
                 <span class="doc-name">Engagement Letter (Executed)</span>
-                <span class="doc-meta">PDF · 0.3 MB</span>
-                <a class="doc-action" href="#">Download</a>
+                <span class="doc-meta">TXT · demo</span>
+                <a class="doc-action" href="#" data-file="Verum-Engagement-Letter.txt" data-file-title="Engagement Letter (Executed)" data-file-body="This letter confirms the terms of engagement between Verum Advisory Group, Inc. and the named client. The partners work every file. No hand-offs.">Download</a>
               </div>
             </div>
 
@@ -128,17 +136,17 @@
               <div class="doc-row">
                 <span class="doc-name">Statement — Q1 2026 Advisory</span>
                 <span class="doc-meta">REF · INV-2026-014</span>
-                <a class="doc-action" href="#">View</a>
+                <a class="doc-action" href="#" data-file="Verum-Statement-INV-2026-014.txt" data-file-title="Statement INV-2026-014 — Q1 2026 Advisory" data-file-body="Advisory services, Q1 2026 ... documented and billed.&#10;Amount due: $0.00 (settled).">View</a>
               </div>
               <div class="doc-row">
                 <span class="doc-name">Statement — Q4 2025 Advisory</span>
                 <span class="doc-meta">REF · INV-2025-061</span>
-                <a class="doc-action" href="#">View</a>
+                <a class="doc-action" href="#" data-file="Verum-Statement-INV-2025-061.txt" data-file-title="Statement INV-2025-061 — Q4 2025 Advisory" data-file-body="Advisory services, Q4 2025.&#10;Amount due: $0.00 (settled).">View</a>
               </div>
               <div class="doc-row">
                 <span class="doc-name">Statement — Transaction Engagement</span>
                 <span class="doc-meta">REF · INV-2025-048</span>
-                <a class="doc-action" href="#">View</a>
+                <a class="doc-action" href="#" data-file="Verum-Statement-INV-2025-048.txt" data-file-title="Statement INV-2025-048 — Transaction Engagement" data-file-body="Transaction advisory engagement.&#10;Amount due: $0.00 (settled).">View</a>
               </div>
               <div style="margin-top:2rem;display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--gold);padding-top:1.25rem;">
                 <span style="color:var(--warm-gray);font-size:0.8125rem;letter-spacing:0.06em;">CURRENT BALANCE</span>

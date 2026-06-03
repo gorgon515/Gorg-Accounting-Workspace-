@@ -20,18 +20,26 @@
         <span class="sub">ADVISORY</span>
       </a>
       <ul class="tabs" id="tabs">
-        <li><a href="practice.html" aria-current="page">Practice</a></li>
-        <li><a href="firm.html">The Firm</a></li>
-        <li><a href="insights.html">Insights</a></li>
-        <li><a href="portal.html">Client Portal</a></li>
-        <li><a href="crm.html">CRM</a></li>
-        <li><a href="contact.html">Contact</a></li>
+        <li><a href="practice.html" data-key="Practice" data-preview="Cross-border structuring, transactions, controversy, private capital" aria-current="page">Practice</a></li>
+        <li><a href="firm.html" data-key="The Firm" data-preview="Principles — and the partners who work every file">The Firm</a></li>
+        <li><a href="insights.html" data-key="Insights" data-preview="Notes on structure, controversy, and consequence">Insights</a></li>
+        <li><a href="portal.html" data-key="Client Portal" data-preview="Documents, deadlines, statements, secure messages">Client Portal</a></li>
+        <li><a href="crm.html" data-key="CRM" data-preview="Internal engagement register — the book of business">CRM</a></li>
+        <li><a href="contact.html" data-key="Contact" data-preview="Begin a conversation with a partner">Contact</a></li>
       </ul>
       <a class="nav-cta" href="portal.html">Client Login</a>
       <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="tabs">
         <span></span><span></span><span></span>
       </button>
     </nav>
+    <div class="nav-preview" id="nav-preview" aria-hidden="true">
+      <div class="np-inner">
+        <span class="np-key"></span>
+        <span class="np-sep"></span>
+        <span class="np-desc"></span>
+        <span class="np-go">open <span class="arrow">&#8594;</span></span>
+      </div>
+    </div>
   </header>
 
   <main>
@@ -43,29 +51,74 @@
       </div>
     </section>
 
-    <section style="padding-top:2rem;">
+    <!-- 01 Cross-Border -->
+    <section class="disc" id="cross-border" style="padding-top:2rem;">
+      <div class="wrap media-row">
+        <div class="media-text reveal">
+          <p class="eyebrow" style="margin-bottom:1rem;">01 · Cross-Border Structuring</p>
+          <h2 style="margin-bottom:1.5rem;">Built to hold across borders.</h2>
+          <p>Holding structures, treaty positions, transfer pricing, and entity selection. We design for the audit that may never come — and would survive it if it did.</p>
+          <ul class="disc-list">
+            <li>Holding-company and IP-holding design</li>
+            <li>Treaty access and beneficial-ownership analysis</li>
+            <li>Transfer-pricing policy and documentation</li>
+            <li>Entity selection and check-the-box planning</li>
+          </ul>
+        </div>
+        <figure class="figure reveal">
+          <span class="figure-tag">FIG · HOLDING STRUCTURE</span>
+          <img src="assets/img/structure.svg" alt="A cross-border holding structure: HoldCo over OpCo, IP Co and Fin Co, with a treaty node." width="560" height="360" loading="lazy" />
+        </figure>
+      </div>
+    </section>
+
+    <!-- 02 Transactions -->
+    <section class="disc" id="transactions" style="padding-top:0;">
+      <div class="wrap media-row media-row--rev">
+        <div class="media-text reveal">
+          <p class="eyebrow" style="margin-bottom:1rem;">02 · Transaction Advisory</p>
+          <h2 style="margin-bottom:1.5rem;">Modeled before it is signed.</h2>
+          <p>We model tax consequences before a deal closes: acquisitions, carve-outs, dispositions, and internal reorganizations across jurisdictions.</p>
+          <ul class="disc-list">
+            <li>Buy-side and sell-side structuring</li>
+            <li>Carve-out and step-plan design</li>
+            <li>Earn-out and rollover taxation</li>
+            <li>Post-close integration and reorganization</li>
+          </ul>
+        </div>
+        <figure class="figure reveal">
+          <span class="figure-tag">FIG · DEAL PERSPECTIVE</span>
+          <img src="assets/img/corridor.svg" alt="An empty corridor in one-point perspective, a lit doorway at the end." width="640" height="440" loading="lazy" />
+        </figure>
+      </div>
+    </section>
+
+    <!-- 03 Controversy -->
+    <section class="disc" id="controversy" style="padding-top:0;">
       <div class="wrap">
-        <div class="deflist reveal">
-          <div>
-            <span class="mono" style="color:var(--gold);font-size:0.75rem;">01</span>
-            <dt>Cross-Border Structuring</dt>
-            <dd>Holding structures, treaty positions, transfer pricing, and entity selection. We design for the audit that may never come — and would survive it if it did.</dd>
-          </div>
-          <div>
-            <span class="mono" style="color:var(--gold);font-size:0.75rem;">02</span>
-            <dt>Transaction Advisory</dt>
-            <dd>We model tax consequences before a deal is signed: acquisitions, carve-outs, dispositions, and internal reorganizations across jurisdictions.</dd>
-          </div>
-          <div>
-            <span class="mono" style="color:var(--gold);font-size:0.75rem;">03</span>
-            <dt>Controversy &amp; Audit</dt>
-            <dd>Representation before the IRS and foreign tax authorities. Positions are documented to withstand scrutiny rather than to invite negotiation.</dd>
-          </div>
-          <div>
-            <span class="mono" style="color:var(--gold);font-size:0.75rem;">04</span>
-            <dt>Private Capital &amp; Succession</dt>
-            <dd>Structures for families, founders, and closely held capital — built for the decades that follow, not the quarter ahead.</dd>
-          </div>
+        <div class="section-head reveal">
+          <p class="eyebrow">03 · Controversy &amp; Audit</p>
+          <h2>Documented to withstand scrutiny.</h2>
+        </div>
+        <div class="grid grid--3 reveal">
+          <div class="cell"><span class="num">i</span><h3>Examination</h3><p>Representation before the IRS and foreign authorities, from first notice to resolution.</p></div>
+          <div class="cell"><span class="num">ii</span><h3>Voluntary disclosure</h3><p>Coming into compliance on prior positions, quietly and on defensible terms.</p></div>
+          <div class="cell"><span class="num">iii</span><h3>Appeals</h3><p>Positions are documented to withstand scrutiny rather than to invite negotiation.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 Private Capital -->
+    <section class="disc" id="private-capital" style="padding-top:0;">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow">04 · Private Capital &amp; Succession</p>
+          <h2>For the decades that follow.</h2>
+        </div>
+        <div class="grid grid--3 reveal">
+          <div class="cell"><span class="num">i</span><h3>Succession</h3><p>Structures for families, founders, and closely held capital — built for the decade after the founder.</p></div>
+          <div class="cell"><span class="num">ii</span><h3>Trust &amp; estate</h3><p>Cross-border estate planning that assumes more than one governing law.</p></div>
+          <div class="cell"><span class="num">iii</span><h3>Governance</h3><p>The structure documented so it can be administered without the founder in the room.</p></div>
         </div>
       </div>
     </section>

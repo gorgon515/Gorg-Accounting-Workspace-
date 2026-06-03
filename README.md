@@ -16,7 +16,21 @@ international tax advisory firm. Built to the firm's brand brief:
 | The Firm | `firm.html` | Principles and the partners |
 | Insights | `insights.html` | Notes on structure, controversy, consequence |
 | Client Portal | `portal.html` | Tabbed secure area: Documents · Tax Calendar · Statements · Secure Messages · Sign In |
+| CRM | `crm.html` | Internal engagement register (localStorage) |
 | Contact | `contact.html` | Request an introduction |
+
+Insights articles open real pages via `article.html?id=<slug>` (content in
+`assets/js/articles.js`). Practice cards deep-link to anchored discipline
+sections (`practice.html#cross-border`, etc.).
+
+### Graphics & interaction
+
+- **Custom SVG line-art** in `assets/img/` (no stock photos, no gradients):
+  a glass-tower `facade`, a one-point-perspective `corridor`, a cross-border
+  holding-`structure` diagram, and a `skyline` divider.
+- **Nav preview** ("precursor highlight") — hovering a tab reveals a hairline
+  bar describing what that tab opens before you click.
+- **Portal downloads** generate real letterhead text files locally (Blob).
 
 ## Design system
 

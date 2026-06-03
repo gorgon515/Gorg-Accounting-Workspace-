@@ -79,6 +79,81 @@
     });
   });
 
+  /* ---- Nav preview: "precursor highlight" showing what each tab opens --- */
+  var preview = document.getElementById("nav-preview");
+  var navLinks = document.querySelectorAll(".tabs a[data-preview]");
+  if (preview && navLinks.length) {
+    var npKey = preview.querySelector(".np-key");
+    var npDesc = preview.querySelector(".np-desc");
+    var npList = document.querySelector(".tabs");
+    var hide = function () { preview.classList.remove("is-open"); };
+    navLinks.forEach(function (a) {
+      var show = function () {
+        npKey.textContent = a.getAttribute("data-key") || a.textContent.trim();
+        npDesc.textContent = a.getAttribute("data-preview");
+        preview.classList.add("is-open");
+      };
+      a.addEventListener("mouseenter", show);
+      a.addEventListener("focus", show);
+    });
+    if (npList) npList.addEventListener("mouseleave", hide);
+    preview.addEventListener("mouseleave", hide);
+    document.querySelector(".site-header").addEventListener("mouseleave", hide);
+  }
+
+  /* ---- Generated document downloads — make portal links open real files -- */
+  function downloadFile(name, text) {
+    var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function letterhead(title, body) {
+    var rule = "────────────────────────────────────────────────";
+    return [
+      "VERUM ADVISORY",
+      "International Tax Advisory",
+      rule, "",
+      title.toUpperCase(), "",
+      body, "",
+      rule,
+      "Verum Advisory Group, Inc. · One Bryant Park, New York, NY 10036",
+      "PRIVILEGED & CONFIDENTIAL — prepared for the named client only.",
+      "Reference: VA-" + Math.random().toString(36).slice(2, 8).toUpperCase()
+    ].join("\n");
+  }
+  document.querySelectorAll("[data-file]").forEach(function (el) {
+    el.addEventListener("click", function (e) {
+      e.preventDefault();
+      var name = el.getAttribute("data-file");
+      var title = el.getAttribute("data-file-title") || name;
+      var body = el.getAttribute("data-file-body") ||
+        "This is a demonstration document generated locally in your browser. " +
+        "In production, the executed file would be served from secure storage.";
+      downloadFile(name, letterhead(title, body));
+      var prev = el.textContent;
+      el.textContent = "Downloaded ✓";
+      setTimeout(function () { el.textContent = prev; }, 1800);
+    });
+  });
+
+  /* ---- Flash an anchored section when navigated to (practice deep links) - */
+  function flashHash() {
+    if (!location.hash) return;
+    var t = document.getElementById(location.hash.slice(1));
+    if (t && t.classList.contains("disc")) {
+      t.classList.remove("is-flash");
+      void t.offsetWidth;
+      t.classList.add("is-flash");
+    }
+  }
+  window.addEventListener("hashchange", flashHash);
+  flashHash();
+
   /* Current year */
   var yr = document.querySelector("[data-year]");
   if (yr) yr.textContent = new Date().getFullYear();
