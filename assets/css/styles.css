@@ -32,6 +32,31 @@
 
 html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
 
+/* Accessibility — visible focus ring (keyboard only) */
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 1px; }
+
+/* Skip link — first stop for keyboard users */
+.skip-link {
+  position: fixed; top: -100px; left: 1rem; z-index: 200;
+  background: var(--slate); color: var(--ivory);
+  border: 1px solid var(--gold);
+  padding: 0.7rem 1.1rem; font-size: 0.8125rem; letter-spacing: 0.04em;
+  transition: top var(--t) var(--ease);
+}
+.skip-link:focus { top: 1rem; }
+
+/* Honeypot — off-screen field to catch bots; never shown to humans */
+.hp { position: absolute !important; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+
+/* Scroll progress — thin gold hairline along the very top */
+.scroll-progress {
+  position: fixed; top: 0; left: 0; height: 2px; width: 100%;
+  transform: scaleX(0); transform-origin: 0 50%;
+  background: var(--gold); z-index: 150;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) { .scroll-progress { display: none; } }
+
 body {
   background: var(--obsidian);
   color: var(--ivory);

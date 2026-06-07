@@ -52,6 +52,31 @@ available, it can be dropped into the hero/marque slots later.
 All design tokens live as CSS custom properties at the top of
 `assets/css/styles.css`.
 
+## Security & accessibility
+
+- **Content-Security-Policy** (meta on every page) — `script-src 'self'`,
+  `object-src 'none'`, no inline scripts, fonts limited to Google Fonts. A
+  `_headers` file ships the same CSP plus `X-Content-Type-Options`,
+  `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and HSTS for
+  hosts that honor it (Netlify/Cloudflare; GitHub Pages ignores custom headers,
+  so the meta CSP is the enforced layer there).
+- **No inline event handlers or inline `<script>`** — all JS is external and
+  same-origin, so the strict CSP holds.
+- **CRM `innerHTML` is escaped** (`escapeHtml`) on every user-entered field.
+- **Contact form honeypot** silently drops bot submissions; required fields
+  use native validation.
+- **Accessibility** — skip-to-content link, `:focus-visible` rings, a `#main`
+  landmark, WAI-ARIA tabs in the Client Portal with full keyboard support
+  (arrows / Home / End, roving tabindex), `prefers-reduced-motion` honored,
+  and a custom `404.html`.
+- **Efficiency** — scroll work is `requestAnimationFrame`-throttled behind a
+  single passive listener; scripts are `defer`red; an SVG favicon and
+  `theme-color` are set. No images, no gradients, no web fonts beyond three.
+
+> Note: the strict CSP requires the site to be served over http(s) (the local
+> `http.server` command, or GitHub Pages). Opening pages directly via
+> `file://` will have the CSP block same-origin scripts — use the server.
+
 ## Running
 
 No build step. It is plain HTML/CSS/JS. Open `index.html` directly, or serve

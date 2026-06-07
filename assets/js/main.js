@@ -2,14 +2,25 @@
 (function () {
   "use strict";
 
-  /* Header hairline on scroll */
+  /* Header hairline + scroll progress (rAF-throttled, single listener) */
   var header = document.querySelector(".site-header");
-  if (header) {
-    var onScroll = function () {
-      header.classList.toggle("is-scrolled", window.scrollY > 12);
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
+  var progress = document.getElementById("scroll-progress");
+  var ticking = false;
+  function paintScroll() {
+    ticking = false;
+    if (header) header.classList.toggle("is-scrolled", window.scrollY > 12);
+    if (progress) {
+      var h = document.documentElement;
+      var max = h.scrollHeight - h.clientHeight;
+      var ratio = max > 0 ? Math.min(window.scrollY / max, 1) : 0;
+      progress.style.transform = "scaleX(" + ratio + ")";
+    }
+  }
+  if (header || progress) {
+    paintScroll();
+    window.addEventListener("scroll", function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(paintScroll); }
+    }, { passive: true });
   }
 
   /* Mobile navigation */
@@ -49,18 +60,31 @@
     revealEls.forEach(function (el) { el.classList.add("is-visible"); });
   }
 
-  /* Client Portal tabs */
-  var tabButtons = document.querySelectorAll(".portal-tabbtn");
+  /* Client Portal tabs — click + full keyboard support (WAI-ARIA tabs) */
+  var tabButtons = Array.prototype.slice.call(document.querySelectorAll(".portal-tabbtn"));
   if (tabButtons.length) {
-    tabButtons.forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var target = btn.getAttribute("data-panel");
-        tabButtons.forEach(function (b) {
-          b.setAttribute("aria-selected", String(b === btn));
-        });
-        document.querySelectorAll(".portal-panel").forEach(function (panel) {
-          panel.classList.toggle("is-active", panel.id === target);
-        });
+    var selectTab = function (btn, focus) {
+      var target = btn.getAttribute("data-panel");
+      tabButtons.forEach(function (b) {
+        var on = b === btn;
+        b.setAttribute("aria-selected", String(on));
+        b.tabIndex = on ? 0 : -1;          // roving tabindex
+      });
+      document.querySelectorAll(".portal-panel").forEach(function (panel) {
+        panel.classList.toggle("is-active", panel.id === target);
+      });
+      if (focus) btn.focus();
+    };
+    tabButtons.forEach(function (btn, i) {
+      btn.tabIndex = btn.getAttribute("aria-selected") === "true" ? 0 : -1;
+      btn.addEventListener("click", function () { selectTab(btn); });
+      btn.addEventListener("keydown", function (e) {
+        var n = tabButtons.length, next = null;
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") next = (i + 1) % n;
+        else if (e.key === "ArrowUp" || e.key === "ArrowLeft") next = (i - 1 + n) % n;
+        else if (e.key === "Home") next = 0;
+        else if (e.key === "End") next = n - 1;
+        if (next !== null) { e.preventDefault(); selectTab(tabButtons[next], true); }
       });
     });
   }
@@ -69,6 +93,9 @@
   document.querySelectorAll("form[data-demo]").forEach(function (form) {
     form.addEventListener("submit", function (e) {
       e.preventDefault();
+      // Honeypot: if a bot filled the hidden field, silently drop.
+      var hp = form.querySelector('input[name="company_website"]');
+      if (hp && hp.value) { form.reset(); return; }
       var note = form.querySelector("[data-form-note]");
       if (note) {
         note.textContent = form.getAttribute("data-success") ||

@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; object-src 'none'; frame-ancestors 'none'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="theme-color" content="#0E0E10" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <title>Client Portal — Verum Advisory</title>
   <meta name="description" content="Secure access to documents, tax calendars, statements, and partner correspondence." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -11,6 +15,8 @@
   <link rel="stylesheet" href="assets/css/styles.css" />
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
 
   <header class="site-header">
     <nav class="nav" aria-label="Primary">
@@ -42,7 +48,7 @@
     </div>
   </header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <section class="page-hero">
       <div class="wrap">
         <p class="eyebrow reveal">Client Portal</p>
@@ -260,6 +266,6 @@
     </div>
   </footer>
 
-  <script src="assets/js/main.js"></script>
+  <script defer src="assets/js/main.js"></script>
 </body>
 </html>
