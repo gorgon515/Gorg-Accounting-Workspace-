@@ -623,3 +623,26 @@ a.cell:hover::after { opacity: 1; transform: none; }
 .article-nav { display: flex; justify-content: space-between; gap: 2rem; margin-top: 4rem; padding-top: 2.5rem; border-top: 1px solid var(--line); flex-wrap: wrap; }
 .article-nav a { font-size: 0.875rem; color: var(--warm-gray); }
 .article-nav a:hover { color: var(--ivory); }
+
+/* =========================================================================
+   Document viewer (portal documents & statements)
+   ========================================================================= */
+
+.document { border: 1px solid var(--line); background: var(--charcoal); max-width: 760px; }
+.document-head { padding: clamp(1.75rem, 4vw, 2.75rem); border-bottom: 1px solid var(--line); }
+.document-meta { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.document-meta .d-kind { font-size: 0.6875rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.document-meta .mono { font-size: 0.72rem; color: var(--warm-gray); }
+.document-head h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); max-width: 24ch; }
+.document-body { padding: clamp(1.75rem, 4vw, 2.75rem); }
+.document-body p { color: var(--warm-gray); font-size: 1rem; line-height: 1.8; margin-bottom: 1.25rem; max-width: 62ch; }
+.document-body .doc-pre { font-family: var(--mono); font-size: 0.85rem; color: var(--ivory); line-height: 1.7; background: var(--obsidian); border: 1px solid var(--line); padding: 1.25rem; margin: 0.5rem 0 1.25rem; overflow-x: auto; }
+.doc-ledger { border-top: 1px solid var(--line); margin-top: 0.5rem; }
+.ledger-row { display: flex; justify-content: space-between; align-items: baseline; padding: 0.95rem 0; border-bottom: 1px solid var(--line); }
+.ledger-row span:first-child { color: var(--warm-gray); font-size: 0.9375rem; }
+.ledger-row .mono { color: var(--ivory); font-size: 0.875rem; }
+.ledger-total { border-bottom: 0; border-top: 1px solid var(--gold); margin-top: 0.5rem; }
+.ledger-total span:first-child { color: var(--ivory); letter-spacing: 0.04em; }
+.ledger-total .mono { color: var(--gold); font-size: 1.15rem; }
+.document-foot { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: clamp(1.5rem, 3vw, 2rem) clamp(1.75rem, 4vw, 2.75rem); border-top: 1px solid var(--line); flex-wrap: wrap; }
+.document-conf { font-size: 0.65rem; letter-spacing: 0.12em; color: var(--warm-gray); }

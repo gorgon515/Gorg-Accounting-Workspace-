@@ -21,7 +21,9 @@ international tax advisory firm. Built to the firm's brand brief:
 
 Insights articles open real pages via `article.html?id=<slug>` (content in
 `assets/js/articles.js`). Practice cards deep-link to anchored discipline
-sections (`practice.html#cross-border`, etc.).
+sections (`practice.html#cross-border`, etc.). Every Client Portal document and
+statement opens a real viewer page via `document.html?id=<slug>` (content in
+`assets/js/documents.js`) with an on-page download. No link dead-ends.
 
 ### Visual approach & interaction
 
@@ -67,8 +69,7 @@ All design tokens live as CSS custom properties at the top of
   use native validation.
 - **Accessibility** — skip-to-content link, `:focus-visible` rings, a `#main`
   landmark, WAI-ARIA tabs in the Client Portal with full keyboard support
-  (arrows / Home / End, roving tabindex), `prefers-reduced-motion` honored,
-  and a custom `404.html`.
+  (arrows / Home / End, roving tabindex), and `prefers-reduced-motion` honored.
 - **Efficiency** — scroll work is `requestAnimationFrame`-throttled behind a
   single passive listener; scripts are `defer`red; an SVG favicon and
   `theme-color` are set. No images, no gradients, no web fonts beyond three.
