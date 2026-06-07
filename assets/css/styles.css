@@ -531,6 +531,26 @@ section { padding: clamp(4rem, 9vw, 8rem) 0; }
 .marque span { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.18em; color: var(--warm-gray); }
 .marque .dot { color: var(--gold); }
 
+/* NYC skyline — hand-drawn line-art (no gradients, no photography) */
+.hero { overflow: hidden; }
+.hero-skyline {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  width: 100%; pointer-events: none; z-index: 0; opacity: 0.45;
+  line-height: 0;
+}
+.hero-skyline img { width: 100%; display: block; }
+.hero .wrap { position: relative; z-index: 1; }
+
+.cityline { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--charcoal); padding: 0; line-height: 0; }
+.cityline img { width: 100%; display: block; opacity: 0.92; }
+.cityline-cap { display: flex; align-items: center; justify-content: center; gap: 1.4rem; flex-wrap: wrap; padding: 1.2rem 1rem; border-top: 1px solid var(--line); line-height: 1; }
+.cityline-cap span { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.18em; color: var(--warm-gray); }
+.cityline-cap .dot { color: var(--gold); }
+
+/* Tall tower accent beside text */
+.tower-figure { line-height: 0; }
+.tower-figure img { width: 100%; max-width: 300px; display: block; border: 1px solid var(--line); background: var(--obsidian); }
+
 /* Caption under structural blocks */
 figcaption.figcap { margin-top: 1rem; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--warm-gray); }
 
