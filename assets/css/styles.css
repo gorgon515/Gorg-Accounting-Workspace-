@@ -27,12 +27,6 @@
   --maxw: 1180px;
   --gutter: clamp(1.5rem, 5vw, 5rem);
 
-  /* NYC photography — swap these URLs for the firm's own licensed images.
-     Each loads in the browser at view-time; if a URL fails, the hand-drawn
-     line-art underneath shows instead (no broken images). Source: Unsplash. */
-  --photo-hero:    url("https://images.unsplash.com/photo-1522083165195-3424ed129620?auto=format&fit=crop&w=1600&q=70");
-  --photo-skyline: url("https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=1600&q=70");
-  --photo-room:    url("https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=70");
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -558,28 +552,7 @@ section { padding: clamp(4rem, 9vw, 8rem) 0; }
 .tower-figure { position: relative; line-height: 0; width: 300px; max-width: 100%; }
 .tower-figure img { width: 100%; display: block; border: 1px solid var(--line); background: var(--obsidian); }
 
-/* ---- Photo layers — load in browser, monochrome, over line-art fallback --- */
-.photo-layer {
-  position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  background-position: center; background-size: cover; background-repeat: no-repeat;
-  /* desaturate + darken so photography reads on-brand (obsidian/gold) */
-  filter: grayscale(1) contrast(1.04) brightness(0.55);
-}
-.photo-layer::after { content: ""; position: absolute; inset: 0; background: rgba(14, 14, 16, 0.46); }
-
-/* Hero: photo behind text, line-art skyline still anchors the base */
-.hero .photo-layer { filter: grayscale(1) contrast(1.04) brightness(0.42); }
-.hero .photo-layer::after { background: rgba(14, 14, 16, 0.55); }
-.has-photo-hero .photo-layer { background-image: var(--photo-hero); }
-
-/* Skyline band: photo over the SVG; if it 404s, the SVG shows through */
-.cityline { position: relative; }
 .cityline-frame { position: relative; line-height: 0; }
-.cityline-frame .photo-layer { background-image: var(--photo-skyline); }
-.cityline-cap { position: relative; z-index: 1; }
-
-/* The room: photo over the tower line-art */
-.tower-figure .photo-layer { background-image: var(--photo-room); filter: grayscale(1) contrast(1.04) brightness(0.6); }
 
 /* Caption under structural blocks */
 figcaption.figcap { margin-top: 1rem; font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.06em; color: var(--warm-gray); }

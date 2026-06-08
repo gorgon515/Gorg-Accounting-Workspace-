@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'self'; img-src 'self' data: https://images.unsplash.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; object-src 'none'; frame-ancestors 'none'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; form-action 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; object-src 'none'; frame-ancestors 'none'" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta name="theme-color" content="#0E0E10" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -51,11 +51,10 @@
 
   <main id="main" tabindex="-1">
     <!-- Hero -->
-    <section class="hero has-photo-hero">
+    <section class="hero">
       <div class="hero-skyline" aria-hidden="true">
         <img src="assets/img/skyline.svg" alt="" width="1440" height="360" />
       </div>
-      <span class="photo-layer" aria-hidden="true"></span>
       <div class="wrap">
         <div class="hero-grid">
           <div class="hero-copy">
@@ -158,8 +157,7 @@
     <div class="cityline">
       <div class="cityline-frame">
         <img src="assets/img/skyline.svg" alt="The Manhattan skyline at dusk." width="1440" height="360" loading="lazy" />
-        <span class="photo-layer" aria-hidden="true"></span>
-      </div>
+        </div>
       <div class="cityline-cap" aria-hidden="true">
         <span>NEW YORK</span><span class="dot">·</span>
         <span>LONDON</span><span class="dot">·</span>
