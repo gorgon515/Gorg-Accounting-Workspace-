@@ -27,19 +27,23 @@ statement opens a real viewer page via `document.html?id=<slug>` (content in
 
 ### Visual approach & interaction
 
-Strictly typographic and structural — **no imagery, no gradients, no AI art**,
-per the brand brief ("not anything with a gradient or a hero video").
+Typographic and structural, with NYC architecture as the only imagery —
+**no gradients, no AI art**, per the brand brief.
 
+- **NYC photography** in the hero, a skyline band, and "The room" on The Firm.
+  Real Unsplash photos load at view-time, treated monochrome + darkened to
+  read on-brand. Each sits over **hand-drawn line-art** (`assets/img/skyline.svg`,
+  `tower.svg`) that shows automatically if a photo is blocked — never a broken
+  image. Swap the three `--photo-*` URLs at the top of `assets/css/styles.css`
+  for the firm's own licensed photography (dusk facades, lobbies — no people).
 - **Hairline specimen panel** in the hero and a **holding-structure diagram**
-  on the Practice page — both built in HTML/CSS (mono labels, hairline rules),
-  treated as data/structural elements rather than decoration.
-- **Marque bands** (monospace location lines between hairline rules) as dividers.
+  on the Practice page — built in HTML/CSS (mono labels, hairline rules).
 - **Nav preview** ("precursor highlight") — hovering a tab reveals a hairline
   bar describing what that tab opens before you click.
-- **Portal downloads** generate real letterhead text files locally (Blob).
+- **Portal documents** open real viewer pages with on-page downloads.
 
-If real architectural photography (stone, glass, steel — no people) becomes
-available, it can be dropped into the hero/marque slots later.
+> The photos must be served over http(s) and reach `images.unsplash.com`
+> (allowlisted in the CSP). Offline/`file://`, you'll see the line-art instead.
 
 ## Design system
 
