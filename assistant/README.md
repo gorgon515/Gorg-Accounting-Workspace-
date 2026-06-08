@@ -32,6 +32,34 @@ npm start
 
 Node 18+ required (uses global `fetch`).
 
+### Web sessions: allow the market-data host
+
+Claude Code **web** sessions run behind a network allowlist, which blocks the
+market-data feed by default. To let quotes load in a web session, open the
+environment's settings → **Network access** → **Custom**, tick *"Also include
+default list of common package managers"*, and add:
+
+```text
+query1.finance.yahoo.com
+query2.finance.yahoo.com
+```
+
+This is a web-UI setting (there is no committed config file for it). Local
+`npm start` on your own machine is unaffected — it has full network access.
+
+### Trading (paper) — approval-gated
+
+The Trading panel runs a **simulated** account (starting cash $100,000). The
+safety model is deliberate:
+
+- The Claude brain can only **propose** a trade (`propose_trade`); it has no
+  tool that executes. Proposals appear as pending **approval cards**.
+- A trade fills **only** when you click **Approve** — re-priced at the live
+  quote at that moment. **Reject** discards it. Both AI- and manually-entered
+  orders funnel through the same approval gate.
+- Real-money brokerage (e.g. Alpaca) would slot in behind the fill step and
+  stay gated behind this approval + paper-mode default. It is **not** enabled.
+
 ## Architecture
 
 ```
@@ -77,7 +105,8 @@ the relay slots in behind the existing voice interface — `voice.js` is the sea
 
 ## Roadmap
 
-1. **Stocks** ✅ (this slice) — quotes, search, history, watchlist, voice.
+1. **Stocks** ✅ — quotes, search, history, watchlist, voice.
+1b. **Trading (paper)** ✅ — approval-gated buy/sell, live-priced fills, portfolio P/L.
 2. **Productivity** — daily briefing, tasks, calendar, Gmail triage.
 3. **Accounting** — ledger/invoices, categorization, reports (ties into the
    existing workspace site).

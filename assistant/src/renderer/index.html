@@ -51,6 +51,25 @@
       <div class="watchlist" id="watchlist"><p class="muted">Loading…</p></div>
     </section>
 
+    <!-- Trading (paper) -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Trading <span class="tag" id="trade-mode">paper</span></h2>
+        <span class="total" id="portfolio-total">—</span>
+      </div>
+      <div class="approvals" id="approvals"></div>
+      <form class="order-form" id="order-form">
+        <select id="order-side">
+          <option value="buy">Buy</option>
+          <option value="sell">Sell</option>
+        </select>
+        <input id="order-symbol" type="text" placeholder="AAPL" autocomplete="off" />
+        <input id="order-qty" type="text" inputmode="numeric" placeholder="Qty" autocomplete="off" />
+        <button type="submit">Propose</button>
+      </form>
+      <div class="positions" id="positions"></div>
+    </section>
+
     <!-- Lookup -->
     <section class="panel">
       <div class="panel-head"><h2>Look up</h2></div>

@@ -47,8 +47,8 @@ body {
 .grid {
   flex: 1;
   display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  grid-template-rows: 1fr 1fr;
+  grid-template-columns: 1.25fr 1fr;
+  grid-template-rows: 1fr 1.15fr 1fr;
   gap: 16px;
   padding: 16px;
   min-height: 0;
@@ -62,7 +62,7 @@ body {
   flex-direction: column;
   min-height: 0;
 }
-.panel-chat { grid-row: span 2; }
+.panel-chat { grid-row: span 3; }
 .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .panel-head h2 { margin: 0; font-size: 13px; font-weight: 400; letter-spacing: 0.04em; color: var(--ivory); }
 
@@ -131,6 +131,38 @@ input[type="text"]:focus { border-color: var(--gold); }
 
 .muted { color: var(--warm-gray); font-size: 12px; }
 .err { color: var(--red); font-size: 12px; font-family: var(--mono); }
+
+/* Trading */
+.tag { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--gold); border: 1px solid var(--hairline); border-radius: 3px; padding: 1px 5px; margin-left: 6px; }
+.total { font-family: var(--mono); font-size: 12px; color: var(--ivory); }
+.approvals { display: flex; flex-direction: column; gap: 8px; max-height: 46%; overflow-y: auto; }
+.approval {
+  border: 1px solid var(--gold); border-radius: 5px; padding: 10px;
+  background: rgba(184, 151, 106, 0.06);
+}
+.approval .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.approval .deal { font-family: var(--mono); font-size: 12px; }
+.approval .est { font-family: var(--mono); font-size: 11px; color: var(--warm-gray); }
+.approval .warn { color: var(--gold); font-size: 11px; margin: 4px 0; }
+.approval .acts { display: flex; gap: 8px; margin-top: 8px; }
+.approval .acts button { flex: 1; padding: 6px; font-size: 11px; }
+.approval .approve { border-color: var(--green); color: var(--green); }
+.approval .reject { border-color: var(--red); color: var(--red); }
+.order-form { display: flex; gap: 6px; margin: 10px 0; }
+.order-form select {
+  background: var(--obsidian); color: var(--ivory); border: 1px solid var(--hairline);
+  border-radius: 4px; padding: 7px; font-size: 12px; font-family: var(--sans);
+}
+.order-form input { min-width: 0; }
+.order-form #order-symbol { flex: 1; }
+.order-form #order-qty { width: 64px; }
+.positions { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+.pos-row { display: flex; justify-content: space-between; padding: 6px 9px;
+  background: var(--obsidian); border: 1px solid var(--hairline); border-radius: 4px; }
+.pos-row .sym { font-family: var(--mono); font-size: 12px; }
+.pos-row .meta { font-size: 10px; color: var(--warm-gray); }
+.pos-row .pl { font-family: var(--mono); font-size: 11px; }
 
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-thumb { background: var(--slate); border-radius: 4px; }

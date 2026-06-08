@@ -5,8 +5,9 @@
 // create a sibling module and register it here — nothing else changes.
 
 const stocks = require('./stocks');
+const trading = require('./trading');
 
-const skills = [stocks];
+const skills = [stocks, trading];
 
 function allTools() {
   return skills.flatMap((s) => s.tools || []);

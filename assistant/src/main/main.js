@@ -27,6 +27,24 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
   mainWindow.once('ready-to-show', () => mainWindow.show());
 
+  // Headless smoke test: ARIA_SCREENSHOT=<path> launches, captures the
+  // rendered window after it settles, writes the PNG, and quits. Used in CI
+  // and local sanity checks; a no-op in normal use.
+  if (process.env.ARIA_SCREENSHOT) {
+    mainWindow.webContents.once('did-finish-load', () => {
+      setTimeout(async () => {
+        try {
+          const img = await mainWindow.webContents.capturePage();
+          require('fs').writeFileSync(process.env.ARIA_SCREENSHOT, img.toPNG());
+          console.log('[screenshot] wrote', process.env.ARIA_SCREENSHOT);
+        } catch (err) {
+          console.error('[screenshot] failed:', err.message);
+        }
+        app.quit();
+      }, 2500);
+    });
+  }
+
   // External links open in the system browser, not inside the app.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);

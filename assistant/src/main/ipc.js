@@ -10,6 +10,7 @@ const skills = require('./services/skills');
 
 function register() {
   const stocks = skills.getSkill('stocks').api;
+  const trading = skills.getSkill('trading').api;
 
   ipcMain.handle('aria:config', () => ({
     hasBrain: config.hasBrain(),
@@ -29,6 +30,15 @@ function register() {
   ipcMain.handle('stocks:watchlist:quotes', () => stocks.getQuotes(stocks.getWatchlist()));
   ipcMain.handle('stocks:watchlist:add', (_e, symbol) => stocks.addToWatchlist(symbol));
   ipcMain.handle('stocks:watchlist:remove', (_e, symbol) => stocks.removeFromWatchlist(symbol));
+
+  // Trading (paper). propose stages an order; only approve fills it.
+  ipcMain.handle('trading:portfolio', () => trading.getPortfolio());
+  ipcMain.handle('trading:pending', () => trading.listPending());
+  ipcMain.handle('trading:propose', (_e, order) => trading.proposeTrade(order));
+  ipcMain.handle('trading:approve', (_e, id) => trading.approve(id));
+  ipcMain.handle('trading:reject', (_e, id) => trading.reject(id));
+  ipcMain.handle('trading:orders', () => trading.getOrders());
+  ipcMain.handle('trading:reset', () => trading.resetAccount());
 }
 
 module.exports = { register };

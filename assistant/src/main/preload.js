@@ -17,4 +17,13 @@ contextBridge.exposeInMainWorld('aria', {
     addToWatchlist: (symbol) => ipcRenderer.invoke('stocks:watchlist:add', symbol),
     removeFromWatchlist: (symbol) => ipcRenderer.invoke('stocks:watchlist:remove', symbol),
   },
+  trading: {
+    portfolio: () => ipcRenderer.invoke('trading:portfolio'),
+    pending: () => ipcRenderer.invoke('trading:pending'),
+    propose: (order) => ipcRenderer.invoke('trading:propose', order),
+    approve: (id) => ipcRenderer.invoke('trading:approve', id),
+    reject: (id) => ipcRenderer.invoke('trading:reject', id),
+    orders: () => ipcRenderer.invoke('trading:orders'),
+    reset: () => ipcRenderer.invoke('trading:reset'),
+  },
 });

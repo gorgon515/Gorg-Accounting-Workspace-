@@ -20,6 +20,14 @@ const els = {
   searchInput: document.getElementById('search-input'),
   searchBtn: document.getElementById('search-btn'),
   results: document.getElementById('results'),
+  approvals: document.getElementById('approvals'),
+  positions: document.getElementById('positions'),
+  portfolioTotal: document.getElementById('portfolio-total'),
+  tradeMode: document.getElementById('trade-mode'),
+  orderForm: document.getElementById('order-form'),
+  orderSide: document.getElementById('order-side'),
+  orderSymbol: document.getElementById('order-symbol'),
+  orderQty: document.getElementById('order-qty'),
 };
 
 let chatHistory = [];
@@ -95,8 +103,9 @@ async function sendToBrain(text) {
       els.transcript.insertBefore(tdiv, pending);
     }
     if (res.ok && voice && voice.isListening && voice.isListening()) voice.speak(res.text);
-    // Refresh watchlist in case the brain modified it.
+    // Refresh panels in case the brain modified the watchlist or staged a trade.
     loadWatchlist();
+    refreshTrading();
   } catch (err) {
     pending.textContent = `Error: ${err.message}`;
   }
@@ -163,6 +172,100 @@ async function doSearch() {
 els.searchBtn.addEventListener('click', doSearch);
 els.searchInput.addEventListener('keydown', (e) => e.key === 'Enter' && doSearch());
 
+// ---- trading (paper, approval-gated) ----
+const money = (n, cur) =>
+  n == null ? '—' : `${n.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${cur || ''}`.trim();
+
+function approvalCard(o) {
+  const card = document.createElement('div');
+  card.className = 'approval';
+  const sideLabel = o.side.toUpperCase();
+  const warnHtml = (o.warnings || [])
+    .map((w) => `<div class="warn">⚠ ${w}</div>`)
+    .join('');
+  card.innerHTML = `
+    <div class="head">
+      <span class="deal">${sideLabel} ${o.qty} ${o.symbol}</span>
+      <span class="est">~${money(o.estPrice, o.currency)}/sh</span>
+    </div>
+    <div class="est">Est. ${o.side === 'buy' ? 'cost' : 'proceeds'}: ${money(o.estValue, o.currency)} · ${o.name || ''}</div>
+    ${warnHtml}
+    <div class="acts">
+      <button class="approve">Approve</button>
+      <button class="reject">Reject</button>
+    </div>`;
+  card.querySelector('.approve').addEventListener('click', async () => {
+    card.querySelector('.approve').disabled = true;
+    try {
+      const { order } = await aria.trading.approve(o.id);
+      appendMsg('tool', `✓ Filled: ${order.side} ${order.qty} ${order.symbol} @ ${money(order.fillPrice, order.currency)}`);
+    } catch (err) {
+      appendMsg('tool', `✗ ${err.message}`);
+    }
+    refreshTrading();
+  });
+  card.querySelector('.reject').addEventListener('click', async () => {
+    try { await aria.trading.reject(o.id); } catch {}
+    refreshTrading();
+  });
+  return card;
+}
+
+function positionRow(p) {
+  const row = document.createElement('div');
+  row.className = 'pos-row';
+  const pl = p.unrealized;
+  const plClass = pl == null ? '' : pl >= 0 ? 'up' : 'down';
+  const plTxt =
+    pl == null ? '' : `${pl >= 0 ? '+' : ''}${pl.toFixed(2)} (${p.unrealizedPct >= 0 ? '+' : ''}${(p.unrealizedPct ?? 0).toFixed(1)}%)`;
+  row.innerHTML = `
+    <div>
+      <div class="sym">${p.qty} ${p.symbol}</div>
+      <div class="meta">avg ${p.avgCost.toFixed(2)} · now ${p.price != null ? p.price.toFixed(2) : '—'}</div>
+    </div>
+    <div class="pl chg ${plClass}">${plTxt}</div>`;
+  return row;
+}
+
+async function refreshTrading() {
+  try {
+    const [pending, portfolio] = await Promise.all([
+      aria.trading.pending(),
+      aria.trading.portfolio(),
+    ]);
+    els.tradeMode.textContent = portfolio.mode;
+    els.portfolioTotal.textContent = `${money(portfolio.totalValue)} · cash ${money(portfolio.cash)}`;
+
+    els.approvals.innerHTML = '';
+    pending.forEach((o) => els.approvals.appendChild(approvalCard(o)));
+
+    els.positions.innerHTML = '';
+    if (!portfolio.positions.length) {
+      els.positions.innerHTML = '<p class="muted">No positions yet.</p>';
+    } else {
+      portfolio.positions.forEach((p) => els.positions.appendChild(positionRow(p)));
+    }
+  } catch (err) {
+    els.portfolioTotal.textContent = '—';
+  }
+}
+
+els.orderForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const side = els.orderSide.value;
+  const symbol = els.orderSymbol.value.trim();
+  const qty = Number(els.orderQty.value);
+  if (!symbol || !qty) return;
+  try {
+    await aria.trading.propose({ side, symbol, qty });
+    els.orderSymbol.value = '';
+    els.orderQty.value = '';
+    refreshTrading();
+  } catch (err) {
+    appendMsg('tool', `✗ ${err.message}`);
+  }
+});
+
 // ---- voice ----
 function setVoiceHint(state) {
   const map = {
@@ -216,6 +319,9 @@ async function boot() {
   }
   initVoice();
   loadWatchlist();
+  refreshTrading();
+  // Keep pending approvals and live P/L fresh.
+  setInterval(refreshTrading, 15000);
 }
 
 boot();
