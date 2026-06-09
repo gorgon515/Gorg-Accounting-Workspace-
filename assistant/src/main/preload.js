@@ -33,4 +33,11 @@ contextBridge.exposeInMainWorld('aria', {
     deleteTask: (id) => ipcRenderer.invoke('prod:task:delete', id),
     briefing: () => ipcRenderer.invoke('prod:briefing'),
   },
+  alerts: {
+    list: () => ipcRenderer.invoke('alerts:list'),
+    add: (a) => ipcRenderer.invoke('alerts:add', a),
+    remove: (id) => ipcRenderer.invoke('alerts:remove', id),
+    // main -> renderer push when an alert fires
+    onTriggered: (cb) => ipcRenderer.on('alert:triggered', (_e, data) => cb(data)),
+  },
 });

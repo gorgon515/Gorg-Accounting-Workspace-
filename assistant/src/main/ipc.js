@@ -12,6 +12,7 @@ function register() {
   const stocks = skills.getSkill('stocks').api;
   const trading = skills.getSkill('trading').api;
   const productivity = skills.getSkill('productivity').api;
+  const alerts = skills.getSkill('alerts').api;
 
   ipcMain.handle('aria:config', () => ({
     hasBrain: config.hasBrain(),
@@ -47,6 +48,11 @@ function register() {
   ipcMain.handle('prod:task:complete', (_e, id) => productivity.completeTask({ id }));
   ipcMain.handle('prod:task:delete', (_e, id) => productivity.deleteTask({ id }));
   ipcMain.handle('prod:briefing', () => productivity.briefing());
+
+  // Alerts
+  ipcMain.handle('alerts:list', () => alerts.listAlerts());
+  ipcMain.handle('alerts:add', (_e, a) => alerts.addAlert(a));
+  ipcMain.handle('alerts:remove', (_e, id) => alerts.removeAlert({ id }));
 }
 
 module.exports = { register };

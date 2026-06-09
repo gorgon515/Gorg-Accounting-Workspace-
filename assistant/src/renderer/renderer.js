@@ -34,6 +34,15 @@ const els = {
   taskDue: document.getElementById('task-due'),
   tasklist: document.getElementById('tasklist'),
   taskCount: document.getElementById('task-count'),
+  chartCanvas: document.getElementById('chart-canvas'),
+  chartSymbol: document.getElementById('chart-symbol'),
+  chartMeta: document.getElementById('chart-meta'),
+  chartRanges: document.getElementById('chart-ranges'),
+  alertForm: document.getElementById('alert-form'),
+  alertSymbol: document.getElementById('alert-symbol'),
+  alertDir: document.getElementById('alert-dir'),
+  alertPrice: document.getElementById('alert-price'),
+  alertlist: document.getElementById('alertlist'),
 };
 
 let chatHistory = [];
@@ -49,9 +58,9 @@ const fmtChg = (q) => {
   return `${sign}${q.change.toFixed(2)} (${sign}${q.changePercent.toFixed(2)}%)`;
 };
 
-function quoteRow(q, { removable = false, clickable = false } = {}) {
+function quoteRow(q, { removable = false, clickable = false, onSelect = null } = {}) {
   const row = document.createElement('div');
-  row.className = 'row' + (clickable ? ' clickable' : '');
+  row.className = 'row' + (clickable || onSelect ? ' clickable' : '');
   if (q.error) {
     row.innerHTML = `<div class="left"><span class="sym">${q.symbol}</span>
       <span class="name err">${q.error}</span></div>`;
@@ -80,6 +89,9 @@ function quoteRow(q, { removable = false, clickable = false } = {}) {
       await aria.stocks.addToWatchlist(q.symbol);
       loadWatchlist();
     });
+  }
+  if (onSelect) {
+    row.addEventListener('click', () => onSelect(q.symbol));
   }
   return row;
 }
@@ -114,6 +126,7 @@ async function sendToBrain(text) {
     loadWatchlist();
     refreshTrading();
     loadTasks();
+    loadAlerts();
   } catch (err) {
     pending.textContent = `Error: ${err.message}`;
   }
@@ -137,7 +150,9 @@ async function loadWatchlist() {
       els.watchlist.innerHTML = '<p class="muted">No tickers yet. Add one above.</p>';
       return;
     }
-    quotes.forEach((q) => els.watchlist.appendChild(quoteRow(q, { removable: true })));
+    quotes.forEach((q) =>
+      els.watchlist.appendChild(quoteRow(q, { removable: true, onSelect: setChart }))
+    );
   } catch (err) {
     els.watchlist.innerHTML = `<p class="err">${err.message}</p>`;
   }
@@ -269,6 +284,136 @@ els.orderForm.addEventListener('submit', async (e) => {
     els.orderSymbol.value = '';
     els.orderQty.value = '';
     refreshTrading();
+  } catch (err) {
+    appendMsg('tool', `✗ ${err.message}`);
+  }
+});
+
+// ---- chart ----
+const chartState = { symbol: null, range: '1mo' };
+
+function drawChart(points) {
+  const cv = els.chartCanvas;
+  const ctx = cv.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth || 320;
+  const h = cv.clientHeight || 150;
+  cv.width = w * dpr;
+  cv.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  if (!points || points.length < 2) return;
+
+  const vals = points.map((p) => p.close);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const pad = 6;
+  const x = (i) => pad + (i / (points.length - 1)) * (w - 2 * pad);
+  const y = (v) => (max === min ? h / 2 : pad + (1 - (v - min) / (max - min)) * (h - 2 * pad));
+  const up = vals[vals.length - 1] >= vals[0];
+  const color = up ? '#6FA98C' : '#C97A6A';
+
+  // line
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    const X = x(i);
+    const Y = y(p.close);
+    i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y);
+  });
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // soft fill under the line
+  ctx.lineTo(x(points.length - 1), h - pad);
+  ctx.lineTo(x(0), h - pad);
+  ctx.closePath();
+  ctx.fillStyle = up ? 'rgba(111,169,140,0.08)' : 'rgba(201,122,106,0.08)';
+  ctx.fill();
+}
+
+async function loadChart() {
+  if (!chartState.symbol) return;
+  els.chartSymbol.textContent = chartState.symbol;
+  els.chartMeta.textContent = 'Loading…';
+  try {
+    const hist = await aria.stocks.history(chartState.symbol, chartState.range);
+    if (!hist.points || !hist.points.length) {
+      els.chartMeta.textContent = 'No data.';
+      drawChart([]);
+      return;
+    }
+    drawChart(hist.points);
+    const first = hist.points[0].close;
+    const last = hist.points[hist.points.length - 1].close;
+    const chg = last - first;
+    const pct = first ? (chg / first) * 100 : 0;
+    els.chartMeta.textContent =
+      `${chartState.range} · ${last.toFixed(2)} (${chg >= 0 ? '+' : ''}${pct.toFixed(2)}%)`;
+  } catch (err) {
+    els.chartMeta.textContent = err.message;
+  }
+}
+
+function setChart(symbol) {
+  chartState.symbol = symbol;
+  loadChart();
+}
+
+els.chartRanges.addEventListener('click', (e) => {
+  const btn = e.target.closest('.r-btn');
+  if (!btn) return;
+  els.chartRanges.querySelectorAll('.r-btn').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  chartState.range = btn.dataset.range;
+  loadChart();
+});
+// Redraw on resize so the canvas stays crisp.
+window.addEventListener('resize', () => chartState.symbol && loadChart());
+
+// ---- price alerts ----
+function alertRow(a) {
+  const row = document.createElement('div');
+  row.className = 'alert-row' + (a.active ? '' : ' fired');
+  const state = a.active
+    ? '<span class="a-state live">watching</span>'
+    : `<span class="a-state fired">fired${a.triggeredPrice != null ? ' ' + a.triggeredPrice.toFixed(2) : ''}</span>`;
+  row.innerHTML = `
+    <span class="a-desc">${a.symbol} ${a.direction} ${a.price}</span>
+    <div class="right">${state}<button class="a-del" title="Remove">✕</button></div>`;
+  row.querySelector('.a-del').addEventListener('click', async () => {
+    await aria.alerts.remove(a.id);
+    loadAlerts();
+  });
+  return row;
+}
+
+async function loadAlerts() {
+  try {
+    const list = await aria.alerts.list();
+    els.alertlist.innerHTML = '';
+    if (!list.length) {
+      els.alertlist.innerHTML = '<p class="muted">No alerts set.</p>';
+      return;
+    }
+    list.sort((a, b) => (a.active === b.active ? 0 : a.active ? -1 : 1));
+    list.forEach((a) => els.alertlist.appendChild(alertRow(a)));
+  } catch (err) {
+    els.alertlist.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+els.alertForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const symbol = els.alertSymbol.value.trim();
+  const direction = els.alertDir.value;
+  const price = Number(els.alertPrice.value);
+  if (!symbol || !price) return;
+  try {
+    await aria.alerts.add({ symbol, direction, price });
+    els.alertSymbol.value = '';
+    els.alertPrice.value = '';
+    loadAlerts();
   } catch (err) {
     appendMsg('tool', `✗ ${err.message}`);
   }
@@ -417,6 +562,26 @@ async function boot() {
   loadWatchlist();
   refreshTrading();
   loadTasks();
+  loadAlerts();
+
+  // Chart the first watchlist symbol on load.
+  try {
+    const symbols = await aria.stocks.watchlist();
+    if (symbols && symbols.length) setChart(symbols[0]);
+  } catch {}
+
+  // Push notifications when a price alert fires (main -> renderer).
+  if (aria.alerts.onTriggered) {
+    aria.alerts.onTriggered((a) => {
+      const now = a.triggeredPrice != null ? ` (now ${a.triggeredPrice.toFixed(2)})` : '';
+      appendMsg('assistant', `🔔 Alert: ${a.symbol} is ${a.direction} ${a.price}${now}.`);
+      if (voice && voice.isListening && voice.isListening()) {
+        voice.speak(`Alert: ${a.symbol} is ${a.direction} ${a.price}`);
+      }
+      loadAlerts();
+    });
+  }
+
   // Keep pending approvals and live P/L fresh.
   setInterval(refreshTrading, 15000);
 }

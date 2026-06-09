@@ -1,9 +1,12 @@
 'use strict';
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell, Notification } = require('electron');
 const path = require('path');
 const store = require('./store');
 const ipc = require('./ipc');
+const skills = require('./services/skills');
+
+let stopAlertChecker = null;
 
 let mainWindow = null;
 let tray = null;
@@ -77,11 +80,29 @@ function createTray() {
   }
 }
 
+function startAlertChecker() {
+  const alerts = skills.getSkill('alerts').api;
+  stopAlertChecker = alerts.startChecker({
+    intervalMs: 60000,
+    onTrigger: (a) => {
+      const now = a.triggeredPrice != null ? ` (now ${a.triggeredPrice.toFixed(2)})` : '';
+      const body = `${a.symbol} is ${a.direction} ${a.price}${now}`;
+      try {
+        if (Notification.isSupported()) new Notification({ title: 'ARIA price alert', body }).show();
+      } catch { /* notifications unavailable */ }
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('alert:triggered', a);
+      }
+    },
+  });
+}
+
 app.whenReady().then(() => {
   store.init();
   ipc.register();
   createWindow();
   createTray();
+  startAlertChecker();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

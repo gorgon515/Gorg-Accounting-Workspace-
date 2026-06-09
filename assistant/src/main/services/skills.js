@@ -7,8 +7,9 @@
 const stocks = require('./stocks');
 const trading = require('./trading');
 const productivity = require('./productivity');
+const alerts = require('./alerts');
 
-const skills = [stocks, trading, productivity];
+const skills = [stocks, trading, productivity, alerts];
 
 function allTools() {
   return skills.flatMap((s) => s.tools || []);

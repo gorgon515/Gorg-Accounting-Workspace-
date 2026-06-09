@@ -42,6 +42,22 @@
     </section>
 
     <aside class="sidebar">
+    <!-- Chart -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Chart <span class="mono" id="chart-symbol">—</span></h2>
+        <div class="ranges" id="chart-ranges">
+          <button class="r-btn" data-range="1d">1D</button>
+          <button class="r-btn" data-range="5d">5D</button>
+          <button class="r-btn active" data-range="1mo">1M</button>
+          <button class="r-btn" data-range="6mo">6M</button>
+          <button class="r-btn" data-range="1y">1Y</button>
+        </div>
+      </div>
+      <canvas id="chart-canvas" height="150"></canvas>
+      <div class="chart-meta muted" id="chart-meta">Click a ticker to chart it.</div>
+    </section>
+
     <!-- Watchlist -->
     <section class="panel">
       <div class="panel-head">
@@ -53,6 +69,21 @@
         <button id="add-btn">Add</button>
       </div>
       <div class="watchlist" id="watchlist"><p class="muted">Loading…</p></div>
+    </section>
+
+    <!-- Alerts -->
+    <section class="panel">
+      <div class="panel-head"><h2>Price alerts</h2></div>
+      <form class="add-row" id="alert-form">
+        <input id="alert-symbol" type="text" placeholder="AAPL" autocomplete="off" />
+        <select id="alert-dir">
+          <option value="above">above</option>
+          <option value="below">below</option>
+        </select>
+        <input id="alert-price" type="text" inputmode="decimal" placeholder="price" autocomplete="off" />
+        <button type="submit">Set</button>
+      </form>
+      <div class="alertlist" id="alertlist"></div>
     </section>
 
     <!-- Trading (paper) -->
