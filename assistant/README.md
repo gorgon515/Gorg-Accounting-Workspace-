@@ -106,8 +106,9 @@ the relay slots in behind the existing voice interface — `voice.js` is the sea
 ## Roadmap
 
 1. **Stocks** ✅ — quotes, search, history, watchlist, voice, **price chart**
-   (click any ticker, selectable range), and **price alerts** (above/below
-   thresholds → OS notification; the brain can set them by voice).
+   (click any ticker, selectable range, auto-refreshing intraday), **news
+   headlines** per ticker, and **price alerts** (above/below thresholds → OS
+   notification + chime; the brain can set them by voice).
 1b. **Trading (paper)** ✅ — approval-gated buy/sell, live-priced fills, portfolio P/L.
 2. **Productivity** ◑ — tasks, quick notes, and a daily briefing (tasks +
    watchlist movers + portfolio) done. **Email triage / calendar pending**: both

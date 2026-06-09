@@ -70,6 +70,18 @@ async function searchSymbol(query) {
     }));
 }
 
+async function getNews(query) {
+  const data = await yahoo(
+    `${SEARCH}?q=${encodeURIComponent(query)}&newsCount=8&quotesCount=0`
+  );
+  return (data.news || []).map((n) => ({
+    title: n.title,
+    publisher: n.publisher,
+    link: n.link,
+    time: n.providerPublishTime ? new Date(n.providerPublishTime * 1000).toISOString() : null,
+  }));
+}
+
 async function getHistory(symbol, range = '1mo') {
   const sym = String(symbol).trim().toUpperCase();
   const interval = INTERVALS[range] || '1d';
@@ -133,6 +145,15 @@ const tools = [
     },
   },
   {
+    name: 'get_news',
+    description: 'Get recent news headlines for a company or ticker. Call when the user asks what\'s happening with a stock or wants the latest news.',
+    input_schema: {
+      type: 'object',
+      properties: { query: { type: 'string', description: 'Company name or ticker' } },
+      required: ['query'],
+    },
+  },
+  {
     name: 'get_history',
     description: 'Get historical closing prices for a ticker over a range, for trend questions ("how has X done this month").',
     input_schema: {
@@ -174,6 +195,7 @@ const handlers = {
   get_quote: ({ symbol }) => getQuote(symbol),
   get_quotes: ({ symbols }) => getQuotes(symbols),
   search_symbol: ({ query }) => searchSymbol(query),
+  get_news: ({ query }) => getNews(query),
   get_history: ({ symbol, range }) => getHistory(symbol, range),
   get_watchlist: async () => getQuotes(getWatchlist()),
   add_to_watchlist: async ({ symbol }) => ({ watchlist: addToWatchlist(symbol) }),
@@ -189,5 +211,5 @@ module.exports = {
   tools,
   handlers,
   // Direct API used by UI panels (no AI brain needed):
-  api: { getQuote, getQuotes, searchSymbol, getHistory, getWatchlist, addToWatchlist, removeFromWatchlist },
+  api: { getQuote, getQuotes, searchSymbol, getNews, getHistory, getWatchlist, addToWatchlist, removeFromWatchlist },
 };

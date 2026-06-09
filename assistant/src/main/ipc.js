@@ -27,6 +27,7 @@ function register() {
   ipcMain.handle('stocks:quote', (_e, symbol) => stocks.getQuote(symbol));
   ipcMain.handle('stocks:quotes', (_e, symbols) => stocks.getQuotes(symbols));
   ipcMain.handle('stocks:search', (_e, query) => stocks.searchSymbol(query));
+  ipcMain.handle('stocks:news', (_e, query) => stocks.getNews(query));
   ipcMain.handle('stocks:history', (_e, { symbol, range }) => stocks.getHistory(symbol, range));
   ipcMain.handle('stocks:watchlist', () => stocks.getWatchlist());
   ipcMain.handle('stocks:watchlist:quotes', () => stocks.getQuotes(stocks.getWatchlist()));

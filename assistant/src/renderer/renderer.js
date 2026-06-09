@@ -38,6 +38,8 @@ const els = {
   chartSymbol: document.getElementById('chart-symbol'),
   chartMeta: document.getElementById('chart-meta'),
   chartRanges: document.getElementById('chart-ranges'),
+  newsSymbol: document.getElementById('news-symbol'),
+  newslist: document.getElementById('newslist'),
   alertForm: document.getElementById('alert-form'),
   alertSymbol: document.getElementById('alert-symbol'),
   alertDir: document.getElementById('alert-dir'),
@@ -358,6 +360,40 @@ async function loadChart() {
 function setChart(symbol) {
   chartState.symbol = symbol;
   loadChart();
+  loadNews(symbol);
+}
+
+function relTime(iso) {
+  if (!iso) return '';
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.round(hrs / 24)}d ago`;
+}
+
+async function loadNews(symbol) {
+  els.newsSymbol.textContent = symbol || '';
+  els.newslist.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const items = await aria.stocks.news(symbol);
+    els.newslist.innerHTML = '';
+    if (!items.length) {
+      els.newslist.innerHTML = '<p class="muted">No recent headlines.</p>';
+      return;
+    }
+    items.forEach((n) => {
+      const el = document.createElement('div');
+      el.className = 'news-item';
+      // target=_blank routes through the main process to the system browser.
+      el.innerHTML = `
+        <a href="${n.link}" target="_blank" rel="noopener">${escapeHtml(n.title)}</a>
+        <div class="meta">${escapeHtml(n.publisher || '')}${n.time ? ' · ' + relTime(n.time) : ''}</div>`;
+      els.newslist.appendChild(el);
+    });
+  } catch (err) {
+    els.newslist.innerHTML = `<p class="err">${err.message}</p>`;
+  }
 }
 
 els.chartRanges.addEventListener('click', (e) => {
@@ -386,6 +422,29 @@ function alertRow(a) {
     loadAlerts();
   });
   return row;
+}
+
+// Short two-tone chime via Web Audio (no asset file needed).
+function playAlertSound() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    [880, 1175].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      const t = ctx.currentTime + i * 0.16;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.16);
+    });
+    setTimeout(() => ctx.close(), 600);
+  } catch { /* audio unavailable */ }
 }
 
 async function loadAlerts() {
@@ -575,6 +634,7 @@ async function boot() {
     aria.alerts.onTriggered((a) => {
       const now = a.triggeredPrice != null ? ` (now ${a.triggeredPrice.toFixed(2)})` : '';
       appendMsg('assistant', `🔔 Alert: ${a.symbol} is ${a.direction} ${a.price}${now}.`);
+      playAlertSound();
       if (voice && voice.isListening && voice.isListening()) {
         voice.speak(`Alert: ${a.symbol} is ${a.direction} ${a.price}`);
       }
@@ -582,8 +642,10 @@ async function boot() {
     });
   }
 
-  // Keep pending approvals and live P/L fresh.
+  // Live refresh: trades/P/L fast, watchlist + chart on a slower intraday cadence.
   setInterval(refreshTrading, 15000);
+  setInterval(loadWatchlist, 60000);
+  setInterval(() => chartState.symbol && loadChart(), 45000);
 }
 
 boot();

@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('aria', {
     quote: (symbol) => ipcRenderer.invoke('stocks:quote', symbol),
     quotes: (symbols) => ipcRenderer.invoke('stocks:quotes', symbols),
     search: (query) => ipcRenderer.invoke('stocks:search', query),
+    news: (query) => ipcRenderer.invoke('stocks:news', query),
     history: (symbol, range) => ipcRenderer.invoke('stocks:history', { symbol, range }),
     watchlist: () => ipcRenderer.invoke('stocks:watchlist'),
     watchlistQuotes: () => ipcRenderer.invoke('stocks:watchlist:quotes'),
