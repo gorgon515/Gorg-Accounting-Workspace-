@@ -107,7 +107,10 @@ the relay slots in behind the existing voice interface — `voice.js` is the sea
 
 1. **Stocks** ✅ — quotes, search, history, watchlist, voice.
 1b. **Trading (paper)** ✅ — approval-gated buy/sell, live-priced fills, portfolio P/L.
-2. **Productivity** — daily briefing, tasks, calendar, Gmail triage.
+2. **Productivity** ◑ — tasks, quick notes, and a daily briefing (tasks +
+   watchlist movers + portfolio) done. **Email triage / calendar pending**: both
+   need their own OAuth (e.g. Gmail/Google Calendar) inside the app — the
+   `briefing.inbox` seam is in place, the integration is not.
 3. **Accounting** — ledger/invoices, categorization, reports (ties into the
    existing workspace site).
 4. **Studying** — notes ingestion, flashcards, spaced repetition, tutor Q&A.

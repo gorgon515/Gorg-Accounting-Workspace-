@@ -11,6 +11,7 @@ const skills = require('./services/skills');
 function register() {
   const stocks = skills.getSkill('stocks').api;
   const trading = skills.getSkill('trading').api;
+  const productivity = skills.getSkill('productivity').api;
 
   ipcMain.handle('aria:config', () => ({
     hasBrain: config.hasBrain(),
@@ -39,6 +40,13 @@ function register() {
   ipcMain.handle('trading:reject', (_e, id) => trading.reject(id));
   ipcMain.handle('trading:orders', () => trading.getOrders());
   ipcMain.handle('trading:reset', () => trading.resetAccount());
+
+  // Productivity
+  ipcMain.handle('prod:tasks', (_e, filter) => productivity.listTasks({ filter }));
+  ipcMain.handle('prod:task:add', (_e, t) => productivity.addTask(t));
+  ipcMain.handle('prod:task:complete', (_e, id) => productivity.completeTask({ id }));
+  ipcMain.handle('prod:task:delete', (_e, id) => productivity.deleteTask({ id }));
+  ipcMain.handle('prod:briefing', () => productivity.briefing());
 }
 
 module.exports = { register };

@@ -27,7 +27,10 @@
     <section class="panel panel-chat">
       <div class="panel-head">
         <h2>Assistant</h2>
-        <button id="mic-btn" class="mic" title="Toggle voice">🎙 Voice: off</button>
+        <div class="head-actions">
+          <button id="brief-btn" class="ghost" title="Daily briefing">☀ Briefing</button>
+          <button id="mic-btn" class="mic" title="Toggle voice">🎙 Voice: off</button>
+        </div>
       </div>
       <div class="transcript" id="transcript"></div>
       <form class="composer" id="composer">
@@ -38,6 +41,7 @@
       <p class="hint" id="voice-hint"></p>
     </section>
 
+    <aside class="sidebar">
     <!-- Watchlist -->
     <section class="panel">
       <div class="panel-head">
@@ -70,6 +74,20 @@
       <div class="positions" id="positions"></div>
     </section>
 
+    <!-- Tasks -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Tasks</h2>
+        <span class="muted" id="task-count"></span>
+      </div>
+      <form class="add-row" id="task-form">
+        <input id="task-input" type="text" placeholder="New task…" autocomplete="off" />
+        <input id="task-due" type="text" placeholder="due (today)" autocomplete="off" />
+        <button type="submit">Add</button>
+      </form>
+      <div class="tasklist" id="tasklist"></div>
+    </section>
+
     <!-- Lookup -->
     <section class="panel">
       <div class="panel-head"><h2>Look up</h2></div>
@@ -79,6 +97,7 @@
       </div>
       <div class="results" id="results"></div>
     </section>
+    </aside>
   </main>
 
   <script src="voice.js"></script>

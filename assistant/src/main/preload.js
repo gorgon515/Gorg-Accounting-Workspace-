@@ -26,4 +26,11 @@ contextBridge.exposeInMainWorld('aria', {
     orders: () => ipcRenderer.invoke('trading:orders'),
     reset: () => ipcRenderer.invoke('trading:reset'),
   },
+  productivity: {
+    tasks: (filter) => ipcRenderer.invoke('prod:tasks', filter),
+    addTask: (t) => ipcRenderer.invoke('prod:task:add', t),
+    completeTask: (id) => ipcRenderer.invoke('prod:task:complete', id),
+    deleteTask: (id) => ipcRenderer.invoke('prod:task:delete', id),
+    briefing: () => ipcRenderer.invoke('prod:briefing'),
+  },
 });

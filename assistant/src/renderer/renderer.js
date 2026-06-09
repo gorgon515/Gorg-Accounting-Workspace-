@@ -28,6 +28,12 @@ const els = {
   orderSide: document.getElementById('order-side'),
   orderSymbol: document.getElementById('order-symbol'),
   orderQty: document.getElementById('order-qty'),
+  briefBtn: document.getElementById('brief-btn'),
+  taskForm: document.getElementById('task-form'),
+  taskInput: document.getElementById('task-input'),
+  taskDue: document.getElementById('task-due'),
+  tasklist: document.getElementById('tasklist'),
+  taskCount: document.getElementById('task-count'),
 };
 
 let chatHistory = [];
@@ -103,9 +109,11 @@ async function sendToBrain(text) {
       els.transcript.insertBefore(tdiv, pending);
     }
     if (res.ok && voice && voice.isListening && voice.isListening()) voice.speak(res.text);
-    // Refresh panels in case the brain modified the watchlist or staged a trade.
+    // Refresh panels in case the brain changed the watchlist, staged a trade,
+    // or added/completed a task.
     loadWatchlist();
     refreshTrading();
+    loadTasks();
   } catch (err) {
     pending.textContent = `Error: ${err.message}`;
   }
@@ -266,6 +274,94 @@ els.orderForm.addEventListener('submit', async (e) => {
   }
 });
 
+// ---- tasks ----
+const TODAY = new Date().toISOString().slice(0, 10);
+
+function taskRow(t) {
+  const row = document.createElement('div');
+  row.className = 'task';
+  let dueTxt = '';
+  let dueCls = '';
+  if (t.due) {
+    dueCls = t.due < TODAY ? 'over' : t.due === TODAY ? 'today' : '';
+    dueTxt = t.due < TODAY ? `overdue · ${t.due}` : t.due === TODAY ? 'today' : t.due;
+  }
+  row.innerHTML = `
+    <button class="check" title="Mark done"></button>
+    <div class="body">
+      <div class="t-text">${escapeHtml(t.text)}</div>
+      ${dueTxt ? `<div class="t-due ${dueCls}">${dueTxt}</div>` : ''}
+    </div>
+    <button class="t-del" title="Delete">✕</button>`;
+  row.querySelector('.check').addEventListener('click', async () => {
+    await aria.productivity.completeTask(t.id);
+    loadTasks();
+  });
+  row.querySelector('.t-del').addEventListener('click', async () => {
+    await aria.productivity.deleteTask(t.id);
+    loadTasks();
+  });
+  return row;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+async function loadTasks() {
+  try {
+    const tasks = await aria.productivity.tasks('open');
+    els.taskCount.textContent = tasks.length ? `${tasks.length} open` : '';
+    els.tasklist.innerHTML = '';
+    if (!tasks.length) {
+      els.tasklist.innerHTML = '<p class="muted">Nothing open. Add a task above.</p>';
+      return;
+    }
+    // Overdue first, then by due date, then undated.
+    tasks.sort((a, b) => (a.due || '9999') < (b.due || '9999') ? -1 : 1);
+    tasks.forEach((t) => els.tasklist.appendChild(taskRow(t)));
+  } catch (err) {
+    els.tasklist.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+els.taskForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = els.taskInput.value.trim();
+  if (!text) return;
+  const due = els.taskDue.value.trim();
+  els.taskInput.value = '';
+  els.taskDue.value = '';
+  await aria.productivity.addTask({ text, due });
+  loadTasks();
+});
+
+// ---- daily briefing ----
+els.briefBtn.addEventListener('click', async () => {
+  if (cfg.hasBrain) {
+    // Let the brain compose and (if voice is on) speak it.
+    sendToBrain('Give me my daily briefing.');
+  } else {
+    // Brain offline: render the raw briefing locally.
+    try {
+      const b = await aria.productivity.briefing();
+      const lines = [`${b.greeting}. ${b.date}.`];
+      if (b.tasks.overdue.length) lines.push(`Overdue: ${b.tasks.overdue.join('; ')}.`);
+      if (b.tasks.dueToday.length) lines.push(`Due today: ${b.tasks.dueToday.join('; ')}.`);
+      lines.push(`${b.tasks.openCount} open task(s).`);
+      if (b.market.movers.length) {
+        lines.push('Movers: ' + b.market.movers
+          .map((m) => `${m.symbol} ${m.changePercent >= 0 ? '+' : ''}${m.changePercent.toFixed(1)}%`)
+          .join(', ') + '.');
+      }
+      if (b.portfolio) lines.push(`Portfolio ~${money(b.portfolio.totalValue)}.`);
+      appendMsg('assistant', lines.join(' '));
+    } catch (err) {
+      appendMsg('assistant', `Couldn't build briefing: ${err.message}`);
+    }
+  }
+});
+
 // ---- voice ----
 function setVoiceHint(state) {
   const map = {
@@ -320,6 +416,7 @@ async function boot() {
   initVoice();
   loadWatchlist();
   refreshTrading();
+  loadTasks();
   // Keep pending approvals and live P/L fresh.
   setInterval(refreshTrading, 15000);
 }
