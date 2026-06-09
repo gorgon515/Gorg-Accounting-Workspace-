@@ -16,6 +16,7 @@
 
 const store = require('../store');
 const stocks = require('./stocks');
+const broker = require('./broker');
 
 function freshAccount() {
   return { mode: 'paper', cash: 100000, positions: {}, history: [] };
@@ -37,6 +38,27 @@ function newId() {
 }
 
 async function getPortfolio() {
+  // Connected broker is the source of truth for the portfolio.
+  if (broker.isConnected()) {
+    const [a, pos] = await Promise.all([broker.getAccount(), broker.getPositions()]);
+    const positions = (pos || []).map((p) => ({
+      symbol: p.symbol,
+      qty: Number(p.qty),
+      avgCost: Number(p.avg_entry_price),
+      price: Number(p.current_price),
+      value: Number(p.market_value),
+      unrealized: Number(p.unrealized_pl),
+      unrealizedPct: Number(p.unrealized_plpc) * 100,
+    }));
+    return {
+      mode: broker.mode() === 'live' ? 'live' : 'paper-broker',
+      cash: Number(a.cash),
+      holdingsValue: positions.reduce((s, x) => s + (x.value || 0), 0),
+      totalValue: Number(a.portfolio_value),
+      positions,
+    };
+  }
+
   const a = account();
   const symbols = Object.keys(a.positions);
   const quotes = symbols.length ? await stocks.api.getQuotes(symbols) : [];
@@ -89,6 +111,8 @@ async function proposeTrade({ side, symbol, qty }) {
     if (qty > held) warnings.push(`You only hold ${held} share(s) of ${symbol}.`);
   }
 
+  const venue = broker.isConnected() ? `alpaca-${broker.mode()}` : 'paper-sim';
+  const live = broker.isConnected() && broker.mode() === 'live';
   const order = {
     id: newId(),
     side,
@@ -99,6 +123,8 @@ async function proposeTrade({ side, symbol, qty }) {
     estValue: estPrice * qty,
     currency: quote.currency,
     status: 'pending',
+    venue,
+    live,
     createdAt: new Date().toISOString(),
     warnings,
   };
@@ -120,7 +146,31 @@ async function approve(id) {
   const order = pending.get(id);
   if (!order) throw new Error('No pending order with that id (it may have expired).');
 
-  const quote = await stocks.api.getQuote(order.symbol); // re-price at fill time
+  // Connected broker: submit a real market order. Fills are async at the broker,
+  // so we record it as "submitted" and let the portfolio reflect the result.
+  if (broker.isConnected()) {
+    const placed = await broker.placeOrder({ side: order.side, symbol: order.symbol, qty: order.qty });
+    order.status = 'submitted';
+    order.brokerOrderId = placed?.id || null;
+    order.submittedAt = new Date().toISOString();
+    const a = account();
+    recordHistory(a, {
+      id: order.id,
+      side: order.side,
+      symbol: order.symbol,
+      qty: order.qty,
+      price: order.estPrice,
+      status: 'submitted',
+      venue: order.venue,
+      brokerOrderId: order.brokerOrderId,
+      at: order.submittedAt,
+    });
+    saveAccount(a);
+    pending.delete(id);
+    return { order, portfolio: await getPortfolio() };
+  }
+
+  const quote = await stocks.api.getQuote(order.symbol); // re-price at fill time (sim)
   const fillPrice = quote.price;
   const a = account();
   const cost = fillPrice * order.qty;
@@ -232,9 +282,9 @@ const handlers = {
 module.exports = {
   name: 'trading',
   systemPromptFragment:
-    'You manage a PAPER (simulated) trading account — no real money. You can read the portfolio and trade history, and you can STAGE buy/sell orders with propose_trade. ' +
-    'Staging is not executing: every order must be explicitly approved by the user in the Trading panel before any shares or cash move. ' +
-    'When you stage an order, clearly tell the user it is pending their approval and restate the side, quantity, symbol, and estimated cost. Never claim a trade executed. ' +
+    'You manage the user\'s trading account. By default it is a PAPER (simulated) account; if the user has connected a broker (Alpaca) it may be a paper or LIVE real-money account. You can read the portfolio and trade history, and you can STAGE buy/sell orders with propose_trade. ' +
+    'Staging is not executing: every order must be explicitly approved by the user in the Trading panel before any shares or cash move — this is true for the simulator AND for a connected real account. ' +
+    'When you stage an order, clearly tell the user it is pending their approval and restate the side, quantity, symbol, and estimated cost. If the account is live, remind them it is a real-money order. Never claim a trade executed. ' +
     'You are not a licensed financial advisor — explain and summarize, but do not tell the user to buy or sell, and add a brief "not financial advice" note when they ask what to do.',
   tools,
   handlers,

@@ -45,6 +45,17 @@ const els = {
   alertDir: document.getElementById('alert-dir'),
   alertPrice: document.getElementById('alert-price'),
   alertlist: document.getElementById('alertlist'),
+  agenda: document.getElementById('agenda'),
+  inboxCount: document.getElementById('inbox-count'),
+  googleStatus: document.getElementById('google-status'),
+  googleBtn: document.getElementById('google-btn'),
+  brokerStatus: document.getElementById('broker-status'),
+  brokerForm: document.getElementById('broker-form'),
+  brokerMode: document.getElementById('broker-mode'),
+  brokerKey: document.getElementById('broker-key'),
+  brokerSecret: document.getElementById('broker-secret'),
+  brokerNote: document.getElementById('broker-note'),
+  brokerDisconnect: document.getElementById('broker-disconnect'),
 };
 
 let chatHistory = [];
@@ -129,6 +140,7 @@ async function sendToBrain(text) {
     refreshTrading();
     loadTasks();
     loadAlerts();
+    loadAgenda();
   } catch (err) {
     pending.textContent = `Error: ${err.message}`;
   }
@@ -203,14 +215,15 @@ const money = (n, cur) =>
 
 function approvalCard(o) {
   const card = document.createElement('div');
-  card.className = 'approval';
+  card.className = 'approval' + (o.live ? ' live' : '');
   const sideLabel = o.side.toUpperCase();
   const warnHtml = (o.warnings || [])
     .map((w) => `<div class="warn">⚠ ${w}</div>`)
     .join('');
+  const liveTag = o.live ? ' <span class="live-tag">live · real money</span>' : '';
   card.innerHTML = `
     <div class="head">
-      <span class="deal">${sideLabel} ${o.qty} ${o.symbol}</span>
+      <span class="deal">${sideLabel} ${o.qty} ${o.symbol}${liveTag}</span>
       <span class="est">~${money(o.estPrice, o.currency)}/sh</span>
     </div>
     <div class="est">Est. ${o.side === 'buy' ? 'cost' : 'proceeds'}: ${money(o.estValue, o.currency)} · ${o.name || ''}</div>
@@ -566,6 +579,136 @@ els.briefBtn.addEventListener('click', async () => {
   }
 });
 
+// ---- connections: Google ----
+async function loadGoogleStatus() {
+  try {
+    const s = await aria.google.status();
+    if (!s.configured) {
+      els.googleStatus.innerHTML = 'not configured';
+      els.googleBtn.disabled = true;
+      els.googleBtn.title = 'Set GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET in .env';
+    } else if (s.connected) {
+      els.googleStatus.innerHTML = `<span class="ok">${escapeHtml(s.email || 'connected')}</span>`;
+      els.googleBtn.textContent = 'Disconnect';
+      els.googleBtn.dataset.connected = '1';
+    } else {
+      els.googleStatus.textContent = 'not connected';
+      els.googleBtn.textContent = 'Connect';
+      els.googleBtn.dataset.connected = '';
+    }
+  } catch {
+    els.googleStatus.textContent = 'unavailable';
+  }
+}
+
+els.googleBtn.addEventListener('click', async () => {
+  if (els.googleBtn.dataset.connected) {
+    await aria.google.disconnect();
+    loadGoogleStatus();
+    loadAgenda();
+    return;
+  }
+  els.googleStatus.textContent = 'opening browser…';
+  try {
+    await aria.google.connect();
+    await loadGoogleStatus();
+    loadAgenda();
+  } catch (err) {
+    els.googleStatus.textContent = 'failed';
+    appendMsg('tool', `✗ Google: ${err.message}`);
+  }
+});
+
+// ---- connections: broker (trading account) ----
+async function loadBrokerStatus() {
+  try {
+    const s = await aria.broker.status();
+    if (s.connected) {
+      const liveCls = s.mode === 'live' ? 'live' : 'ok';
+      els.brokerStatus.innerHTML = `<span class="${liveCls}">${s.mode}</span> · ${escapeHtml(s.keyMasked || '')}`;
+      els.brokerForm.style.display = 'none';
+      els.brokerDisconnect.style.display = '';
+      els.brokerNote.textContent = s.account
+        ? `Value ${money(s.account.portfolioValue)} · cash ${money(s.account.cash)}`
+        : s.error || '';
+    } else {
+      els.brokerStatus.textContent = 'paper simulator';
+      els.brokerForm.style.display = '';
+      els.brokerDisconnect.style.display = 'none';
+      const enc = await aria.broker.encryptionAvailable();
+      els.brokerNote.textContent = enc
+        ? 'Alpaca key/secret, stored encrypted on this device.'
+        : 'Note: OS secure storage unavailable — secret stored obfuscated, not encrypted.';
+    }
+  } catch {
+    els.brokerStatus.textContent = 'unavailable';
+  }
+}
+
+els.brokerForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const mode = els.brokerMode.value;
+  const keyId = els.brokerKey.value.trim();
+  const secret = els.brokerSecret.value.trim();
+  if (!keyId || !secret) return;
+  if (mode === 'live' && !confirm('Connect a LIVE real-money account? Approved orders will execute for real.')) return;
+  els.brokerNote.textContent = 'Connecting…';
+  try {
+    await aria.broker.connect({ keyId, secret, mode });
+    els.brokerKey.value = '';
+    els.brokerSecret.value = '';
+    await loadBrokerStatus();
+    refreshTrading();
+    appendMsg('tool', `✓ Connected ${mode} trading account.`);
+  } catch (err) {
+    els.brokerNote.textContent = err.message;
+  }
+});
+
+els.brokerDisconnect.addEventListener('click', async () => {
+  await aria.broker.disconnect();
+  await loadBrokerStatus();
+  refreshTrading();
+});
+
+// ---- agenda (Google Calendar + unread count) ----
+function evTime(iso) {
+  if (!iso) return 'all day';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+async function loadAgenda() {
+  const gs = await aria.google.status().catch(() => ({ connected: false }));
+  if (!gs.connected) {
+    els.agenda.innerHTML = '<p class="muted">Connect Google to see your day.</p>';
+    els.inboxCount.textContent = '';
+    return;
+  }
+  els.agenda.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const [events, inbox] = await Promise.all([
+      aria.google.agenda(),
+      aria.google.inbox().catch(() => ({ unread: 0 })),
+    ]);
+    els.inboxCount.textContent = inbox.unread ? `${inbox.unread} unread` : 'inbox clear';
+    els.agenda.innerHTML = '';
+    if (!events.length) {
+      els.agenda.innerHTML = '<p class="muted">No events today.</p>';
+      return;
+    }
+    events.forEach((ev) => {
+      const el = document.createElement('div');
+      el.className = 'ev';
+      el.innerHTML = `<span class="ev-time">${evTime(ev.start)}</span><span class="ev-title">${escapeHtml(ev.summary)}</span>`;
+      els.agenda.appendChild(el);
+    });
+  } catch (err) {
+    els.agenda.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
 // ---- voice ----
 function setVoiceHint(state) {
   const map = {
@@ -622,6 +765,9 @@ async function boot() {
   refreshTrading();
   loadTasks();
   loadAlerts();
+  loadGoogleStatus();
+  loadBrokerStatus();
+  loadAgenda();
 
   // Chart the first watchlist symbol on load.
   try {

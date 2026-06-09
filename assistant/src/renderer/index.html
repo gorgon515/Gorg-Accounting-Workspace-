@@ -64,6 +64,15 @@
       <div class="newslist" id="newslist"><p class="muted">Select a ticker for headlines.</p></div>
     </section>
 
+    <!-- Agenda (Google Calendar + Gmail) -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Today</h2>
+        <span class="muted" id="inbox-count"></span>
+      </div>
+      <div class="agenda" id="agenda"><p class="muted">Connect Google to see your day.</p></div>
+    </section>
+
     <!-- Watchlist -->
     <section class="panel">
       <div class="panel-head">
@@ -133,6 +142,31 @@
         <button id="search-btn">Search</button>
       </div>
       <div class="results" id="results"></div>
+    </section>
+
+    <!-- Connections -->
+    <section class="panel">
+      <div class="panel-head"><h2>Connections</h2></div>
+
+      <div class="conn-row">
+        <div class="conn-label">Google <span class="muted" id="google-status">checking…</span></div>
+        <button id="google-btn" class="ghost">Connect</button>
+      </div>
+
+      <div class="conn-block">
+        <div class="conn-label">Trading account <span class="muted" id="broker-status">checking…</span></div>
+        <form id="broker-form" class="broker-form">
+          <select id="broker-mode" title="Paper = simulated; Live = real money">
+            <option value="paper">Paper</option>
+            <option value="live">Live</option>
+          </select>
+          <input id="broker-key" type="text" placeholder="Alpaca Key ID" autocomplete="off" />
+          <input id="broker-secret" type="password" placeholder="Secret Key" autocomplete="off" />
+          <button type="submit">Connect</button>
+        </form>
+        <p class="conn-note muted" id="broker-note"></p>
+        <button id="broker-disconnect" class="ghost" style="display:none">Disconnect account</button>
+      </div>
     </section>
     </aside>
   </main>

@@ -41,4 +41,17 @@ contextBridge.exposeInMainWorld('aria', {
     // main -> renderer push when an alert fires
     onTriggered: (cb) => ipcRenderer.on('alert:triggered', (_e, data) => cb(data)),
   },
+  google: {
+    status: () => ipcRenderer.invoke('google:status'),
+    connect: () => ipcRenderer.invoke('google:connect'),
+    disconnect: () => ipcRenderer.invoke('google:disconnect'),
+    agenda: () => ipcRenderer.invoke('google:agenda'),
+    inbox: () => ipcRenderer.invoke('google:inbox'),
+  },
+  broker: {
+    status: () => ipcRenderer.invoke('broker:status'),
+    connect: (creds) => ipcRenderer.invoke('broker:connect', creds),
+    disconnect: () => ipcRenderer.invoke('broker:disconnect'),
+    encryptionAvailable: () => ipcRenderer.invoke('broker:encryptionAvailable'),
+  },
 });

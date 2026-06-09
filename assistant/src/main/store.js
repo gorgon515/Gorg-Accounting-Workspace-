@@ -4,7 +4,7 @@
 // Keeps the vertical slice dependency-free; swap for SQLite when modules grow.
 const fs = require('fs');
 const path = require('path');
-const { app } = require('electron');
+const { app, safeStorage } = require('electron');
 
 let filePath = null;
 let cache = null;
@@ -40,4 +40,43 @@ function set(key, value) {
   return value;
 }
 
-module.exports = { init, get, set };
+// Secret helpers: encrypt at rest with the OS keychain via safeStorage when
+// available; fall back to base64 (obfuscation only) with a flag so callers can
+// warn. Secrets are stored under their own keys, never returned to the renderer.
+function setSecret(key, plaintext) {
+  if (plaintext == null) return set(key, null);
+  let entry;
+  try {
+    if (safeStorage && safeStorage.isEncryptionAvailable()) {
+      entry = { enc: true, data: safeStorage.encryptString(String(plaintext)).toString('base64') };
+    } else {
+      entry = { enc: false, data: Buffer.from(String(plaintext), 'utf8').toString('base64') };
+    }
+  } catch {
+    entry = { enc: false, data: Buffer.from(String(plaintext), 'utf8').toString('base64') };
+  }
+  return set(key, entry);
+}
+
+function getSecret(key) {
+  const v = get(key, null);
+  if (!v || !v.data) return null;
+  try {
+    if (v.enc && safeStorage && safeStorage.isEncryptionAvailable()) {
+      return safeStorage.decryptString(Buffer.from(v.data, 'base64'));
+    }
+    return Buffer.from(v.data, 'base64').toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
+function encryptionAvailable() {
+  try {
+    return Boolean(safeStorage && safeStorage.isEncryptionAvailable());
+  } catch {
+    return false;
+  }
+}
+
+module.exports = { init, get, set, setSecret, getSecret, encryptionAvailable };

@@ -212,6 +212,32 @@ input[type="text"]:focus { border-color: var(--gold); }
 .news-item a:hover { color: var(--gold); }
 .news-item .meta { font-family: var(--mono); font-size: 10px; color: var(--warm-gray); margin-top: 3px; }
 
+/* Agenda */
+.agenda { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+.agenda .ev { display: flex; gap: 10px; padding: 6px 9px; background: var(--obsidian);
+  border: 1px solid var(--hairline); border-radius: 4px; }
+.agenda .ev-time { font-family: var(--mono); font-size: 11px; color: var(--gold); flex: 0 0 auto; }
+.agenda .ev-title { font-size: 12px; }
+
+/* Connections */
+.conn-row, .conn-block { padding: 8px 0; border-top: 1px solid var(--hairline); }
+.conn-row { display: flex; align-items: center; justify-content: space-between; }
+.conn-row:first-of-type, .conn-block:first-of-type { border-top: none; }
+.conn-label { font-size: 12px; }
+.conn-label .muted { font-family: var(--mono); font-size: 10px; margin-left: 6px; }
+.conn-label .ok { color: var(--green); }
+.conn-label .live { color: var(--red); }
+.broker-form { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.broker-form select { background: var(--obsidian); color: var(--ivory); border: 1px solid var(--hairline);
+  border-radius: 4px; padding: 7px; font-size: 12px; }
+.broker-form input { flex: 1; min-width: 120px; }
+.conn-note { font-family: var(--mono); font-size: 10px; margin: 6px 0 0; min-height: 12px; }
+
+/* Live-order warning on approval cards */
+.approval.live { border-color: var(--red); background: rgba(201, 122, 106, 0.08); }
+.approval .live-tag { color: var(--red); font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase; }
+
 /* Alerts */
 #alert-form #alert-symbol { width: 70px; flex: 0 0 auto; }
 #alert-form #alert-price { width: 70px; flex: 0 0 auto; }

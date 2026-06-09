@@ -14,6 +14,7 @@
 const store = require('../store');
 const stocks = require('./stocks');
 const trading = require('./trading');
+const google = require('./google');
 
 function tasks() {
   return store.get('tasks', []);
@@ -151,6 +152,24 @@ async function briefing() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
+  // Gmail + Calendar when Google is connected.
+  let inbox = { connected: false, unread: 0, items: [], note: 'Connect Google to include email.' };
+  let agenda = { connected: false, events: [], note: 'Connect Google to include your calendar.' };
+  if (google.api.status().connected) {
+    try {
+      const u = await google.api.listUnread();
+      inbox = { connected: true, unread: u.unread, items: u.items.slice(0, 5) };
+    } catch (e) {
+      inbox = { connected: true, unread: 0, items: [], error: e.message };
+    }
+    try {
+      const events = await google.api.listEvents();
+      agenda = { connected: true, events };
+    } catch (e) {
+      agenda = { connected: true, events: [], error: e.message };
+    }
+  }
+
   return {
     date: today,
     greeting,
@@ -161,7 +180,8 @@ async function briefing() {
     },
     market: { movers },
     portfolio,
-    inbox: { unread: 0, items: [], note: 'Email triage not yet connected.' },
+    inbox,
+    agenda,
   };
 }
 
@@ -237,8 +257,8 @@ module.exports = {
   name: 'productivity',
   systemPromptFragment:
     'You manage the user\'s tasks and quick notes, and can produce a daily briefing that combines their tasks, watchlist movers, and portfolio. ' +
-    'When giving the briefing aloud, lead with the greeting and date, then the most urgent tasks (overdue first), then a one-line market note, then portfolio value. Keep it under ~60 words unless asked for detail. ' +
-    'Email/inbox triage is not connected yet — if asked about email, say it\'s coming and offer to note a reminder instead.',
+    'When giving the briefing aloud, lead with the greeting and date, then the most urgent tasks (overdue first), then today\'s calendar and unread-email count if connected, then a one-line market note and portfolio value. Keep it under ~60 words unless asked for detail. ' +
+    'If inbox/agenda show connected:false, the user hasn\'t linked Google — mention they can connect it in the Connections panel.',
   tools,
   handlers,
   api: {

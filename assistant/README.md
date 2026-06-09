@@ -47,6 +47,33 @@ query2.finance.yahoo.com
 This is a web-UI setting (there is no committed config file for it). Local
 `npm start` on your own machine is unaffected — it has full network access.
 
+### Connect a Google account (Gmail + Calendar)
+
+Productivity can read your **unread Gmail** and **today's Calendar** (read-only)
+to power the daily briefing and the Today panel.
+
+1. In Google Cloud Console, create an OAuth client of type **Desktop app** and
+   enable the **Gmail API** + **Google Calendar API**.
+2. Put the client id/secret in `.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`).
+3. In the app → **Connections** → **Google: Connect**. A browser opens for
+   consent; tokens are stored on-device (refresh token via the OS keychain).
+
+### Connect a trading account (Alpaca)
+
+You can connect a real brokerage account via **Alpaca** — **paper or live**.
+
+- In the app → **Connections** → **Trading account**: pick **Paper** or **Live**,
+  paste your Alpaca **Key ID** and **Secret**, and Connect. The credentials are
+  validated against Alpaca and stored **encrypted** on-device (Electron
+  `safeStorage`); the secret is never sent back to the UI.
+- Once connected, the portfolio and fills route through Alpaca instead of the
+  built-in simulator — **but the approval gate is unchanged**: the assistant
+  still only *stages* orders, and nothing executes until you click **Approve**.
+- **Live** orders are real money. Live mode requires an explicit confirm to
+  connect, and every live approval card is flagged red ("live · real money").
+- Get paper keys at <https://alpaca.markets> (Paper Trading → API keys). Paper
+  is strongly recommended until you trust the flow.
+
 ### Trading (paper) — approval-gated
 
 The Trading panel runs a **simulated** account (starting cash $100,000). The
@@ -110,10 +137,11 @@ the relay slots in behind the existing voice interface — `voice.js` is the sea
    headlines** per ticker, and **price alerts** (above/below thresholds → OS
    notification + chime; the brain can set them by voice).
 1b. **Trading (paper)** ✅ — approval-gated buy/sell, live-priced fills, portfolio P/L.
-2. **Productivity** ◑ — tasks, quick notes, and a daily briefing (tasks +
-   watchlist movers + portfolio) done. **Email triage / calendar pending**: both
-   need their own OAuth (e.g. Gmail/Google Calendar) inside the app — the
-   `briefing.inbox` seam is in place, the integration is not.
+1c. **Trading account (Alpaca)** ✅ — connect a real paper/live brokerage
+   account; portfolio + fills route through Alpaca behind the same approval gate.
+2. **Productivity** ✅ — tasks, quick notes, daily briefing, and **Google
+   (Gmail unread + Calendar today)** via on-device OAuth, surfaced in the Today
+   panel and the briefing.
 3. **Accounting** — ledger/invoices, categorization, reports (ties into the
    existing workspace site).
 4. **Studying** — notes ingestion, flashcards, spaced repetition, tutor Q&A.

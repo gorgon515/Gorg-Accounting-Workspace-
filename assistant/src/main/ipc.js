@@ -7,12 +7,15 @@ const { ipcMain } = require('electron');
 const config = require('./config');
 const brain = require('./brain');
 const skills = require('./services/skills');
+const broker = require('./services/broker');
+const store = require('./store');
 
 function register() {
   const stocks = skills.getSkill('stocks').api;
   const trading = skills.getSkill('trading').api;
   const productivity = skills.getSkill('productivity').api;
   const alerts = skills.getSkill('alerts').api;
+  const google = skills.getSkill('google').api;
 
   ipcMain.handle('aria:config', () => ({
     hasBrain: config.hasBrain(),
@@ -54,6 +57,19 @@ function register() {
   ipcMain.handle('alerts:list', () => alerts.listAlerts());
   ipcMain.handle('alerts:add', (_e, a) => alerts.addAlert(a));
   ipcMain.handle('alerts:remove', (_e, id) => alerts.removeAlert({ id }));
+
+  // Google (Gmail + Calendar)
+  ipcMain.handle('google:status', () => google.status());
+  ipcMain.handle('google:connect', () => google.startAuth());
+  ipcMain.handle('google:disconnect', () => google.disconnect());
+  ipcMain.handle('google:agenda', () => google.listEvents());
+  ipcMain.handle('google:inbox', () => google.listUnread());
+
+  // Broker (trading account). The secret never crosses back to the renderer.
+  ipcMain.handle('broker:status', () => broker.status());
+  ipcMain.handle('broker:connect', (_e, creds) => broker.connect(creds));
+  ipcMain.handle('broker:disconnect', () => broker.disconnect());
+  ipcMain.handle('broker:encryptionAvailable', () => store.encryptionAvailable());
 }
 
 module.exports = { register };
