@@ -233,10 +233,20 @@ function approvalCard(o) {
       <button class="reject">Reject</button>
     </div>`;
   card.querySelector('.approve').addEventListener('click', async () => {
+    // Real-money orders get a second, explicit confirmation at approval time.
+    if (o.live) {
+      const ok = confirm(
+        `Execute LIVE real-money order:\n\n${o.side.toUpperCase()} ${o.qty} ${o.symbol} (~${money(o.estValue, o.currency)})\n\n` +
+        'This sends a real order to your broker and cannot be undone here. Continue?'
+      );
+      if (!ok) return;
+    }
     card.querySelector('.approve').disabled = true;
     try {
       const { order } = await aria.trading.approve(o.id);
-      appendMsg('tool', `✓ Filled: ${order.side} ${order.qty} ${order.symbol} @ ${money(order.fillPrice, order.currency)}`);
+      const verb = order.status === 'submitted' ? 'Submitted' : 'Filled';
+      const at = order.fillPrice != null ? ` @ ${money(order.fillPrice, order.currency)}` : '';
+      appendMsg('tool', `✓ ${verb}: ${order.side} ${order.qty} ${order.symbol}${at}`);
     } catch (err) {
       appendMsg('tool', `✗ ${err.message}`);
     }
