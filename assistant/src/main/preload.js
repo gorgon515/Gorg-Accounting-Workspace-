@@ -7,6 +7,10 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('aria', {
   config: () => ipcRenderer.invoke('aria:config'),
   ask: (text, history) => ipcRenderer.invoke('aria:ask', { text, history }),
+  stt: {
+    available: () => ipcRenderer.invoke('stt:available'),
+    transcribe: (base64, mime) => ipcRenderer.invoke('stt:transcribe', { base64, mime }),
+  },
   stocks: {
     quote: (symbol) => ipcRenderer.invoke('stocks:quote', symbol),
     quotes: (symbols) => ipcRenderer.invoke('stocks:quotes', symbols),

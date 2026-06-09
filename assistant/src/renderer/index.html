@@ -29,7 +29,8 @@
         <h2>Assistant</h2>
         <div class="head-actions">
           <button id="brief-btn" class="ghost" title="Daily briefing">☀ Briefing</button>
-          <button id="mic-btn" class="mic" title="Toggle voice">🎙 Voice: off</button>
+          <button id="talk-btn" class="mic" title="Push to talk (Whisper)">🎤 Talk</button>
+          <button id="mic-btn" class="mic" title="Wake-word listening (Web Speech)">🎙 Voice: off</button>
         </div>
       </div>
       <div class="transcript" id="transcript"></div>
@@ -172,6 +173,7 @@
   </main>
 
   <script src="voice.js"></script>
+  <script src="recorder.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

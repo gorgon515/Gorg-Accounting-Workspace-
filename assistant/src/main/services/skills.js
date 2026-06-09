@@ -4,6 +4,7 @@
 // tools, handlers, api }. To add Accounting / Study / Productivity later,
 // create a sibling module and register it here — nothing else changes.
 
+const config = require('../config');
 const stocks = require('./stocks');
 const trading = require('./trading');
 const productivity = require('./productivity');
@@ -36,6 +37,7 @@ function systemPrompt() {
     '',
     'Capabilities:',
     fragments,
+    config.persona ? '\nOperator persona/instructions:\n' + config.persona : '',
   ].join('\n');
 }
 

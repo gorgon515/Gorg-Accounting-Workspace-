@@ -8,6 +8,7 @@ const config = require('./config');
 const brain = require('./brain');
 const skills = require('./services/skills');
 const broker = require('./services/broker');
+const stt = require('./services/stt');
 const store = require('./store');
 
 function register() {
@@ -21,7 +22,12 @@ function register() {
     hasBrain: config.hasBrain(),
     model: config.model,
     wakeWord: config.wakeWord,
+    hasStt: config.hasStt(),
   }));
+
+  // Speech-to-text
+  ipcMain.handle('stt:available', () => stt.available());
+  ipcMain.handle('stt:transcribe', (_e, payload) => stt.transcribe(payload));
 
   // Brain (natural language / voice)
   ipcMain.handle('aria:ask', async (_e, { text, history }) => brain.ask(text, history || []));

@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell, Notification } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, shell, Notification, session } = require('electron');
 const path = require('path');
 const store = require('./store');
 const ipc = require('./ipc');
@@ -99,6 +99,10 @@ function startAlertChecker() {
 
 app.whenReady().then(() => {
   store.init();
+  // Allow microphone access for voice capture (getUserMedia).
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => {
+    cb(permission === 'media' || permission === 'audioCapture');
+  });
   ipc.register();
   createWindow();
   createTray();

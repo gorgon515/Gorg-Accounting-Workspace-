@@ -47,6 +47,33 @@ query2.finance.yahoo.com
 This is a web-UI setting (there is no committed config file for it). Local
 `npm start` on your own machine is unaffected — it has full network access.
 
+### Voice recognition (push-to-talk)
+
+The **🎤 Talk** button records your mic and transcribes it via a Whisper API,
+then sends the text to the brain. This is the reliable voice path in Electron —
+the browser `SpeechRecognition` API (the 🎙 Voice wake-word toggle) doesn't work
+in vanilla Electron because Chromium lacks Google's speech key.
+
+Set `STT_API_KEY` in `.env` (OpenAI or Groq). Groq's `whisper-large-v3` is fast
+and cheap:
+
+```
+STT_API_KEY=...                                   # your key
+STT_BASE_URL=https://api.groq.com/openai/v1       # or https://api.openai.com/v1
+STT_MODEL=whisper-large-v3                         # or whisper-1 for OpenAI
+```
+
+Click Talk to start recording, click again to stop → it transcribes and asks
+the brain (and speaks the reply if voice output is on).
+
+### Customizing the brain
+
+The "brain" is `src/main/brain.js`: a Claude tool-use loop (`claude-opus-4-8`,
+adaptive thinking) over the skill registry. You can shape it without touching
+code via `ARIA_PERSONA` in `.env` (appended to the system prompt), swap the
+model with `ARIA_MODEL`, or extend its abilities by adding a skill module (see
+"Adding a pillar" below) — new tools are picked up automatically.
+
 ### Connect a Google account (Gmail + Calendar)
 
 Productivity can read your **unread Gmail** and **today's Calendar** (read-only)

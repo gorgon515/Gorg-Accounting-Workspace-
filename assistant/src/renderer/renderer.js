@@ -29,6 +29,7 @@ const els = {
   orderSymbol: document.getElementById('order-symbol'),
   orderQty: document.getElementById('order-qty'),
   briefBtn: document.getElementById('brief-btn'),
+  talkBtn: document.getElementById('talk-btn'),
   taskForm: document.getElementById('task-form'),
   taskInput: document.getElementById('task-input'),
   taskDue: document.getElementById('task-due'),
@@ -719,6 +720,44 @@ async function loadAgenda() {
   }
 }
 
+// ---- push-to-talk (Whisper STT) ----
+let recorder = null;
+
+function setTalkState(state) {
+  const map = {
+    recording: '● Recording — click to stop',
+    transcribing: '… Transcribing',
+    denied: '🎤 Mic blocked',
+    error: '🎤 STT error',
+    empty: '🎤 Talk',
+    idle: '🎤 Talk',
+  };
+  els.talkBtn.textContent = map[state] || '🎤 Talk';
+  els.talkBtn.classList.toggle('live', state === 'recording' || state === 'transcribing');
+  if (state === 'denied') els.voiceHint.textContent = 'Microphone blocked — allow mic access for ARIA.';
+  if (state === 'error') els.voiceHint.textContent = 'Transcription failed — check STT_API_KEY in .env.';
+}
+
+async function initTalk() {
+  const available = await aria.stt.available().catch(() => false);
+  recorder = window.createRecorder({
+    onText: (text, err) => {
+      if (err) { appendMsg('tool', `✗ STT: ${err.message}`); return; }
+      if (text) sendToBrain(text);
+    },
+    onState: setTalkState,
+  });
+  if (!recorder.supported || !available) {
+    els.talkBtn.disabled = true;
+    els.talkBtn.title = available
+      ? 'Audio recording not available in this build'
+      : 'Set STT_API_KEY in .env to enable push-to-talk';
+    els.talkBtn.style.opacity = '0.5';
+    return;
+  }
+  els.talkBtn.addEventListener('click', () => recorder.toggle());
+}
+
 // ---- voice ----
 function setVoiceHint(state) {
   const map = {
@@ -771,6 +810,7 @@ async function boot() {
     );
   }
   initVoice();
+  initTalk();
   loadWatchlist();
   refreshTrading();
   loadTasks();
