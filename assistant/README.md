@@ -221,8 +221,9 @@ the relay slots in behind the existing voice interface — `voice.js` is the sea
 2. **Productivity** ✅ — tasks, quick notes, daily briefing, and **Google
    (Gmail unread + Calendar today)** via on-device OAuth, surfaced in the Today
    panel and the briefing.
-3. **Accounting** — ledger/invoices, categorization, reports (ties into the
-   existing workspace site).
+3. **Accounting** ✅ — income/expense ledger with categories, invoices
+   (issue/track/mark-paid), and a P&L summary (income, expenses, net, by
+   category, cash position, accounts receivable). Local, brain-accessible.
 4. **Studying** — notes ingestion, flashcards, spaced repetition, tutor Q&A.
 5. **Hardening** — trade/entry approval gates, wake-word engine (Porcupine),
    packaging/auto-update, encrypted local store.

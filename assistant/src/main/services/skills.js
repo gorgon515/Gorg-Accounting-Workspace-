@@ -11,8 +11,9 @@ const productivity = require('./productivity');
 const alerts = require('./alerts');
 const google = require('./google');
 const analysis = require('./analysis');
+const accounting = require('./accounting');
 
-const skills = [stocks, trading, productivity, alerts, google, analysis];
+const skills = [stocks, trading, productivity, alerts, google, analysis, accounting];
 
 function allTools() {
   return skills.flatMap((s) => s.tools || []);

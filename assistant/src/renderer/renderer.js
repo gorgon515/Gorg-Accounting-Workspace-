@@ -57,6 +57,22 @@ const els = {
   brokerSecret: document.getElementById('broker-secret'),
   brokerNote: document.getElementById('broker-note'),
   brokerDisconnect: document.getElementById('broker-disconnect'),
+  acctTabs: document.getElementById('acct-tabs'),
+  paneSummary: document.getElementById('pane-summary'),
+  paneLedger: document.getElementById('pane-ledger'),
+  paneInvoices: document.getElementById('pane-invoices'),
+  txnForm: document.getElementById('txn-form'),
+  txnType: document.getElementById('txn-type'),
+  txnAmount: document.getElementById('txn-amount'),
+  txnCat: document.getElementById('txn-cat'),
+  txnCats: document.getElementById('txn-cats'),
+  txnDesc: document.getElementById('txn-desc'),
+  txnList: document.getElementById('txn-list'),
+  invForm: document.getElementById('inv-form'),
+  invClient: document.getElementById('inv-client'),
+  invAmount: document.getElementById('inv-amount'),
+  invDue: document.getElementById('inv-due'),
+  invList: document.getElementById('inv-list'),
 };
 
 let chatHistory = [];
@@ -142,6 +158,7 @@ async function sendToBrain(text) {
     loadTasks();
     loadAlerts();
     loadAgenda();
+    loadAccounting();
   } catch (err) {
     pending.textContent = `Error: ${err.message}`;
   }
@@ -764,6 +781,175 @@ async function initTalk() {
   els.talkBtn.addEventListener('click', () => recorder.toggle());
 }
 
+// ---- accounting ----
+const acctMoney = (n) =>
+  n == null ? '—' : (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+els.acctTabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('.t-tab');
+  if (!btn) return;
+  els.acctTabs.querySelectorAll('.t-tab').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  const tab = btn.dataset.tab;
+  els.paneSummary.classList.toggle('hidden', tab !== 'summary');
+  els.paneLedger.classList.toggle('hidden', tab !== 'ledger');
+  els.paneInvoices.classList.toggle('hidden', tab !== 'invoices');
+  if (tab === 'ledger') loadTxns();
+  if (tab === 'invoices') loadInvoices();
+});
+
+async function loadAcctSummary() {
+  try {
+    const s = await aria.accounting.summary();
+    const netCls = s.net >= 0 ? 'pos' : 'neg';
+    const catRows = (obj) =>
+      Object.entries(obj)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([k, v]) => `<div class="crow"><span>${escapeHtml(k)}</span><span>${acctMoney(v)}</span></div>`)
+        .join('') || '<div class="crow muted">none</div>';
+    els.paneSummary.innerHTML = `
+      <div class="sum-grid">
+        <div class="sum-card"><div class="k">Income</div><div class="v pos">${acctMoney(s.income)}</div></div>
+        <div class="sum-card"><div class="k">Expenses</div><div class="v neg">${acctMoney(s.expense)}</div></div>
+        <div class="sum-card"><div class="k">Net</div><div class="v ${netCls}">${acctMoney(s.net)}</div></div>
+        <div class="sum-card"><div class="k">Cash position</div><div class="v">${acctMoney(s.cashPosition)}</div></div>
+      </div>
+      <div class="sum-card" style="margin-bottom:10px">
+        <div class="k">Accounts receivable</div>
+        <div class="v">${acctMoney(s.accountsReceivable.outstanding)}</div>
+        <div class="sum-cats">${s.accountsReceivable.openCount} open${s.accountsReceivable.overdue ? ` · ${acctMoney(s.accountsReceivable.overdue)} overdue` : ''}</div>
+      </div>
+      <div class="sum-cats"><div class="crow"><strong>Top expenses</strong></div>${catRows(s.byCategory.expense)}</div>`;
+  } catch (err) {
+    els.paneSummary.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+async function loadTxnCategories() {
+  try {
+    const c = await aria.accounting.categories();
+    const all = [...new Set([...c.income, ...c.expense])];
+    els.txnCats.innerHTML = all.map((x) => `<option value="${escapeHtml(x)}">`).join('');
+  } catch {}
+}
+
+async function loadTxns() {
+  try {
+    const rows = await aria.accounting.txns({ limit: 30 });
+    els.txnList.innerHTML = '';
+    if (!rows.length) {
+      els.txnList.innerHTML = '<p class="muted">No entries yet.</p>';
+      return;
+    }
+    rows.forEach((t) => {
+      const row = document.createElement('div');
+      row.className = 'acct-row';
+      const sign = t.type === 'income' ? '+' : '-';
+      row.innerHTML = `
+        <div class="left">
+          <div class="a-cat">${escapeHtml(t.category)}${t.description ? ` · <span class="a-meta">${escapeHtml(t.description)}</span>` : ''}</div>
+          <div class="a-meta">${t.date} · ${t.account}</div>
+        </div>
+        <div class="a-amt ${t.type}">${sign}${acctMoney(t.amount).replace('$', '$')}</div>
+        <button class="a-del" title="Delete">✕</button>`;
+      row.querySelector('.a-del').addEventListener('click', async () => {
+        await aria.accounting.deleteTxn(t.id);
+        loadTxns();
+        loadAcctSummary();
+      });
+      els.txnList.appendChild(row);
+    });
+  } catch (err) {
+    els.txnList.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+els.txnForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const amount = Number(els.txnAmount.value);
+  if (!amount) return;
+  try {
+    await aria.accounting.addTxn({
+      type: els.txnType.value,
+      amount,
+      category: els.txnCat.value.trim(),
+      description: els.txnDesc.value.trim(),
+    });
+    els.txnAmount.value = '';
+    els.txnCat.value = '';
+    els.txnDesc.value = '';
+    loadTxns();
+    loadAcctSummary();
+    loadTxnCategories();
+  } catch (err) {
+    appendMsg('tool', `✗ ${err.message}`);
+  }
+});
+
+async function loadInvoices() {
+  try {
+    const list = await aria.accounting.invoices();
+    els.invList.innerHTML = '';
+    if (!list.length) {
+      els.invList.innerHTML = '<p class="muted">No invoices yet.</p>';
+      return;
+    }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    list.forEach((inv) => {
+      const row = document.createElement('div');
+      row.className = 'acct-row';
+      const overdue = inv.status !== 'paid' && inv.due && inv.due < todayStr;
+      const statusCls = inv.status === 'paid' ? 'paid' : overdue ? 'overdue' : '';
+      const statusTxt = inv.status === 'paid' ? 'paid' : overdue ? 'overdue' : inv.status;
+      row.innerHTML = `
+        <div class="left">
+          <div class="a-cat">${escapeHtml(inv.client)} <span class="a-meta">${inv.number}</span></div>
+          <div class="a-meta">${acctMoney(inv.amount)}${inv.due ? ` · due ${inv.due}` : ''}</div>
+        </div>
+        <span class="inv-status ${statusCls}">${statusTxt}</span>
+        ${inv.status !== 'paid' ? '<button class="inv-pay">Paid</button>' : ''}
+        <button class="a-del" title="Delete">✕</button>`;
+      const payBtn = row.querySelector('.inv-pay');
+      if (payBtn) payBtn.addEventListener('click', async () => {
+        await aria.accounting.markPaid(inv.id);
+        loadInvoices();
+        loadAcctSummary();
+      });
+      row.querySelector('.a-del').addEventListener('click', async () => {
+        await aria.accounting.deleteInvoice(inv.id);
+        loadInvoices();
+        loadAcctSummary();
+      });
+      els.invList.appendChild(row);
+    });
+  } catch (err) {
+    els.invList.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+els.invForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const client = els.invClient.value.trim();
+  const amount = Number(els.invAmount.value);
+  if (!client || !amount) return;
+  try {
+    await aria.accounting.addInvoice({ client, amount, due: els.invDue.value.trim() });
+    els.invClient.value = '';
+    els.invAmount.value = '';
+    els.invDue.value = '';
+    loadInvoices();
+    loadAcctSummary();
+  } catch (err) {
+    appendMsg('tool', `✗ ${err.message}`);
+  }
+});
+
+function loadAccounting() {
+  loadAcctSummary();
+  loadTxnCategories();
+}
+
 // ---- voice ----
 function setVoiceHint(state) {
   const map = {
@@ -825,6 +1011,7 @@ async function boot() {
   loadGoogleStatus();
   loadBrokerStatus();
   loadAgenda();
+  loadAccounting();
 
   // Chart the first watchlist symbol on load.
   try {

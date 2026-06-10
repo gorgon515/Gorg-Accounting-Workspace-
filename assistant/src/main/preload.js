@@ -61,4 +61,15 @@ contextBridge.exposeInMainWorld('aria', {
     disconnect: () => ipcRenderer.invoke('broker:disconnect'),
     encryptionAvailable: () => ipcRenderer.invoke('broker:encryptionAvailable'),
   },
+  accounting: {
+    summary: (range) => ipcRenderer.invoke('acct:summary', range),
+    txns: (filter) => ipcRenderer.invoke('acct:txns', filter),
+    addTxn: (t) => ipcRenderer.invoke('acct:txn:add', t),
+    deleteTxn: (id) => ipcRenderer.invoke('acct:txn:delete', id),
+    categories: () => ipcRenderer.invoke('acct:categories'),
+    invoices: (filter) => ipcRenderer.invoke('acct:invoices', filter),
+    addInvoice: (inv) => ipcRenderer.invoke('acct:invoice:add', inv),
+    markPaid: (id) => ipcRenderer.invoke('acct:invoice:paid', id),
+    deleteInvoice: (id) => ipcRenderer.invoke('acct:invoice:delete', id),
+  },
 });

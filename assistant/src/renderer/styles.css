@@ -212,6 +212,42 @@ input[type="text"]:focus { border-color: var(--gold); }
 .news-item a:hover { color: var(--gold); }
 .news-item .meta { font-family: var(--mono); font-size: 10px; color: var(--warm-gray); margin-top: 3px; }
 
+/* Accounting */
+.acct-tabs { display: flex; gap: 4px; }
+.t-tab { padding: 3px 8px; font-family: var(--mono); font-size: 10px; background: transparent; }
+.t-tab.active { border-color: var(--gold); color: var(--gold); }
+.acct-pane.hidden { display: none; }
+.acct-form { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.acct-form select { background: var(--obsidian); color: var(--ivory); border: 1px solid var(--hairline);
+  border-radius: 4px; padding: 7px; font-size: 12px; }
+.acct-form input { flex: 1; min-width: 70px; }
+.acct-form #txn-amount, .acct-form #inv-amount { max-width: 90px; flex: 0 0 auto; }
+.acct-list { display: flex; flex-direction: column; gap: 5px; max-height: 210px; overflow-y: auto; }
+.acct-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 10px; background: var(--obsidian); border: 1px solid var(--hairline); border-radius: 4px; }
+.acct-row .left { min-width: 0; }
+.acct-row .a-cat { font-size: 12px; }
+.acct-row .a-meta { font-family: var(--mono); font-size: 10px; color: var(--warm-gray); }
+.acct-row .a-amt { font-family: var(--mono); font-size: 12px; flex: 0 0 auto; }
+.a-amt.income { color: var(--green); }
+.a-amt.expense { color: var(--red); }
+.acct-row .a-del { background: transparent; border: none; color: var(--warm-gray); padding: 0 4px; }
+.acct-row .a-del:hover { color: var(--red); }
+.inv-status { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em;
+  border: 1px solid var(--hairline); border-radius: 3px; padding: 1px 5px; }
+.inv-status.paid { color: var(--green); border-color: var(--green); }
+.inv-status.overdue { color: var(--red); border-color: var(--red); }
+.inv-pay { font-size: 10px; padding: 3px 7px; }
+/* Summary grid */
+.sum-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.sum-card { padding: 9px 11px; background: var(--obsidian); border: 1px solid var(--hairline); border-radius: 5px; }
+.sum-card .k { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--warm-gray); }
+.sum-card .v { font-family: var(--mono); font-size: 15px; margin-top: 3px; }
+.sum-card .v.pos { color: var(--green); }
+.sum-card .v.neg { color: var(--red); }
+.sum-cats { font-family: var(--mono); font-size: 10px; color: var(--warm-gray); }
+.sum-cats .crow { display: flex; justify-content: space-between; padding: 2px 0; }
+
 /* Agenda */
 .agenda { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
 .agenda .ev { display: flex; gap: 10px; padding: 6px 9px; background: var(--obsidian);

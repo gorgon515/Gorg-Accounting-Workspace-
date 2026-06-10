@@ -121,6 +121,45 @@
       <div class="positions" id="positions"></div>
     </section>
 
+    <!-- Accounting -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Accounting</h2>
+        <div class="acct-tabs" id="acct-tabs">
+          <button class="t-tab active" data-tab="summary">Summary</button>
+          <button class="t-tab" data-tab="ledger">Ledger</button>
+          <button class="t-tab" data-tab="invoices">Invoices</button>
+        </div>
+      </div>
+
+      <div class="acct-pane" id="pane-summary"></div>
+
+      <div class="acct-pane hidden" id="pane-ledger">
+        <form class="acct-form" id="txn-form">
+          <select id="txn-type">
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+          <input id="txn-amount" type="text" inputmode="decimal" placeholder="Amount" autocomplete="off" />
+          <input id="txn-cat" type="text" placeholder="Category" autocomplete="off" list="txn-cats" />
+          <datalist id="txn-cats"></datalist>
+          <input id="txn-desc" type="text" placeholder="Description (optional)" autocomplete="off" />
+          <button type="submit">Add</button>
+        </form>
+        <div class="acct-list" id="txn-list"></div>
+      </div>
+
+      <div class="acct-pane hidden" id="pane-invoices">
+        <form class="acct-form" id="inv-form">
+          <input id="inv-client" type="text" placeholder="Client" autocomplete="off" />
+          <input id="inv-amount" type="text" inputmode="decimal" placeholder="Amount" autocomplete="off" />
+          <input id="inv-due" type="text" placeholder="Due (YYYY-MM-DD)" autocomplete="off" />
+          <button type="submit">Invoice</button>
+        </form>
+        <div class="acct-list" id="inv-list"></div>
+      </div>
+    </section>
+
     <!-- Tasks -->
     <section class="panel">
       <div class="panel-head">
