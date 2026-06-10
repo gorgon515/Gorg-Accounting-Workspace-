@@ -18,12 +18,16 @@ function register() {
   const alerts = skills.getSkill('alerts').api;
   const google = skills.getSkill('google').api;
 
-  ipcMain.handle('aria:config', () => ({
-    hasBrain: config.hasBrain(),
-    model: config.model,
-    wakeWord: config.wakeWord,
-    stt: stt.info(),
-  }));
+  ipcMain.handle('aria:config', async () => {
+    const b = await brain.status();
+    return {
+      hasBrain: b.ready,
+      brain: b, // { engine, model, ready, local, reason }
+      model: b.model,
+      wakeWord: config.wakeWord,
+      stt: stt.info(),
+    };
+  });
 
   // Speech-to-text
   ipcMain.handle('stt:available', () => stt.available());

@@ -1,100 +1,184 @@
 'use strict';
 
-// The Claude "brain": turns a natural-language (or voice) command into actions
-// by running a manual tool-use loop against the skill registry.
+// The brain: turns natural-language (or voice) commands into actions by
+// running a tool-use loop against the skill registry.
 //
-// Manual loop (not the SDK tool-runner) is deliberate — it gives us a place to
-// gate, log, or require approval for sensitive actions later (e.g. trades or
-// posting accounting entries), which is exactly where you want human-in-the-loop.
+// Two engines:
+//   • 'local'  — Ollama (http://127.0.0.1:11434). Fully on-device, no API key.
+//                Install from https://ollama.com and `ollama pull qwen2.5:7b`.
+//   • 'claude' — Anthropic API (claude-opus-4-8). Strongest reasoning; needs
+//                ANTHROPIC_API_KEY.
+// Default: claude if a key is set, otherwise local.
+//
+// Both run the same manual loop so approval gates and logging stay in one
+// place — the brain can only call tools the skills expose; trade execution is
+// not one of them.
 
 const Anthropic = require('@anthropic-ai/sdk');
 const config = require('./config');
 const skills = require('./services/skills');
 
+const MAX_TURNS = 6;
+
+// ---------- Claude engine ----------
 let client = null;
 function getClient() {
-  if (!config.hasBrain()) return null;
+  if (!config.anthropicApiKey) return null;
   if (!client) client = new Anthropic({ apiKey: config.anthropicApiKey });
   return client;
 }
 
-const MAX_TURNS = 6;
-
-// history: array of prior {role, content} messages for multi-turn context.
-async function ask(userText, history = []) {
+async function askClaude(userText, history, toolEvents) {
   const anthropic = getClient();
-  if (!anthropic) {
-    return {
-      ok: false,
-      text:
-        'The AI brain is offline because no Anthropic API key is set. ' +
-        'You can still use the watchlist and search panels. Add ANTHROPIC_API_KEY to .env to enable voice and chat.',
-      toolEvents: [],
-      history,
-    };
-  }
-
   const messages = [...history, { role: 'user', content: userText }];
   const tools = skills.allTools();
-  const toolEvents = [];
 
-  try {
-    for (let turn = 0; turn < MAX_TURNS; turn++) {
-      const res = await anthropic.messages.create({
-        model: config.model,
-        max_tokens: 4000,
-        thinking: { type: 'adaptive' },
-        system: skills.systemPrompt(),
-        tools,
-        messages,
-      });
+  for (let turn = 0; turn < MAX_TURNS; turn++) {
+    const res = await anthropic.messages.create({
+      model: config.model,
+      max_tokens: 4000,
+      thinking: { type: 'adaptive' },
+      system: skills.systemPrompt(),
+      tools,
+      messages,
+    });
 
-      messages.push({ role: 'assistant', content: res.content });
+    messages.push({ role: 'assistant', content: res.content });
 
-      if (res.stop_reason !== 'tool_use') {
-        const text = res.content
-          .filter((b) => b.type === 'text')
-          .map((b) => b.text)
-          .join('')
-          .trim();
-        return { ok: true, text, toolEvents, history: messages };
-      }
-
-      // Execute every requested tool, collect results for the next turn.
-      const toolResults = [];
-      for (const block of res.content) {
-        if (block.type !== 'tool_use') continue;
-        const handler = skills.handlerFor(block.name);
-        let result;
-        try {
-          if (!handler) throw new Error(`Unknown tool: ${block.name}`);
-          const data = await handler(block.input || {});
-          result = JSON.stringify(data);
-          toolEvents.push({ name: block.name, input: block.input, ok: true });
-        } catch (err) {
-          result = `Error: ${err.message}`;
-          toolEvents.push({ name: block.name, input: block.input, ok: false, error: err.message });
-        }
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: block.id,
-          content: result,
-          is_error: !handler ? true : undefined,
-        });
-      }
-      messages.push({ role: 'user', content: toolResults });
+    if (res.stop_reason !== 'tool_use') {
+      const text = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+      return { text, history: messages };
     }
 
-    return {
-      ok: true,
-      text: "I worked through several steps but didn't reach a final answer. Try narrowing the request.",
-      toolEvents,
-      history: messages,
-    };
+    const toolResults = [];
+    for (const block of res.content) {
+      if (block.type !== 'tool_use') continue;
+      const { result, ok, error } = await runTool(block.name, block.input || {});
+      toolEvents.push({ name: block.name, input: block.input, ok, error });
+      toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: result });
+    }
+    messages.push({ role: 'user', content: toolResults });
+  }
+  return { text: "I worked through several steps but didn't reach a final answer. Try narrowing the request.", history: messages };
+}
+
+// ---------- Local engine (Ollama) ----------
+function toOllamaTools(tools) {
+  return tools.map((t) => ({
+    type: 'function',
+    function: { name: t.name, description: t.description, parameters: t.input_schema },
+  }));
+}
+
+async function ollamaChat(messages, tools) {
+  const res = await fetch(`${config.ollamaUrl.replace(/\/$/, '')}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: config.ollamaModel,
+      messages,
+      tools,
+      stream: false,
+    }),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`Ollama ${res.status}: ${t.slice(0, 200)}`);
+  }
+  return res.json();
+}
+
+async function askLocal(userText, history, toolEvents) {
+  // history is kept in Ollama's flat {role, content} shape for this engine.
+  const messages = [
+    { role: 'system', content: skills.systemPrompt() },
+    ...history.filter((m) => m.role !== 'system'),
+    { role: 'user', content: userText },
+  ];
+  const tools = toOllamaTools(skills.allTools());
+
+  for (let turn = 0; turn < MAX_TURNS; turn++) {
+    const data = await ollamaChat(messages, tools);
+    const msg = data.message || {};
+    messages.push(msg);
+
+    const calls = msg.tool_calls || [];
+    if (!calls.length) {
+      return { text: (msg.content || '').trim(), history: messages.slice(1) }; // drop system
+    }
+    for (const call of calls) {
+      const name = call.function?.name;
+      let input = call.function?.arguments || {};
+      if (typeof input === 'string') {
+        try { input = JSON.parse(input); } catch { input = {}; }
+      }
+      const { result, ok, error } = await runTool(name, input);
+      toolEvents.push({ name, input, ok, error });
+      messages.push({ role: 'tool', content: result });
+    }
+  }
+  return { text: "I worked through several steps but didn't reach a final answer. Try narrowing the request.", history: messages.slice(1) };
+}
+
+async function localReady() {
+  try {
+    const res = await fetch(`${config.ollamaUrl.replace(/\/$/, '')}/api/tags`, { signal: AbortSignal.timeout(1500) });
+    if (!res.ok) return { ready: false, reason: `Ollama responded ${res.status}` };
+    const data = await res.json();
+    const names = (data.models || []).map((m) => m.name);
+    const want = config.ollamaModel;
+    const have = names.some((n) => n === want || n.startsWith(want.split(':')[0]));
+    return have
+      ? { ready: true }
+      : { ready: false, reason: `Ollama is running but model "${want}" is not pulled. Run: ollama pull ${want}` };
+  } catch {
+    return { ready: false, reason: 'Ollama is not running. Install it from https://ollama.com, then: ollama pull ' + config.ollamaModel };
+  }
+}
+
+// ---------- shared ----------
+async function runTool(name, input) {
+  const handler = skills.handlerFor(name);
+  if (!handler) return { result: `Error: Unknown tool: ${name}`, ok: false, error: 'unknown tool' };
+  try {
+    const data = await handler(input);
+    return { result: JSON.stringify(data), ok: true };
+  } catch (err) {
+    return { result: `Error: ${err.message}`, ok: false, error: err.message };
+  }
+}
+
+async function status() {
+  if (config.brainEngine === 'claude') {
+    return config.anthropicApiKey
+      ? { engine: 'claude', model: config.model, ready: true, local: false }
+      : { engine: 'claude', model: config.model, ready: false, local: false, reason: 'ANTHROPIC_API_KEY not set' };
+  }
+  const r = await localReady();
+  return { engine: 'local', model: config.ollamaModel, ready: r.ready, local: true, reason: r.reason };
+}
+
+async function ask(userText, history = []) {
+  const toolEvents = [];
+  try {
+    const s = await status();
+    if (!s.ready) {
+      return {
+        ok: false,
+        text: `The brain is offline: ${s.reason || 'not configured'} ` +
+          '(Panels still work without it.)',
+        toolEvents,
+        history,
+      };
+    }
+    const out = s.engine === 'claude'
+      ? await askClaude(userText, history, toolEvents)
+      : await askLocal(userText, history, toolEvents);
+    return { ok: true, text: out.text, toolEvents, history: out.history };
   } catch (err) {
     console.error('[brain] error:', err);
     return { ok: false, text: `Brain error: ${err.message}`, toolEvents, history };
   }
 }
 
-module.exports = { ask };
+module.exports = { ask, status };

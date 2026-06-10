@@ -803,16 +803,17 @@ async function boot() {
   try {
     cfg = await aria.config();
   } catch {}
-  if (cfg.hasBrain) {
+  const b = cfg.brain || { engine: '?', model: cfg.model, ready: cfg.hasBrain };
+  if (b.ready) {
     els.brainDot.classList.add('on');
-    els.brainLabel.textContent = `brain online · ${cfg.model}`;
+    els.brainLabel.textContent = `brain online · ${b.local ? 'local' : 'claude'} · ${b.model}`;
   } else {
     els.brainDot.classList.add('off');
-    els.brainLabel.textContent = 'brain offline · add API key';
+    els.brainLabel.textContent = `brain offline · ${b.local ? 'start Ollama' : 'add API key'}`;
     appendMsg(
       'assistant',
-      'Hi — I\'m ARIA. The AI brain is offline (no API key), but the Stocks panels work now: ' +
-        'try adding a ticker or searching a company. Add ANTHROPIC_API_KEY to .env to unlock chat and voice.'
+      `Hi — I'm ARIA. The brain is offline: ${b.reason || 'not configured'} ` +
+        'The data panels (stocks, chart, alerts, tasks, trading) all still work.'
     );
   }
   initVoice();

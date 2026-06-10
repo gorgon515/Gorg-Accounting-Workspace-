@@ -72,13 +72,40 @@ offline); `npm run model` does that ahead of time. Set `WHISPER_MODEL` to
 **Prefer the cloud instead?** Set `STT_ENGINE=whisper-api` + `STT_API_KEY` in
 `.env` (OpenAI or Groq). Off by default — local is the default.
 
-### Customizing the brain
+### The brain — fully local option (no API key)
 
-The "brain" is `src/main/brain.js`: a Claude tool-use loop (`claude-opus-4-8`,
-adaptive thinking) over the skill registry. You can shape it without touching
-code via `ARIA_PERSONA` in `.env` (appended to the system prompt), swap the
-model with `ARIA_MODEL`, or extend its abilities by adding a skill module (see
-"Adding a pillar" below) — new tools are picked up automatically.
+The brain (`src/main/brain.js`) runs a tool-use loop over the skill registry
+with one of two engines:
+
+| Engine | What it is | Needs |
+|---|---|---|
+| `local` | **Ollama** running on your machine — no API key, no account, audio/text never leave the device | Install <https://ollama.com>, then `ollama pull qwen2.5:7b` |
+| `claude` | Anthropic API (`claude-opus-4-8`) — strongest reasoning | `ANTHROPIC_API_KEY` |
+
+Default: `claude` if a key is set, otherwise `local`. Force one with
+`BRAIN_ENGINE=local` (or `claude`) in `.env`. For local, `qwen2.5:7b` has solid
+tool-calling; larger models (`qwen2.5:14b`, `llama3.1:8b`) improve quality if
+your hardware allows. The header shows which engine is live.
+
+With `BRAIN_ENGINE=local` + local voice (default) the entire assistant is
+on-device: the only internet use is fetching public market data and any
+optional connections you add (Google, Alpaca).
+
+Customize behavior without code via `ARIA_PERSONA` in `.env` (appended to the
+system prompt), or extend abilities by adding a skill module (see "Adding a
+pillar") — new tools are picked up by both engines automatically.
+
+### Technical analysis (local)
+
+The brain has a local TA engine (`services/analysis.js`) — SMA20/50, RSI(14),
+MACD(12/26/9), Bollinger(20,2σ) — computed from public price history, no key:
+
+- *"Analyze NVDA"* → indicators + plain-language signals (trend, momentum,
+  overbought/oversold, band position).
+- *"Scan my watchlist"* → RSI/trend/momentum/20-day change across every ticker.
+
+Informational only — not financial advice. Pair with `propose_trade` and the
+approval gate when you want to act on it.
 
 ### Connect a Google account (Gmail + Calendar)
 
