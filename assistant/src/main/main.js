@@ -11,6 +11,29 @@ let stopAlertChecker = null;
 let mainWindow = null;
 let tray = null;
 
+app.setName('ARIA');
+
+function buildAppMenu() {
+  const isMac = process.platform === 'darwin';
+  const template = [
+    ...(isMac ? [{ role: 'appMenu' }] : []),
+    { label: 'File', submenu: [isMac ? { role: 'close' } : { role: 'quit' }] },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' },
+    {
+      role: 'help',
+      submenu: [
+        {
+          label: 'ARIA on GitHub',
+          click: () => shell.openExternal('https://github.com/gorgon515/Gorg-Accounting-Workspace-'),
+        },
+      ],
+    },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1180,
@@ -19,6 +42,7 @@ function createWindow() {
     minHeight: 640,
     backgroundColor: '#0E0E10',
     title: 'ARIA',
+    icon: path.join(__dirname, '..', '..', 'build', 'icon.png'),
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -59,11 +83,20 @@ function createWindow() {
   });
 }
 
-function createTray() {
-  // 1x1 transparent placeholder so the app runs before a real icon is added.
-  const icon = nativeImage.createFromDataURL(
+function trayIcon() {
+  // Use the generated app icon, downscaled for the tray. Falls back to a 1x1
+  // transparent pixel if the file isn't present.
+  try {
+    const img = nativeImage.createFromPath(path.join(__dirname, '..', '..', 'build', 'icon.png'));
+    if (!img.isEmpty()) return img.resize({ width: 18, height: 18 });
+  } catch { /* fall through */ }
+  return nativeImage.createFromDataURL(
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
   );
+}
+
+function createTray() {
+  const icon = trayIcon();
   try {
     tray = new Tray(icon);
     tray.setToolTip('ARIA — desktop assistant');
@@ -97,23 +130,37 @@ function startAlertChecker() {
   });
 }
 
-app.whenReady().then(() => {
-  store.init();
-  // Allow microphone access for voice capture (getUserMedia).
-  session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => {
-    cb(permission === 'media' || permission === 'audioCapture');
+// Single-instance: focus the existing window instead of launching a second app.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
   });
-  ipc.register();
-  createWindow();
-  createTray();
-  startAlertChecker();
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  app.whenReady().then(() => {
+    store.init();
+    // Allow microphone access for voice capture (getUserMedia).
+    session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => {
+      cb(permission === 'media' || permission === 'audioCapture');
+    });
+    buildAppMenu();
+    ipc.register();
+    createWindow();
+    createTray();
+    startAlertChecker();
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
   });
-});
 
-app.on('window-all-closed', () => {
-  // Keep running in the tray on macOS; quit elsewhere.
-  if (process.platform !== 'darwin') app.quit();
-});
+  app.on('window-all-closed', () => {
+    // Keep running in the tray on macOS; quit elsewhere.
+    if (process.platform !== 'darwin') app.quit();
+  });
+}
