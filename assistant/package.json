@@ -10,6 +10,7 @@
     "start": "electron .",
     "dev": "electron . --enable-logging",
     "icon": "electron scripts/make-icon.js",
+    "model": "node scripts/get-model.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dist:mac": "electron-builder --mac",
@@ -26,6 +27,9 @@
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-builder": "^25.1.8"
+  },
+  "optionalDependencies": {
+    "@huggingface/transformers": "^3.8.1"
   },
   "build": {
     "appId": "com.gorg.aria",

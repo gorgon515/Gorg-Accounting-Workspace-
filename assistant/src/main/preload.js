@@ -9,7 +9,10 @@ contextBridge.exposeInMainWorld('aria', {
   ask: (text, history) => ipcRenderer.invoke('aria:ask', { text, history }),
   stt: {
     available: () => ipcRenderer.invoke('stt:available'),
-    transcribe: (base64, mime) => ipcRenderer.invoke('stt:transcribe', { base64, mime }),
+    info: () => ipcRenderer.invoke('stt:info'),
+    // payload is either { base64, sampleRate } for local PCM, or { base64, mime }
+    // for the cloud audio-file path.
+    transcribe: (payload) => ipcRenderer.invoke('stt:transcribe', payload),
   },
   stocks: {
     quote: (symbol) => ipcRenderer.invoke('stocks:quote', symbol),

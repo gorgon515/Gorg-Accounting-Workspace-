@@ -47,24 +47,30 @@ query2.finance.yahoo.com
 This is a web-UI setting (there is no committed config file for it). Local
 `npm start` on your own machine is unaffected — it has full network access.
 
-### Voice recognition (push-to-talk)
+### Voice recognition (push-to-talk) — fully local
 
-The **🎤 Talk** button records your mic and transcribes it via a Whisper API,
-then sends the text to the brain. This is the reliable voice path in Electron —
-the browser `SpeechRecognition` API (the 🎙 Voice wake-word toggle) doesn't work
-in vanilla Electron because Chromium lacks Google's speech key.
+The **🎤 Talk** button records your mic and transcribes it **entirely on your
+machine** by default — audio never leaves the device and no network is used.
+Mic capture (`getUserMedia`) and recognition (a local Vosk model) both run
+locally. (The browser `SpeechRecognition` wake-word toggle stays as a fallback,
+but it doesn't actually work in vanilla Electron — hence the local engine.)
 
-Set `STT_API_KEY` in `.env` (OpenAI or Groq). Groq's `whisper-large-v3` is fast
-and cheap:
+Recognition uses on-device **Whisper** via `@huggingface/transformers` — no
+native compilation, no `ffi-napi`. Setup:
 
+```bash
+npm install      # pulls optional @huggingface/transformers (+ onnxruntime)
+npm run model    # optional: pre-download the model so it's offline-ready
+npm start
 ```
-STT_API_KEY=...                                   # your key
-STT_BASE_URL=https://api.groq.com/openai/v1       # or https://api.openai.com/v1
-STT_MODEL=whisper-large-v3                         # or whisper-1 for OpenAI
-```
 
-Click Talk to start recording, click again to stop → it transcribes and asks
-the brain (and speaks the reply if voice output is on).
+Click Talk to record, click again to stop → it transcribes **locally** and asks
+the brain. The first transcription downloads the model weights once (then it's
+offline); `npm run model` does that ahead of time. Set `WHISPER_MODEL` to
+`Xenova/whisper-base.en` or `small.en` for more accuracy at some speed cost.
+
+**Prefer the cloud instead?** Set `STT_ENGINE=whisper-api` + `STT_API_KEY` in
+`.env` (OpenAI or Groq). Off by default — local is the default.
 
 ### Customizing the brain
 

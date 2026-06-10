@@ -739,20 +739,26 @@ function setTalkState(state) {
 }
 
 async function initTalk() {
-  const available = await aria.stt.available().catch(() => false);
+  const sttInfo = await aria.stt.info().catch(() => ({ available: false, engine: 'vosk', local: true }));
   recorder = window.createRecorder({
+    mode: sttInfo.engine === 'whisper-api' ? 'audio' : 'pcm16',
     onText: (text, err) => {
       if (err) { appendMsg('tool', `✗ STT: ${err.message}`); return; }
       if (text) sendToBrain(text);
     },
     onState: setTalkState,
   });
-  if (!recorder.supported || !available) {
+  els.talkBtn.title = sttInfo.local
+    ? 'Push to talk — fully local speech recognition'
+    : 'Push to talk — cloud (Whisper API)';
+  if (!recorder.supported || !sttInfo.available) {
     els.talkBtn.disabled = true;
-    els.talkBtn.title = available
-      ? 'Audio recording not available in this build'
-      : 'Set STT_API_KEY in .env to enable push-to-talk';
     els.talkBtn.style.opacity = '0.5';
+    els.talkBtn.title = !recorder.supported
+      ? 'Audio recording not available in this build'
+      : sttInfo.local
+        ? `Local speech model not found at ${sttInfo.modelPath || 'models/vosk'} — see README`
+        : 'Set STT_API_KEY in .env to enable push-to-talk';
     return;
   }
   els.talkBtn.addEventListener('click', () => recorder.toggle());

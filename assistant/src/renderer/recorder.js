@@ -1,22 +1,47 @@
 'use strict';
 
-// Push-to-talk recorder: captures mic audio with MediaRecorder, then hands the
-// bytes to the main process for Whisper transcription. This is the reliable
-// voice-input path in Electron (the Web Speech API in voice.js needs a Google
-// key that Electron doesn't ship).
+// Push-to-talk recorder. Captures mic audio with MediaRecorder, then either:
+//   • 'pcm16' (local/Vosk): decodes + resamples to 16 kHz mono PCM entirely in
+//     the renderer and sends raw samples to the local engine — no audio leaves
+//     the machine; or
+//   • 'audio' (cloud/whisper-api): sends the recorded audio file.
+//
+// Mic capture is always local (getUserMedia). The default mode is 'pcm16'.
 
 (function () {
   function arrayBufferToBase64(buf) {
     const bytes = new Uint8Array(buf);
     let bin = '';
-    const chunk = 0x8000; // avoid call-stack limits on large buffers
+    const chunk = 0x8000;
     for (let i = 0; i < bytes.length; i += chunk) {
       bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
     }
     return btoa(bin);
   }
 
-  function createRecorder({ onText, onState } = {}) {
+  // Decode a recorded blob and resample to 16 kHz mono float audio, all local.
+  // Returns an ArrayBuffer of Float32 samples (what Whisper expects).
+  async function blobToFloat32_16k(blob) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const decodeCtx = new AC();
+    let decoded;
+    try {
+      decoded = await decodeCtx.decodeAudioData(await blob.arrayBuffer());
+    } finally {
+      decodeCtx.close();
+    }
+    const targetRate = 16000;
+    const frames = Math.ceil(decoded.duration * targetRate);
+    const offline = new OfflineAudioContext(1, frames, targetRate);
+    const src = offline.createBufferSource();
+    src.buffer = decoded;
+    src.connect(offline.destination);
+    src.start(0);
+    const rendered = await offline.startRendering();
+    return rendered.getChannelData(0).slice().buffer; // own ArrayBuffer
+  }
+
+  function createRecorder({ mode = 'pcm16', onText, onState } = {}) {
     const supported =
       typeof navigator !== 'undefined' &&
       navigator.mediaDevices &&
@@ -33,7 +58,7 @@
       if (recording || !supported) return;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch (err) {
+      } catch {
         emit('denied');
         return;
       }
@@ -47,8 +72,14 @@
         if (!blob.size) { emit('idle'); return; }
         emit('transcribing');
         try {
-          const base64 = arrayBufferToBase64(await blob.arrayBuffer());
-          const res = await window.aria.stt.transcribe(base64, blob.type);
+          let payload;
+          if (mode === 'audio') {
+            payload = { base64: arrayBufferToBase64(await blob.arrayBuffer()), mime: blob.type };
+          } else {
+            const f32 = await blobToFloat32_16k(blob);
+            payload = { base64: arrayBufferToBase64(f32), sampleRate: 16000 };
+          }
+          const res = await window.aria.stt.transcribe(payload);
           emit('idle');
           if (res && res.text) onText && onText(res.text);
           else emit('empty');

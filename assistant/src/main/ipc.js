@@ -22,11 +22,12 @@ function register() {
     hasBrain: config.hasBrain(),
     model: config.model,
     wakeWord: config.wakeWord,
-    hasStt: config.hasStt(),
+    stt: stt.info(),
   }));
 
   // Speech-to-text
   ipcMain.handle('stt:available', () => stt.available());
+  ipcMain.handle('stt:info', () => stt.info());
   ipcMain.handle('stt:transcribe', (_e, payload) => stt.transcribe(payload));
 
   // Brain (natural language / voice)
