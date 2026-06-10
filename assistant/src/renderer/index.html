@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- CSP: allow only what we need; no remote scripts. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:;" />
+  <title>ARIA</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <span class="mark">ARIA</span>
+      <span class="rule"></span>
+      <span class="sub">DESKTOP ASSISTANT</span>
+    </div>
+    <div class="status" id="status">
+      <span class="dot" id="brain-dot"></span>
+      <span id="brain-label">checking…</span>
+    </div>
+  </header>
+
+  <main class="grid">
+    <!-- Voice + chat -->
+    <section class="panel panel-chat">
+      <div class="panel-head">
+        <h2>Assistant</h2>
+        <div class="head-actions">
+          <button id="brief-btn" class="ghost" title="Daily briefing">☀ Briefing</button>
+          <button id="talk-btn" class="mic" title="Push to talk (Whisper)">🎤 Talk</button>
+          <button id="mic-btn" class="mic" title="Wake-word listening (Web Speech)">🎙 Voice: off</button>
+        </div>
+      </div>
+      <div class="transcript" id="transcript"></div>
+      <form class="composer" id="composer">
+        <input id="composer-input" type="text" autocomplete="off"
+               placeholder="Ask anything — e.g. “how is NVDA doing?”" />
+        <button type="submit">Send</button>
+      </form>
+      <p class="hint" id="voice-hint"></p>
+    </section>
+
+    <aside class="sidebar">
+    <!-- Chart -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Chart <span class="mono" id="chart-symbol">—</span></h2>
+        <div class="ranges" id="chart-ranges">
+          <button class="r-btn" data-range="1d">1D</button>
+          <button class="r-btn" data-range="5d">5D</button>
+          <button class="r-btn active" data-range="1mo">1M</button>
+          <button class="r-btn" data-range="6mo">6M</button>
+          <button class="r-btn" data-range="1y">1Y</button>
+        </div>
+      </div>
+      <canvas id="chart-canvas" height="150"></canvas>
+      <div class="chart-meta muted" id="chart-meta">Click a ticker to chart it.</div>
+    </section>
+
+    <!-- News -->
+    <section class="panel">
+      <div class="panel-head"><h2>News <span class="mono" id="news-symbol"></span></h2></div>
+      <div class="newslist" id="newslist"><p class="muted">Select a ticker for headlines.</p></div>
+    </section>
+
+    <!-- Agenda (Google Calendar + Gmail) -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Today</h2>
+        <span class="muted" id="inbox-count"></span>
+      </div>
+      <div class="agenda" id="agenda"><p class="muted">Connect Google to see your day.</p></div>
+    </section>
+
+    <!-- Watchlist -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Watchlist</h2>
+        <button id="refresh-btn" class="ghost" title="Refresh">↻</button>
+      </div>
+      <div class="add-row">
+        <input id="add-input" type="text" placeholder="Add ticker (AAPL)" autocomplete="off" />
+        <button id="add-btn">Add</button>
+      </div>
+      <div class="watchlist" id="watchlist"><p class="muted">Loading…</p></div>
+    </section>
+
+    <!-- Alerts -->
+    <section class="panel">
+      <div class="panel-head"><h2>Price alerts</h2></div>
+      <form class="add-row" id="alert-form">
+        <input id="alert-symbol" type="text" placeholder="AAPL" autocomplete="off" />
+        <select id="alert-dir">
+          <option value="above">above</option>
+          <option value="below">below</option>
+        </select>
+        <input id="alert-price" type="text" inputmode="decimal" placeholder="price" autocomplete="off" />
+        <button type="submit">Set</button>
+      </form>
+      <div class="alertlist" id="alertlist"></div>
+    </section>
+
+    <!-- Trading (paper) -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Trading <span class="tag" id="trade-mode">paper</span></h2>
+        <span class="total" id="portfolio-total">—</span>
+      </div>
+      <div class="approvals" id="approvals"></div>
+      <form class="order-form" id="order-form">
+        <select id="order-side">
+          <option value="buy">Buy</option>
+          <option value="sell">Sell</option>
+        </select>
+        <input id="order-symbol" type="text" placeholder="AAPL" autocomplete="off" />
+        <input id="order-qty" type="text" inputmode="numeric" placeholder="Qty" autocomplete="off" />
+        <button type="submit">Propose</button>
+      </form>
+      <div class="positions" id="positions"></div>
+    </section>
+
+    <!-- Tasks -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Tasks</h2>
+        <span class="muted" id="task-count"></span>
+      </div>
+      <form class="add-row" id="task-form">
+        <input id="task-input" type="text" placeholder="New task…" autocomplete="off" />
+        <input id="task-due" type="text" placeholder="due (today)" autocomplete="off" />
+        <button type="submit">Add</button>
+      </form>
+      <div class="tasklist" id="tasklist"></div>
+    </section>
+
+    <!-- Lookup -->
+    <section class="panel">
+      <div class="panel-head"><h2>Look up</h2></div>
+      <div class="add-row">
+        <input id="search-input" type="text" placeholder="Company or ticker (Apple)" autocomplete="off" />
+        <button id="search-btn">Search</button>
+      </div>
+      <div class="results" id="results"></div>
+    </section>
+
+    <!-- Connections -->
+    <section class="panel">
+      <div class="panel-head"><h2>Connections</h2></div>
+
+      <div class="conn-row">
+        <div class="conn-label">Google <span class="muted" id="google-status">checking…</span></div>
+        <button id="google-btn" class="ghost">Connect</button>
+      </div>
+
+      <div class="conn-block">
+        <div class="conn-label">Trading account <span class="muted" id="broker-status">checking…</span></div>
+        <form id="broker-form" class="broker-form">
+          <select id="broker-mode" title="Paper = simulated; Live = real money">
+            <option value="paper">Paper</option>
+            <option value="live">Live</option>
+          </select>
+          <input id="broker-key" type="text" placeholder="Alpaca Key ID" autocomplete="off" />
+          <input id="broker-secret" type="password" placeholder="Secret Key" autocomplete="off" />
+          <button type="submit">Connect</button>
+        </form>
+        <p class="conn-note muted" id="broker-note"></p>
+        <button id="broker-disconnect" class="ghost" style="display:none">Disconnect account</button>
+      </div>
+    </section>
+    </aside>
+  </main>
+
+  <script src="voice.js"></script>
+  <script src="recorder.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
