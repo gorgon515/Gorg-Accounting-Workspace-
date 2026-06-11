@@ -86,4 +86,8 @@ contextBridge.exposeInMainWorld('aria', {
     cpa: () => ipcRenderer.invoke('study:cpa'),
     setCpa: (p) => ipcRenderer.invoke('study:cpa:set', p),
   },
+  strategy: {
+    idea: (symbol) => ipcRenderer.invoke('strategy:idea', symbol),
+    scan: () => ipcRenderer.invoke('strategy:scan'),
+  },
 });

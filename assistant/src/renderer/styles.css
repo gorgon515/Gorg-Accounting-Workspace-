@@ -212,6 +212,34 @@ input[type="text"]:focus { border-color: var(--gold); }
 .news-item a:hover { color: var(--gold); }
 .news-item .meta { font-family: var(--mono); font-size: 10px; color: var(--warm-gray); margin-top: 3px; }
 
+/* Trade ideas */
+.ideas { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; }
+.idea {
+  border: 1px solid var(--hairline); border-radius: 6px; padding: 11px; background: var(--obsidian);
+}
+.idea.bullish { border-left: 3px solid var(--green); }
+.idea.bearish { border-left: 3px solid var(--red); }
+.idea.aside { border-left: 3px solid var(--warm-gray); }
+.idea .i-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 5px; }
+.idea .i-sym { font-family: var(--mono); font-size: 13px; }
+.idea .i-bias { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+.i-bias.bullish { color: var(--green); }
+.i-bias.bearish { color: var(--red); }
+.i-bias.neutral { color: var(--warm-gray); }
+.idea .i-score { height: 5px; background: var(--slate); border-radius: 3px; overflow: hidden; margin: 4px 0 8px; }
+.idea .i-score > span { display: block; height: 100%; background: var(--gold); }
+.idea .i-line { font-size: 12px; line-height: 1.5; }
+.idea .i-label { font-family: var(--mono); font-size: 10px; color: var(--warm-gray); }
+.idea .i-contract { font-family: var(--mono); font-size: 11px; background: var(--charcoal);
+  border: 1px solid var(--hairline); border-radius: 4px; padding: 6px 8px; margin: 6px 0; }
+.idea .i-disc { font-size: 10px; color: var(--warm-gray); margin-top: 7px; font-style: italic; }
+.idea .i-reasons { font-size: 11px; color: var(--warm-gray); margin-top: 4px; }
+.idea-rank { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px;
+  background: var(--obsidian); border: 1px solid var(--hairline); border-radius: 4px; cursor: pointer; }
+.idea-rank:hover { border-color: var(--gold); }
+.idea-rank .r-sym { font-family: var(--mono); font-size: 12px; }
+.idea-rank .r-meta { font-family: var(--mono); font-size: 10px; color: var(--warm-gray); }
+
 /* Accounting */
 .acct-tabs { display: flex; gap: 4px; }
 .t-tab { padding: 3px 8px; font-family: var(--mono); font-size: 10px; background: transparent; }

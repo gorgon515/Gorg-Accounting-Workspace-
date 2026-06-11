@@ -95,6 +95,25 @@ Customize behavior without code via `ARIA_PERSONA` in `.env` (appended to the
 system prompt), or extend abilities by adding a skill module (see "Adding a
 pillar") — new tools are picked up by both engines automatically.
 
+### Trade-idea engine (calls / puts / futures)
+
+`services/strategy.js` forms a directional thesis from local technicals, scores
+the **setup quality** (signal confluence — explicitly **not** a probability of
+profit), and turns it into concrete, defined-risk ideas using **real options
+chains** (Yahoo, no key):
+
+- *"Find a trade on NVDA"* → bias + setup score, underlying entry/stop/target, a
+  specific **long call/put** (strike, expiry, break-even, % move required, max
+  loss, IV), a **defined-risk vertical spread**, and a **futures** alternative
+  for index/commodity proxies (ES/NQ/GC… incl. micros).
+- *"Scan for setups"* → watchlist ranked by setup score.
+- Returns **"stand aside"** when there's no clean setup — often the best call.
+
+It **generates ideas only**. Equities execute through `propose_trade` + the
+approval gate; options/futures are placed manually at your broker. Options and
+futures carry substantial risk and can lose 100% — every idea says so. Not
+financial advice.
+
 ### Technical analysis (local)
 
 The brain has a local TA engine (`services/analysis.js`) — SMA20/50, RSI(14),

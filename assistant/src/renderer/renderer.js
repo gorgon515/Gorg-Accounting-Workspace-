@@ -84,6 +84,10 @@ const els = {
   vocabTr: document.getElementById('vocab-tr'),
   vocabEx: document.getElementById('vocab-ex'),
   cpaList: document.getElementById('cpa-list'),
+  ideaForm: document.getElementById('idea-form'),
+  ideaSymbol: document.getElementById('idea-symbol'),
+  scanIdeas: document.getElementById('scan-ideas'),
+  ideas: document.getElementById('ideas'),
 };
 
 let chatHistory = [];
@@ -961,6 +965,98 @@ function loadAccounting() {
   loadAcctSummary();
   loadTxnCategories();
 }
+
+// ---- trade ideas ----
+function fmtNum(n) {
+  return n == null ? '—' : Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function renderIdea(idea) {
+  const el = document.createElement('div');
+  if (idea.recommendation === 'stand aside') {
+    el.className = 'idea aside';
+    el.innerHTML = `
+      <div class="i-head"><span class="i-sym">${idea.symbol} · ${fmtNum(idea.price)}</span>
+        <span class="i-bias neutral">stand aside</span></div>
+      <div class="i-line">${escapeHtml(idea.note || '')}</div>
+      <div class="i-reasons">${(idea.rationale || []).map(escapeHtml).join(' · ')}</div>
+      <div class="i-disc">${escapeHtml(idea.disclaimer)}</div>`;
+    return el;
+  }
+  const dir = idea.recommendation; // bullish | bearish
+  el.className = 'idea ' + dir;
+  const o = idea.option;
+  const sp = idea.spread;
+  const plan = idea.underlyingPlan || {};
+  let contractHtml = '';
+  if (o) {
+    contractHtml += `<div class="i-contract">${o.type.toUpperCase()} ${idea.symbol} ${fmtNum(o.strike)} exp ${o.expiry} (${o.dte}d)
+      · ~$${fmtNum(o.premium)} · BE ${fmtNum(o.breakeven)} (${o.moveToBreakevenPct >= 0 ? '+' : ''}${fmtNum(o.moveToBreakevenPct)}%)
+      · max loss $${fmtNum(o.maxLossPerContract)}${o.iv != null ? ` · IV ${fmtNum(o.iv)}%` : ''}</div>`;
+  } else if (idea.optionError) {
+    contractHtml += `<div class="i-reasons">${escapeHtml(idea.optionError)}</div>`;
+  }
+  if (sp) {
+    contractHtml += `<div class="i-contract">${sp.type.toUpperCase()} ${fmtNum(sp.longStrike)}/${fmtNum(sp.shortStrike)}
+      · debit $${fmtNum(sp.netDebit)} · max profit $${fmtNum(sp.maxProfit)} · max loss $${fmtNum(sp.maxLoss)} · R:R ${fmtNum(sp.riskReward)}</div>`;
+  }
+  if (idea.futures) {
+    contractHtml += `<div class="i-contract">FUTURES ${idea.futures.direction.toUpperCase()} ${idea.futures.contract} (micro ${idea.futures.microContract}) — ${escapeHtml(idea.futures.underlying)}</div>`;
+  }
+  el.innerHTML = `
+    <div class="i-head"><span class="i-sym">${idea.symbol} · ${fmtNum(idea.price)}</span>
+      <span class="i-bias ${dir}">${dir} · ${idea.setupScore}</span></div>
+    <div class="i-score"><span style="width:${idea.setupScore}%"></span></div>
+    <div class="i-line"><span class="i-label">UNDERLYING</span> entry ${fmtNum(plan.entry)} · stop ${fmtNum(plan.stop)} · target ${fmtNum(plan.target)}</div>
+    ${contractHtml}
+    <div class="i-reasons">${(idea.rationale || []).map(escapeHtml).join(' · ')}</div>
+    <div class="i-disc">${escapeHtml(idea.disclaimer)}</div>`;
+  return el;
+}
+
+async function getIdea(symbol) {
+  els.ideas.innerHTML = '<p class="muted">Analyzing…</p>';
+  try {
+    const idea = await aria.strategy.idea(symbol);
+    els.ideas.innerHTML = '';
+    els.ideas.appendChild(renderIdea(idea));
+  } catch (err) {
+    els.ideas.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+els.ideaForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const s = els.ideaSymbol.value.trim();
+  if (!s) return;
+  getIdea(s);
+});
+
+els.scanIdeas.addEventListener('click', async () => {
+  els.ideas.innerHTML = '<p class="muted">Scanning watchlist…</p>';
+  try {
+    const res = await aria.strategy.scan();
+    els.ideas.innerHTML = '';
+    if (!res.ideas.length) {
+      els.ideas.innerHTML = '<p class="muted">No clean setups on the watchlist right now.</p>';
+    } else {
+      res.ideas.forEach((i) => {
+        const row = document.createElement('div');
+        row.className = 'idea-rank';
+        row.innerHTML = `<span class="r-sym">${i.symbol} · ${i.bias}</span>
+          <span class="r-meta">score ${i.setupScore} · ${escapeHtml((i.top || [])[0] || '')}</span>`;
+        row.addEventListener('click', () => { els.ideaSymbol.value = i.symbol; getIdea(i.symbol); });
+        els.ideas.appendChild(row);
+      });
+    }
+    const note = document.createElement('p');
+    note.className = 'i-disc';
+    note.textContent = res.note;
+    els.ideas.appendChild(note);
+  } catch (err) {
+    els.ideas.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+});
 
 // ---- study ----
 let dueQueue = [];

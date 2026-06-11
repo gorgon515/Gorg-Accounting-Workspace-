@@ -19,6 +19,7 @@ function register() {
   const google = skills.getSkill('google').api;
   const accounting = skills.getSkill('accounting').api;
   const study = skills.getSkill('study').api;
+  const strategy = skills.getSkill('strategy').api;
 
   ipcMain.handle('aria:config', async () => {
     const b = await brain.status();
@@ -108,6 +109,10 @@ function register() {
   ipcMain.handle('study:log', (_e, s) => study.logStudy(s));
   ipcMain.handle('study:cpa', () => study.cpaStatus());
   ipcMain.handle('study:cpa:set', (_e, p) => study.setCpaProgress(p));
+
+  // Trade ideas
+  ipcMain.handle('strategy:idea', (_e, symbol) => strategy.tradeIdea(symbol));
+  ipcMain.handle('strategy:scan', () => strategy.scanIdeas());
 }
 
 module.exports = { register };
