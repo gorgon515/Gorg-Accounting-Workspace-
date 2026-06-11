@@ -202,7 +202,28 @@ safety model is deliberate:
 - Real-money brokerage (e.g. Alpaca) would slot in behind the fill step and
   stay gated behind this approval + paper-mode default. It is **not** enabled.
 
-## Packaging — build installers
+## Download the desktop app
+
+Installers are produced by the **Build ARIA installers** GitHub Actions
+workflow (`.github/workflows/build-installers.yml`) on native runners:
+
+- **Windows** — `ARIA Setup <ver>.exe` (NSIS installer)
+- **macOS** — `ARIA-<ver>.dmg` (+ zip), arm64 & Intel
+- **Linux** — `ARIA-<ver>.AppImage` + `.deb`
+
+Two ways to get them:
+
+1. **One-off:** GitHub → Actions → *Build ARIA installers* → *Run workflow* →
+   download the artifacts from the run page.
+2. **Versioned release:** `git tag v0.1.0 && git push origin v0.1.0` → the
+   workflow attaches all installers to a public GitHub Release.
+
+Builds are unsigned (no certificates), so expect the usual first-run prompts:
+Windows SmartScreen → "More info → Run anyway"; macOS → right-click → Open.
+Installers bundle the app + Electron (~160 MB; GPU inference libraries are
+excluded — the local voice model runs on CPU).
+
+## Packaging — build installers locally
 
 The app packages into native installers with `electron-builder`.
 

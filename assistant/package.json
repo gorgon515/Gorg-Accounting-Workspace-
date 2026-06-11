@@ -2,7 +2,7 @@
   "name": "aria-assistant",
   "version": "0.1.0",
   "private": true,
-  "description": "ARIA — an integrated, voice-driven desktop assistant (stocks, trading, productivity).",
+  "description": "ARIA \u2014 an integrated, voice-driven desktop assistant (stocks, trading, productivity).",
   "author": "Vincent Gregorio",
   "license": "MIT",
   "main": "src/main/main.js",
@@ -34,7 +34,7 @@
   "build": {
     "appId": "com.gorg.aria",
     "productName": "ARIA",
-    "copyright": "Copyright © 2026",
+    "copyright": "Copyright \u00a9 2026",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -42,7 +42,9 @@
     "files": [
       "src/**/*",
       "build/icon.png",
-      "!**/*.map"
+      "!**/*.map",
+      "!node_modules/onnxruntime-node/bin/**/libonnxruntime_providers_cuda*",
+      "!node_modules/onnxruntime-node/bin/**/libonnxruntime_providers_tensorrt*"
     ],
     "extraMetadata": {
       "main": "src/main/main.js"
@@ -65,7 +67,10 @@
           ]
         }
       ],
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "files": [
+        "!node_modules/onnxruntime-node/bin/napi-v3/{linux,win32}/**"
+      ]
     },
     "dmg": {
       "title": "ARIA ${version}"
@@ -79,7 +84,10 @@
           ]
         }
       ],
-      "icon": "build/icon.png"
+      "icon": "build/icon.png",
+      "files": [
+        "!node_modules/onnxruntime-node/bin/napi-v3/{linux,darwin}/**"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -104,7 +112,10 @@
         }
       ],
       "icon": "build/icon.png",
-      "maintainer": "Vincent Gregorio"
+      "maintainer": "Vincent Gregorio",
+      "files": [
+        "!node_modules/onnxruntime-node/bin/napi-v3/{win32,darwin}/**"
+      ]
     }
   }
 }
