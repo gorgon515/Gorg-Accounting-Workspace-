@@ -8,10 +8,13 @@ const skills = require('./services/skills');
 const brain = require('./brain');
 const config = require('./config');
 const imessage = require('./services/imessage');
+const telegram = require('./services/telegram');
 
 let stopAlertChecker = null;
 let stopImessage = null;
+let stopTelegram = null;
 const imHistories = new Map(); // per-handle conversation history
+const tgHistories = new Map(); // per-chat conversation history
 
 let mainWindow = null;
 let tray = null;
@@ -137,8 +140,23 @@ function startAlertChecker() {
           imessage.send(handle, `ARIA alert: ${body}`).catch(() => {});
         }
       }
+      // And via Telegram (works on Windows/anywhere).
+      if (config.telegramToken && config.telegramAlerts) {
+        telegram.broadcast(`ARIA alert: ${body}`).catch(() => {});
+      }
     },
   });
+}
+
+function startTelegramBridge() {
+  if (!config.telegramToken) return;
+  stopTelegram = telegram.start(async (chatId, text) => {
+    const history = tgHistories.get(chatId) || [];
+    const res = await brain.ask(text, history);
+    tgHistories.set(chatId, res.history || history);
+    return res.ok ? res.text : (res.text || 'Sorry — I hit an error.');
+  });
+  console.log('[telegram] bridge polling.');
 }
 
 function startImessageBridge() {
@@ -180,6 +198,7 @@ if (!app.requestSingleInstanceLock()) {
     createTray();
     startAlertChecker();
     startImessageBridge();
+    startTelegramBridge();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

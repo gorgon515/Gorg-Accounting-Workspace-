@@ -31,6 +31,14 @@ const config = {
   imessageTrigger: (process.env.IMESSAGE_TRIGGER || '').trim().toLowerCase(),
   imessagePollMs: Number(process.env.IMESSAGE_POLL_MS || 4000),
   imessageAlerts: process.env.IMESSAGE_ALERTS !== 'false', // text price alerts too
+  // Telegram bridge (works on Windows/anywhere). Create a bot with @BotFather,
+  // put its token here, and allowlist your Telegram username or chat id.
+  telegramToken: process.env.TELEGRAM_BOT_TOKEN || '',
+  telegramAllow: (process.env.TELEGRAM_ALLOW || '')
+    .split(',')
+    .map((s) => s.trim().replace(/^@/, '').toLowerCase())
+    .filter(Boolean),
+  telegramAlerts: process.env.TELEGRAM_ALERTS !== 'false',
   // Optional extra persona/behavior appended to the brain's system prompt.
   persona: process.env.ARIA_PERSONA || '',
   // Speech-to-text engine: 'local' (on-device Whisper via transformers.js;

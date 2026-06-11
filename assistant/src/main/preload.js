@@ -93,4 +93,7 @@ contextBridge.exposeInMainWorld('aria', {
   imessage: {
     status: () => ipcRenderer.invoke('imessage:status'),
   },
+  telegram: {
+    status: () => ipcRenderer.invoke('telegram:status'),
+  },
 });

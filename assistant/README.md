@@ -156,6 +156,23 @@ Price alerts are also texted to you (`IMESSAGE_ALERTS=true`). The approval gate
 still holds — a trade proposed by text waits for your in-app Approve click.
 Non-macOS builds show "macOS only" and the bridge stays off.
 
+### Text ARIA from your phone on Windows (Telegram)
+
+**iMessage cannot work on Windows** — Apple provides no API, no Windows client,
+and blocks workarounds (the Mac-relay projects like BlueBubbles need an
+always-on Mac). The cross-platform phone channel is a **Telegram bot**:
+
+1. In Telegram (free app, works on iPhone): message **@BotFather** → `/newbot`
+   → copy the token into `.env` as `TELEGRAM_BOT_TOKEN`.
+2. Put your Telegram `@username` (without the @) or chat id in `TELEGRAM_ALLOW`.
+3. Restart ARIA, then message your bot: *"how's NVDA?"*, *"scan for trades"*,
+   *"add a task: file taxes Friday"*.
+
+ARIA answers only allowlisted users (empty list = answers no one). Price alerts
+are also pushed to your phone (`TELEGRAM_ALERTS=true`). The approval gate
+holds — trades proposed by text still wait for your in-app Approve click. Uses
+outbound long-polling only: no inbound ports, no public server.
+
 ### Connect a trading account (Alpaca)
 
 You can connect a real brokerage account via **Alpaca** — **paper or live**.

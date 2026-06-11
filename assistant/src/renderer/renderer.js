@@ -51,6 +51,7 @@ const els = {
   googleStatus: document.getElementById('google-status'),
   googleBtn: document.getElementById('google-btn'),
   imessageStatus: document.getElementById('imessage-status'),
+  telegramStatus: document.getElementById('telegram-status'),
   brokerStatus: document.getElementById('broker-status'),
   brokerForm: document.getElementById('broker-form'),
   brokerMode: document.getElementById('broker-mode'),
@@ -679,6 +680,17 @@ async function loadImessageStatus() {
   }
 }
 
+async function loadTelegramStatus() {
+  try {
+    const s = await aria.telegram.status();
+    els.telegramStatus.innerHTML = s.enabled
+      ? `<span class="ok">${escapeHtml(s.bot || 'active')} · ${s.allowCount} allowed</span>`
+      : escapeHtml(s.reason || 'not configured');
+  } catch {
+    els.telegramStatus.textContent = 'unavailable';
+  }
+}
+
 // ---- connections: broker (trading account) ----
 async function loadBrokerStatus() {
   try {
@@ -1254,6 +1266,7 @@ async function boot() {
   loadAlerts();
   loadGoogleStatus();
   loadImessageStatus();
+  loadTelegramStatus();
   loadBrokerStatus();
   loadAgenda();
   loadAccounting();

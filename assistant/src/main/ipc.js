@@ -10,6 +10,7 @@ const skills = require('./services/skills');
 const broker = require('./services/broker');
 const stt = require('./services/stt');
 const imessage = require('./services/imessage');
+const telegram = require('./services/telegram');
 const store = require('./store');
 
 function register() {
@@ -117,6 +118,9 @@ function register() {
 
   // iMessage bridge status (macOS)
   ipcMain.handle('imessage:status', () => imessage.available());
+
+  // Telegram bridge status (cross-platform)
+  ipcMain.handle('telegram:status', () => telegram.status());
 }
 
 module.exports = { register };
