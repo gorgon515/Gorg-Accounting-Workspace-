@@ -13,9 +13,10 @@ const config = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
   // claude-opus-4-8 is the current most-capable model. Do not downgrade silently.
   model: process.env.ARIA_MODEL || 'claude-opus-4-8',
-  // Brain engine. Claude (Anthropic API) is THE brain. Ollama is NOT used for
-  // the model unless explicitly opted into with BRAIN_ENGINE=local.
-  brainEngine: (process.env.BRAIN_ENGINE || 'claude').toLowerCase(),
+  // Brain engine. Fully local by default (Ollama, no API key). If an
+  // ANTHROPIC_API_KEY is present it uses Claude instead. Force either with
+  // BRAIN_ENGINE=local | claude.
+  brainEngine: (process.env.BRAIN_ENGINE || (process.env.ANTHROPIC_API_KEY ? 'claude' : 'local')).toLowerCase(),
   ollamaUrl: process.env.OLLAMA_URL || 'http://127.0.0.1:11434',
   // qwen2.5 has strong tool-calling; llama3.1:8b also works.
   ollamaModel: process.env.OLLAMA_MODEL || 'qwen2.5:7b',

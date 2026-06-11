@@ -72,17 +72,23 @@ offline); `npm run model` does that ahead of time. Set `WHISPER_MODEL` to
 **Prefer the cloud instead?** Set `STT_ENGINE=whisper-api` + `STT_API_KEY` in
 `.env` (OpenAI or Groq). Off by default — local is the default.
 
-### The brain — Claude
+### The brain — fully local by default (no API key)
 
-The brain (`src/main/brain.js`) is **Claude** (`claude-opus-4-8`) running a
-tool-use loop over the skill registry. Set `ANTHROPIC_API_KEY` in `.env` and
-the header shows `brain online · claude`.
+The brain (`src/main/brain.js`) runs a tool-use loop over the skill registry.
+**By default it is fully local** — no API key required:
 
-Note: Claude cannot run inside Ollama — it is not an open-weights model. An
-**optional** on-device fallback exists for offline use only: set
-`BRAIN_ENGINE=local` to run an Ollama model (e.g. `qwen2.5:7b`) instead. It is
-never used unless you set that explicitly, and it is noticeably weaker than
-Claude at multi-step tool use.
+1. Install Ollama: <https://ollama.com>
+2. Pull a model: `ollama pull qwen2.5:7b` (or `llama3.2:3b` on lighter hardware)
+3. `npm start` — the header shows `brain online · local · <model>`
+
+The app auto-detects whichever chat model you've pulled. With local voice
+(on-device Whisper) and a local brain, the whole assistant runs on-device — the
+only internet use is public market data and any connections you opt into.
+
+Optional: add `ANTHROPIC_API_KEY` to `.env` to use **Claude**
+(`claude-opus-4-8`) instead — stronger at multi-step tool use, but not local.
+Claude cannot run inside Ollama (it is not an open-weights model); the API is
+the only way to use it. Leave the key blank to stay fully local.
 
 Customize behavior without code via `ARIA_PERSONA` in `.env` (appended to the
 system prompt), or extend abilities by adding a skill module (see "Adding a
