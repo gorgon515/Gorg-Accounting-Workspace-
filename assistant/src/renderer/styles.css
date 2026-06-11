@@ -348,3 +348,121 @@ input[type="text"]:focus { border-color: var(--gold); }
 
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-thumb { background: var(--slate); border-radius: 4px; }
+
+/* ============================================================
+   Design refinement layer — depth, motion, typography polish.
+   Same obsidian/ivory/gold brand, executed with more care.
+   ============================================================ */
+
+:root {
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.28);
+  --shadow-soft: 0 1px 1px rgba(0,0,0,0.35), 0 4px 14px rgba(0,0,0,0.22);
+  --gold-soft: rgba(184, 151, 106, 0.35);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(1100px 500px at 85% -10%, rgba(184,151,106,0.05), transparent 60%),
+    var(--obsidian);
+}
+
+/* Header: floating bar with a hint of gold */
+.bar {
+  background: rgba(26, 26, 30, 0.65);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--hairline);
+}
+.mark { text-shadow: 0 0 18px rgba(184,151,106,0.25); }
+.dot { box-shadow: 0 0 0 0 transparent; transition: box-shadow .4s; }
+.dot.on { box-shadow: 0 0 10px 1px rgba(111,169,140,0.55); }
+.dot.off { box-shadow: 0 0 10px 1px rgba(201,122,106,0.45); }
+
+/* Panels: soft elevation, gentle hover lift */
+.panel {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  transition: border-color .25s ease, box-shadow .25s ease;
+}
+.panel:hover { border-color: rgba(242,237,228,0.16); box-shadow: var(--shadow); }
+.panel-head h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--warm-gray);
+}
+.panel-head h2 .mono, .panel-head h2 .tag { text-transform: none; letter-spacing: 0.04em; }
+
+/* Buttons: tactile press + gold focus */
+button { transition: border-color .18s ease, background .18s ease, transform .06s ease, color .18s ease; }
+button:active { transform: translateY(1px) scale(0.99); }
+button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 1px solid var(--gold-soft);
+  outline-offset: 1px;
+}
+input[type="text"], select { transition: border-color .18s ease, box-shadow .18s ease; }
+input[type="text"]:focus { box-shadow: 0 0 0 3px rgba(184,151,106,0.10); }
+
+/* Chat: refined bubbles with entrance motion */
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.msg { animation: msg-in .28s ease both; border-radius: 12px; }
+.msg.user {
+  background: linear-gradient(180deg, rgba(184,151,106,0.16), rgba(184,151,106,0.08));
+  border: 1px solid rgba(184,151,106,0.25);
+  border-bottom-right-radius: 4px;
+}
+.msg.assistant { border-bottom-left-radius: 4px; box-shadow: var(--shadow-soft); }
+.composer input { border-radius: 999px; padding-left: 16px; }
+.composer button { border-radius: 999px; padding: 7px 18px; }
+
+/* Rows & cards: consistent radii + hover affordance */
+.row, .task, .acct-row, .alert-row, .pos-row, .ev, .news-item, .idea-rank, .sum-card {
+  border-radius: var(--radius-sm);
+  transition: border-color .18s ease, background .18s ease;
+}
+.row:hover, .task:hover, .acct-row:hover, .alert-row:hover, .news-item:hover {
+  background: #141417;
+}
+
+/* Approval cards: amber glow pulse so pending money decisions stand out */
+@keyframes approval-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184,151,106,0.0); }
+  50%      { box-shadow: 0 0 16px 0 rgba(184,151,106,0.18); }
+}
+.approval { border-radius: var(--radius-sm); animation: approval-glow 2.6s ease-in-out infinite; }
+.approval.live { animation: none; box-shadow: 0 0 14px rgba(201,122,106,0.22); }
+
+/* Trade ideas: card depth + score bar shimmer */
+.idea { border-radius: var(--radius-sm); box-shadow: var(--shadow-soft); }
+.idea .i-score > span {
+  background: linear-gradient(90deg, var(--gold), #d6b685);
+  border-radius: 3px;
+}
+
+/* Tabs: pill style */
+.t-tab, .r-btn { border-radius: 999px; padding: 3px 10px; }
+.t-tab.active, .r-btn.active { background: rgba(184,151,106,0.10); }
+
+/* Flashcard: stage presence */
+.flashcard { border-radius: var(--radius); box-shadow: var(--shadow-soft); min-height: 110px; justify-content: center; }
+.flashcard .fc-front { font-size: 19px; letter-spacing: 0.01em; }
+
+/* CPA bars: gold gradient fill */
+.cpa-bar { border-radius: 999px; }
+.cpa-bar > span { background: linear-gradient(90deg, #8a6f4d, var(--gold)); border-radius: 999px; transition: width .5s ease; }
+
+/* Scrollbars: slimmer, quieter */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: rgba(242,237,228,0.10); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(242,237,228,0.18); }
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .msg, .approval { animation: none; }
+  .panel, button, .cpa-bar > span { transition: none; }
+}
