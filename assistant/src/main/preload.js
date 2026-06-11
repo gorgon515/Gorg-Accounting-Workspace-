@@ -90,4 +90,7 @@ contextBridge.exposeInMainWorld('aria', {
     idea: (symbol) => ipcRenderer.invoke('strategy:idea', symbol),
     scan: () => ipcRenderer.invoke('strategy:scan'),
   },
+  imessage: {
+    status: () => ipcRenderer.invoke('imessage:status'),
+  },
 });

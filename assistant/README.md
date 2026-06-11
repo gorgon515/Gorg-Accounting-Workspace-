@@ -137,6 +137,26 @@ to power the daily briefing and the Today panel.
 3. In the app → **Connections** → **Google: Connect**. A browser opens for
    consent; tokens are stored on-device (refresh token via the OS keychain).
 
+### Text ARIA from your phone (iMessage — macOS only)
+
+Apple has **no public iMessage API**. The one workable path is on a **Mac**:
+ARIA reads the local Messages database and replies by scripting Messages.app.
+Since your iPhone's iMessages sync to the Mac, you can text ARIA from your phone
+and get replies back on your phone.
+
+Setup (Mac only):
+1. In `.env`: `IMESSAGE_ENABLED=true` and `IMESSAGE_ALLOW=+1yournumber,you@icloud.com`
+   (only these handles are answered — empty list = never responds). Optional
+   `IMESSAGE_TRIGGER=aria` so only texts starting with "aria" are handled.
+2. Grant the app **Full Disk Access** (System Settings → Privacy & Security →
+   Full Disk Access) so it can read `~/Library/Messages/chat.db`.
+3. Allow **Automation → Messages** when prompted (to send replies).
+
+Then text yourself/your Mac: *"aria how's NVDA"* → ARIA replies on your phone.
+Price alerts are also texted to you (`IMESSAGE_ALERTS=true`). The approval gate
+still holds — a trade proposed by text waits for your in-app Approve click.
+Non-macOS builds show "macOS only" and the bridge stays off.
+
 ### Connect a trading account (Alpaca)
 
 You can connect a real brokerage account via **Alpaca** — **paper or live**.

@@ -9,6 +9,7 @@ const brain = require('./brain');
 const skills = require('./services/skills');
 const broker = require('./services/broker');
 const stt = require('./services/stt');
+const imessage = require('./services/imessage');
 const store = require('./store');
 
 function register() {
@@ -113,6 +114,9 @@ function register() {
   // Trade ideas
   ipcMain.handle('strategy:idea', (_e, symbol) => strategy.tradeIdea(symbol));
   ipcMain.handle('strategy:scan', () => strategy.scanIdeas());
+
+  // iMessage bridge status (macOS)
+  ipcMain.handle('imessage:status', () => imessage.available());
 }
 
 module.exports = { register };

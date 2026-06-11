@@ -5,8 +5,13 @@ const path = require('path');
 const store = require('./store');
 const ipc = require('./ipc');
 const skills = require('./services/skills');
+const brain = require('./brain');
+const config = require('./config');
+const imessage = require('./services/imessage');
 
 let stopAlertChecker = null;
+let stopImessage = null;
+const imHistories = new Map(); // per-handle conversation history
 
 let mainWindow = null;
 let tray = null;
@@ -126,8 +131,29 @@ function startAlertChecker() {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('alert:triggered', a);
       }
+      // Also text the alert to the user's phone via iMessage, if enabled.
+      if (config.imessageEnabled && config.imessageAlerts) {
+        for (const handle of config.imessageAllow) {
+          imessage.send(handle, `ARIA alert: ${body}`).catch(() => {});
+        }
+      }
     },
   });
+}
+
+function startImessageBridge() {
+  const info = imessage.available();
+  if (!info.enabled) {
+    if (info.supported) console.log('[imessage]', info.reason);
+    return;
+  }
+  stopImessage = imessage.start(async (handle, text) => {
+    const history = imHistories.get(handle) || [];
+    const res = await brain.ask(text, history);
+    imHistories.set(handle, res.history || history);
+    return res.ok ? res.text : (res.text || 'Sorry — I hit an error.');
+  });
+  console.log(`[imessage] bridge active for ${config.imessageAllow.length} handle(s).`);
 }
 
 // Single-instance: focus the existing window instead of launching a second app.
@@ -153,6 +179,7 @@ if (!app.requestSingleInstanceLock()) {
     createWindow();
     createTray();
     startAlertChecker();
+    startImessageBridge();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();

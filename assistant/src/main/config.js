@@ -20,6 +20,16 @@ const config = {
   // qwen2.5 has strong tool-calling; llama3.1:8b also works.
   ollamaModel: process.env.OLLAMA_MODEL || 'qwen2.5:7b',
   wakeWord: (process.env.ARIA_WAKE_WORD || 'aria').toLowerCase(),
+  // iMessage bridge (macOS only). Reads ~/Library/Messages/chat.db and replies
+  // via AppleScript. Only responds to allowlisted handles (safe default: none).
+  imessageEnabled: process.env.IMESSAGE_ENABLED === 'true',
+  imessageAllow: (process.env.IMESSAGE_ALLOW || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
+  imessageTrigger: (process.env.IMESSAGE_TRIGGER || '').trim().toLowerCase(),
+  imessagePollMs: Number(process.env.IMESSAGE_POLL_MS || 4000),
+  imessageAlerts: process.env.IMESSAGE_ALERTS !== 'false', // text price alerts too
   // Optional extra persona/behavior appended to the brain's system prompt.
   persona: process.env.ARIA_PERSONA || '',
   // Speech-to-text engine: 'local' (on-device Whisper via transformers.js;

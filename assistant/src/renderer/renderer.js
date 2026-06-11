@@ -50,6 +50,7 @@ const els = {
   inboxCount: document.getElementById('inbox-count'),
   googleStatus: document.getElementById('google-status'),
   googleBtn: document.getElementById('google-btn'),
+  imessageStatus: document.getElementById('imessage-status'),
   brokerStatus: document.getElementById('broker-status'),
   brokerForm: document.getElementById('broker-form'),
   brokerMode: document.getElementById('broker-mode'),
@@ -663,6 +664,21 @@ els.googleBtn.addEventListener('click', async () => {
   }
 });
 
+async function loadImessageStatus() {
+  try {
+    const s = await aria.imessage.status();
+    if (s.enabled && s.reason === 'ready') {
+      els.imessageStatus.innerHTML = `<span class="ok">active · ${s.allowCount} handle(s)</span>`;
+    } else if (!s.supported) {
+      els.imessageStatus.textContent = 'macOS only';
+    } else {
+      els.imessageStatus.textContent = s.reason;
+    }
+  } catch {
+    els.imessageStatus.textContent = 'unavailable';
+  }
+}
+
 // ---- connections: broker (trading account) ----
 async function loadBrokerStatus() {
   try {
@@ -1237,6 +1253,7 @@ async function boot() {
   loadTasks();
   loadAlerts();
   loadGoogleStatus();
+  loadImessageStatus();
   loadBrokerStatus();
   loadAgenda();
   loadAccounting();
