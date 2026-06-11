@@ -174,6 +174,38 @@
       <div class="tasklist" id="tasklist"></div>
     </section>
 
+    <!-- Study -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Study</h2>
+        <div class="acct-tabs" id="study-tabs">
+          <button class="t-tab active" data-tab="review">Review</button>
+          <button class="t-tab" data-tab="vocab">Russian</button>
+          <button class="t-tab" data-tab="cpa">CPA</button>
+        </div>
+      </div>
+
+      <div class="acct-pane" id="pane-review">
+        <div class="study-stats muted" id="study-stats"></div>
+        <div class="flashcard" id="flashcard"></div>
+      </div>
+
+      <div class="acct-pane hidden" id="pane-vocab">
+        <form class="acct-form" id="vocab-form">
+          <input id="vocab-word" type="text" placeholder="Слово (word)" autocomplete="off" />
+          <input id="vocab-tr" type="text" placeholder="Translation" autocomplete="off" />
+          <input id="vocab-ex" type="text" placeholder="Example (optional)" autocomplete="off" />
+          <button type="submit">Add card</button>
+        </form>
+        <p class="muted" id="vocab-hint">New vocab enters spaced-repetition review. Ask the assistant to "teach me 5 Russian words" to add a batch.</p>
+      </div>
+
+      <div class="acct-pane hidden" id="pane-cpa">
+        <div class="cpa-list" id="cpa-list"></div>
+        <a class="becker-link" id="becker-link" href="https://www.becker.com/cpa-review" target="_blank" rel="noopener">Open Becker CPA Review ↗</a>
+      </div>
+    </section>
+
     <!-- Lookup -->
     <section class="panel">
       <div class="panel-head"><h2>Look up</h2></div>

@@ -12,8 +12,9 @@ const alerts = require('./alerts');
 const google = require('./google');
 const analysis = require('./analysis');
 const accounting = require('./accounting');
+const study = require('./study');
 
-const skills = [stocks, trading, productivity, alerts, google, analysis, accounting];
+const skills = [stocks, trading, productivity, alerts, google, analysis, accounting, study];
 
 function allTools() {
   return skills.flatMap((s) => s.tools || []);

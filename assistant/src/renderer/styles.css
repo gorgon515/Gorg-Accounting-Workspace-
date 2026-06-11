@@ -248,6 +248,30 @@ input[type="text"]:focus { border-color: var(--gold); }
 .sum-cats { font-family: var(--mono); font-size: 10px; color: var(--warm-gray); }
 .sum-cats .crow { display: flex; justify-content: space-between; padding: 2px 0; }
 
+/* Study */
+.study-stats { font-family: var(--mono); font-size: 10px; margin-bottom: 10px; }
+.flashcard { border: 1px solid var(--hairline); border-radius: 6px; padding: 16px; min-height: 90px;
+  display: flex; flex-direction: column; gap: 10px; background: var(--obsidian); }
+.flashcard .fc-front { font-size: 16px; text-align: center; }
+.flashcard .fc-back { font-size: 13px; color: var(--gold); text-align: center; white-space: pre-wrap;
+  border-top: 1px solid var(--hairline); padding-top: 10px; }
+.flashcard .fc-sub { font-family: var(--mono); font-size: 9px; color: var(--warm-gray); text-transform: uppercase; letter-spacing: 0.1em; }
+.fc-actions { display: flex; gap: 6px; justify-content: center; }
+.fc-actions button { flex: 1; font-size: 11px; padding: 6px; }
+.fc-reveal { width: 100%; }
+.fc-grade.again { border-color: var(--red); color: var(--red); }
+.fc-grade.good { border-color: var(--green); color: var(--green); }
+.fc-grade.easy { border-color: var(--gold); color: var(--gold); }
+.cpa-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+.cpa-row { display: flex; align-items: center; gap: 10px; }
+.cpa-row .cpa-sec { font-family: var(--mono); font-size: 12px; width: 36px; flex: 0 0 auto; }
+.cpa-bar { flex: 1; height: 7px; background: var(--obsidian); border: 1px solid var(--hairline); border-radius: 4px; overflow: hidden; }
+.cpa-bar > span { display: block; height: 100%; background: var(--gold); }
+.cpa-row .cpa-pct { font-family: var(--mono); font-size: 11px; width: 34px; text-align: right; color: var(--warm-gray); }
+.cpa-row input.cpa-input { width: 46px; flex: 0 0 auto; padding: 4px 6px; font-size: 11px; }
+.becker-link { display: inline-block; font-size: 12px; color: var(--gold); text-decoration: none; }
+.becker-link:hover { text-decoration: underline; }
+
 /* Agenda */
 .agenda { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
 .agenda .ev { display: flex; gap: 10px; padding: 6px 9px; background: var(--obsidian);

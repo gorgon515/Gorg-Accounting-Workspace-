@@ -72,4 +72,18 @@ contextBridge.exposeInMainWorld('aria', {
     markPaid: (id) => ipcRenderer.invoke('acct:invoice:paid', id),
     deleteInvoice: (id) => ipcRenderer.invoke('acct:invoice:delete', id),
   },
+  study: {
+    stats: () => ipcRenderer.invoke('study:stats'),
+    due: (filter) => ipcRenderer.invoke('study:due', filter),
+    review: (id, grade) => ipcRenderer.invoke('study:review', { id, grade }),
+    addCard: (c) => ipcRenderer.invoke('study:card:add', c),
+    addVocab: (v) => ipcRenderer.invoke('study:vocab:add', v),
+    deleteCard: (id) => ipcRenderer.invoke('study:card:delete', id),
+    notes: (filter) => ipcRenderer.invoke('study:notes', filter),
+    addNote: (n) => ipcRenderer.invoke('study:note:add', n),
+    deleteNote: (id) => ipcRenderer.invoke('study:note:delete', id),
+    log: (s) => ipcRenderer.invoke('study:log', s),
+    cpa: () => ipcRenderer.invoke('study:cpa'),
+    setCpa: (p) => ipcRenderer.invoke('study:cpa:set', p),
+  },
 });

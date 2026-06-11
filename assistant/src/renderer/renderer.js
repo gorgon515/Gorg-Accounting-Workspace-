@@ -73,6 +73,17 @@ const els = {
   invAmount: document.getElementById('inv-amount'),
   invDue: document.getElementById('inv-due'),
   invList: document.getElementById('inv-list'),
+  studyTabs: document.getElementById('study-tabs'),
+  paneReview: document.getElementById('pane-review'),
+  paneVocab: document.getElementById('pane-vocab'),
+  paneCpa: document.getElementById('pane-cpa'),
+  studyStats: document.getElementById('study-stats'),
+  flashcard: document.getElementById('flashcard'),
+  vocabForm: document.getElementById('vocab-form'),
+  vocabWord: document.getElementById('vocab-word'),
+  vocabTr: document.getElementById('vocab-tr'),
+  vocabEx: document.getElementById('vocab-ex'),
+  cpaList: document.getElementById('cpa-list'),
 };
 
 let chatHistory = [];
@@ -159,6 +170,7 @@ async function sendToBrain(text) {
     loadAlerts();
     loadAgenda();
     loadAccounting();
+    loadStudyStats();
   } catch (err) {
     pending.textContent = `Error: ${err.message}`;
   }
@@ -950,6 +962,126 @@ function loadAccounting() {
   loadTxnCategories();
 }
 
+// ---- study ----
+let dueQueue = [];
+
+els.studyTabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('.t-tab');
+  if (!btn) return;
+  els.studyTabs.querySelectorAll('.t-tab').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  const tab = btn.dataset.tab;
+  els.paneReview.classList.toggle('hidden', tab !== 'review');
+  els.paneVocab.classList.toggle('hidden', tab !== 'vocab');
+  els.paneCpa.classList.toggle('hidden', tab !== 'cpa');
+  if (tab === 'review') loadReview();
+  if (tab === 'cpa') loadCpa();
+});
+
+async function loadStudyStats() {
+  try {
+    const s = await aria.study.stats();
+    els.studyStats.textContent =
+      `${s.cards.due} card(s) due · ${s.cards.total} total · ${s.streakDays}-day streak`;
+  } catch {}
+}
+
+function renderCard() {
+  if (!dueQueue.length) {
+    els.flashcard.innerHTML = '<p class="muted" style="text-align:center;margin:auto">No cards due. 🎉 Add vocab or ask the assistant to teach you something.</p>';
+    return;
+  }
+  const c = dueQueue[0];
+  els.flashcard.innerHTML = `
+    <div class="fc-sub">${escapeHtml(c.subject)}</div>
+    <div class="fc-front">${escapeHtml(c.front)}</div>
+    <div class="fc-actions"><button class="fc-reveal">Show answer</button></div>`;
+  els.flashcard.querySelector('.fc-reveal').addEventListener('click', () => revealCard(c));
+}
+
+function revealCard(c) {
+  els.flashcard.innerHTML = `
+    <div class="fc-sub">${escapeHtml(c.subject)}</div>
+    <div class="fc-front">${escapeHtml(c.front)}</div>
+    <div class="fc-back">${escapeHtml(c.back)}</div>
+    <div class="fc-actions">
+      <button class="fc-grade again" data-g="1">Again</button>
+      <button class="fc-grade" data-g="3">Hard</button>
+      <button class="fc-grade good" data-g="4">Good</button>
+      <button class="fc-grade easy" data-g="5">Easy</button>
+    </div>`;
+  els.flashcard.querySelectorAll('.fc-grade').forEach((b) =>
+    b.addEventListener('click', async () => {
+      try { await aria.study.review(c.id, Number(b.dataset.g)); } catch {}
+      dueQueue.shift();
+      renderCard();
+      loadStudyStats();
+    })
+  );
+}
+
+async function loadReview() {
+  try {
+    dueQueue = await aria.study.due({ limit: 50 });
+    renderCard();
+  } catch (err) {
+    els.flashcard.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+els.vocabForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const word = els.vocabWord.value.trim();
+  const translation = els.vocabTr.value.trim();
+  if (!word || !translation) return;
+  try {
+    await aria.study.addVocab({ word, translation, example: els.vocabEx.value.trim() });
+    els.vocabWord.value = '';
+    els.vocabTr.value = '';
+    els.vocabEx.value = '';
+    loadStudyStats();
+    appendMsg('tool', `✓ Added Russian card: ${word}`);
+  } catch (err) {
+    appendMsg('tool', `✗ ${err.message}`);
+  }
+});
+
+async function loadCpa() {
+  try {
+    const s = await aria.study.cpa();
+    els.cpaList.innerHTML = '';
+    s.sections.forEach((sec) => {
+      const row = document.createElement('div');
+      row.className = 'cpa-row';
+      row.innerHTML = `
+        <span class="cpa-sec">${sec.section}</span>
+        <div class="cpa-bar"><span style="width:${sec.progress}%"></span></div>
+        <input class="cpa-input" type="text" inputmode="numeric" value="${sec.progress}" title="progress %" />
+        <span class="cpa-pct">%</span>`;
+      const input = row.querySelector('.cpa-input');
+      input.addEventListener('change', async () => {
+        const v = Number(input.value);
+        if (Number.isFinite(v)) {
+          await aria.study.setCpa({ section: sec.section, progress: v });
+          loadCpa();
+        }
+      });
+      els.cpaList.appendChild(row);
+    });
+    const overall = document.createElement('div');
+    overall.className = 'study-stats muted';
+    overall.textContent = `Overall ${s.overallProgress}% · Becker (progress tracked here; study in Becker)`;
+    els.cpaList.appendChild(overall);
+  } catch (err) {
+    els.cpaList.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+function loadStudy() {
+  loadStudyStats();
+  loadReview();
+}
+
 // ---- voice ----
 function setVoiceHint(state) {
   const map = {
@@ -1012,6 +1144,7 @@ async function boot() {
   loadBrokerStatus();
   loadAgenda();
   loadAccounting();
+  loadStudy();
 
   // Chart the first watchlist symbol on load.
   try {

@@ -18,6 +18,7 @@ function register() {
   const alerts = skills.getSkill('alerts').api;
   const google = skills.getSkill('google').api;
   const accounting = skills.getSkill('accounting').api;
+  const study = skills.getSkill('study').api;
 
   ipcMain.handle('aria:config', async () => {
     const b = await brain.status();
@@ -93,6 +94,20 @@ function register() {
   ipcMain.handle('acct:invoice:add', (_e, inv) => accounting.addInvoice(inv));
   ipcMain.handle('acct:invoice:paid', (_e, id) => accounting.markInvoicePaid({ id }));
   ipcMain.handle('acct:invoice:delete', (_e, id) => accounting.deleteInvoice({ id }));
+
+  // Study
+  ipcMain.handle('study:stats', () => study.studyStats());
+  ipcMain.handle('study:due', (_e, filter) => study.dueFlashcards(filter || {}));
+  ipcMain.handle('study:review', (_e, p) => study.reviewFlashcard(p));
+  ipcMain.handle('study:card:add', (_e, c) => study.addFlashcard(c));
+  ipcMain.handle('study:vocab:add', (_e, v) => study.addVocab(v));
+  ipcMain.handle('study:card:delete', (_e, id) => study.deleteFlashcard({ id }));
+  ipcMain.handle('study:notes', (_e, filter) => study.listNotes(filter || {}));
+  ipcMain.handle('study:note:add', (_e, n) => study.addNote(n));
+  ipcMain.handle('study:note:delete', (_e, id) => study.deleteNote({ id }));
+  ipcMain.handle('study:log', (_e, s) => study.logStudy(s));
+  ipcMain.handle('study:cpa', () => study.cpaStatus());
+  ipcMain.handle('study:cpa:set', (_e, p) => study.setCpaProgress(p));
 }
 
 module.exports = { register };

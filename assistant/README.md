@@ -224,8 +224,11 @@ the relay slots in behind the existing voice interface — `voice.js` is the sea
 3. **Accounting** ✅ — income/expense ledger with categories, invoices
    (issue/track/mark-paid), and a P&L summary (income, expenses, net, by
    category, cash position, accounts receivable). Local, brain-accessible.
-4. **Studying** — notes ingestion, flashcards, spaced repetition, tutor Q&A.
-5. **Hardening** — trade/entry approval gates, wake-word engine (Porcupine),
-   packaging/auto-update, encrypted local store.
+4. **Studying** ✅ — notes, spaced-repetition flashcards (SM-2), study log +
+   streak, a **Russian** vocab trainer, conversational tutoring, synopsis of
+   saved material, and a **Becker CPA** progress tracker (AUD/FAR/REG/BAR/ISC/
+   TCP). Becker has no public API, so progress is tracked locally and the panel
+   links out to becker.com for the lessons.
+5. **Hardening** — wake-word engine, auto-update, broader test coverage.
 
 Not financial advice. Market data may be delayed.
