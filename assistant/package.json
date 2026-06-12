@@ -50,6 +50,13 @@
     "extraMetadata": {
       "main": "src/main/main.js"
     },
+    "extraResources": [
+      {
+        "from": "models",
+        "to": "models",
+        "filter": ["**/*", "!.gitkeep"]
+      }
+    ],
     "mac": {
       "category": "public.app-category.finance",
       "target": [

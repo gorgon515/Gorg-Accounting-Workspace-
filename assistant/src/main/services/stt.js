@@ -36,7 +36,7 @@ function getPipeline() {
   pipePromise = (async () => {
     const transformers = await import('@huggingface/transformers');
     const { pipeline, env } = transformers;
-    if (config.sttModelDir) env.cacheDir = config.sttModelDir;
+    if (config.modelsDir) env.cacheDir = config.modelsDir; // bundled weights → fully offline
     return pipeline('automatic-speech-recognition', config.whisperModel);
   })().catch((err) => {
     pipePromise = null; // allow retry on next attempt

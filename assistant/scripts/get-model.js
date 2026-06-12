@@ -16,7 +16,14 @@
     console.error('@huggingface/transformers is not installed. Run `npm install` first.');
     process.exit(1);
   }
-  const { pipeline } = transformers;
+  const { pipeline, env } = transformers;
+
+  // MODELS_DIR redirects the download cache — CI uses this to bundle the
+  // weights into the installers (extraResources), making them fully offline.
+  if (process.env.MODELS_DIR) {
+    env.cacheDir = process.env.MODELS_DIR;
+    console.log(`Saving models to ${process.env.MODELS_DIR}/`);
+  }
 
   const whisper = process.env.WHISPER_MODEL || 'Xenova/whisper-tiny.en';
   console.log(`Downloading local speech model: ${whisper} …`);

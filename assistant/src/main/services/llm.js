@@ -37,7 +37,7 @@ function getPipeline() {
   pipePromise = (async () => {
     const transformers = await import('@huggingface/transformers');
     const { pipeline, env } = transformers;
-    if (config.sttModelDir) env.cacheDir = config.sttModelDir;
+    if (config.modelsDir) env.cacheDir = config.modelsDir; // bundled weights → fully offline
     let lastFile = '';
     return pipeline('text-generation', config.embeddedModel, {
       dtype: config.embeddedDtype,

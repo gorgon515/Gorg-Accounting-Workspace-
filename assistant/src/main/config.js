@@ -2,6 +2,7 @@
 
 // Loads .env (if present) and exposes resolved configuration.
 const path = require('path');
+const fs = require('fs');
 
 try {
   require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
@@ -52,6 +53,26 @@ const config = {
   // Local Whisper model (downloaded once, then cached for offline use).
   whisperModel: process.env.WHISPER_MODEL || 'Xenova/whisper-tiny.en',
   sttModelDir: process.env.STT_MODEL_DIR || '', // optional cache dir override
+  // Where the local AI models live. Installers bundle pre-downloaded weights
+  // (resources/models), so the packaged app is fully offline from first
+  // launch. Resolution: STT_MODEL_DIR override → bundled dir (if it has
+  // content) → '' (transformers.js default cache + download-on-first-use,
+  // the from-source path).
+  modelsDir: (() => {
+    if (process.env.STT_MODEL_DIR) return process.env.STT_MODEL_DIR;
+    const candidates = [
+      process.resourcesPath ? path.join(process.resourcesPath, 'models') : null,
+      path.join(__dirname, '..', '..', 'models'),
+    ].filter(Boolean);
+    for (const dir of candidates) {
+      try {
+        if (fs.readdirSync(dir).some((f) => f !== '.gitkeep')) return dir;
+      } catch {
+        /* missing dir — keep looking */
+      }
+    }
+    return '';
+  })(),
   // Cloud fallback (only used when STT_ENGINE=whisper-api).
   sttApiKey: process.env.STT_API_KEY || '',
   sttBaseUrl: process.env.STT_BASE_URL || 'https://api.openai.com/v1',

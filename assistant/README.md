@@ -72,9 +72,10 @@ npm start
 ```
 
 Click Talk to record, click again to stop → it transcribes **locally** and asks
-the brain. The first transcription downloads the model weights once (then it's
-offline); `npm run model` does that ahead of time. Set `WHISPER_MODEL` to
-`Xenova/whisper-base.en` or `small.en` for more accuracy at some speed cost.
+the brain. The installers bundle the model weights (offline from first launch);
+from source, the first transcription downloads them once — `npm run model`
+does that ahead of time. Set `WHISPER_MODEL` to `Xenova/whisper-base.en` or
+`small.en` for more accuracy at some speed cost.
 
 **Prefer the cloud instead?** Set `STT_ENGINE=whisper-api` + `STT_API_KEY` in
 `.env` (OpenAI or Groq). Off by default — local is the default.
@@ -87,10 +88,11 @@ key, no account, no separate install:
 
 - **Built-in (default)** — a small instruct model
   (`onnx-community/Qwen2.5-0.5B-Instruct`) runs **in-process on CPU** via
-  transformers.js, the same runtime as the local voice. The weights download
-  once on first use (`npm run model` pre-fetches them); after that the brain
-  works **fully offline**. Upgrade quality with
-  `EMBEDDED_MODEL=onnx-community/Qwen2.5-1.5B-Instruct` in `.env`.
+  transformers.js, the same runtime as the local voice. **The installers
+  bundle the weights**, so the installed app is fully offline from first
+  launch — no internet, no downloads, ever. (Running from source instead
+  downloads them once on first use; `npm run model` pre-fetches.) Upgrade
+  quality with `EMBEDDED_MODEL=onnx-community/Qwen2.5-1.5B-Instruct` in `.env`.
 - **Ollama (optional upgrade)** — install <https://ollama.com> and
   `ollama pull qwen2.5:7b`; auto mode detects it and prefers it over the
   built-in model. The app picks up whichever chat model you've pulled.
@@ -237,8 +239,11 @@ Assets). Two ways to trigger one:
 
 Builds are unsigned (no certificates), so expect the usual first-run prompts:
 Windows SmartScreen → "More info → Run anyway"; macOS → right-click → Open.
-Installers bundle the app + Electron (~160 MB; GPU inference libraries are
-excluded — the local voice model runs on CPU).
+Installers bundle the app + Electron **+ the voice and brain model weights**,
+so the installed app works **completely offline** — voice, brain, tasks,
+ledger, flashcards all run with zero internet. (Only inherently-online
+features — live quotes, news, Google, phone bridges — need a connection.)
+GPU inference libraries are excluded; the local models run on CPU.
 
 ## Packaging — build installers locally
 

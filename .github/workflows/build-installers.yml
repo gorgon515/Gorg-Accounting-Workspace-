@@ -41,6 +41,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # Pre-download the voice + brain model weights into models/, which the
+      # build bundles as resources — so the installed app is fully offline
+      # from first launch (no internet needed, ever, for voice or brain).
+      - name: Bundle local AI models (offline-first)
+        run: npm run model
+        env:
+          MODELS_DIR: models
+
       - name: Build installers
         run: npx electron-builder --publish never
 

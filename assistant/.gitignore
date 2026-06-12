@@ -2,6 +2,7 @@ node_modules/
 .env
 dist/
 out/
-models/
+models/*
+!models/.gitkeep
 *.log
 .DS_Store
