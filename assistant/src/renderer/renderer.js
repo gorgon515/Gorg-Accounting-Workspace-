@@ -1248,10 +1248,12 @@ async function boot() {
   const b = cfg.brain || { engine: '?', model: cfg.model, ready: cfg.hasBrain };
   if (b.ready) {
     els.brainDot.classList.add('on');
-    els.brainLabel.textContent = `brain online · ${b.local ? 'local' : 'claude'} · ${b.model}`;
+    const engineLabel = b.engine === 'claude' ? 'claude' : b.engine === 'embedded' ? 'built-in' : 'local';
+    const modelLabel = String(b.model || '').split('/').pop(); // short HF id
+    els.brainLabel.textContent = `brain online · ${engineLabel} · ${modelLabel}`;
   } else {
     els.brainDot.classList.add('off');
-    els.brainLabel.textContent = `brain offline · ${b.local ? 'start Ollama' : 'add API key'}`;
+    els.brainLabel.textContent = `brain offline · ${b.local ? 'no local engine' : 'add API key'}`;
     appendMsg(
       'assistant',
       `Hi — I'm ARIA. The brain is offline: ${b.reason || 'not configured'} ` +

@@ -3,20 +3,24 @@
 // The brain: turns natural-language (or voice) commands into actions by
 // running a tool-use loop against the skill registry.
 //
-// Two engines:
-//   • 'local'  — Ollama (http://127.0.0.1:11434). Fully on-device, no API key.
-//                Install from https://ollama.com and `ollama pull qwen2.5:7b`.
-//   • 'claude' — Anthropic API (claude-opus-4-8). Strongest reasoning; needs
-//                ANTHROPIC_API_KEY.
-// Default: claude if a key is set, otherwise local.
+// Three engines:
+//   • 'embedded' — built-in model via transformers.js, fully in-process. Zero
+//                  setup: no API key, no Ollama; weights download once, then
+//                  it works offline. The out-of-the-box default.
+//   • 'local'    — Ollama (http://127.0.0.1:11434). Fully on-device, stronger
+//                  than embedded if you've installed it and pulled a model.
+//   • 'claude'   — Anthropic API (claude-opus-4-8). Strongest reasoning; needs
+//                  ANTHROPIC_API_KEY.
+// Default ('auto'): claude if a key is set → Ollama if it's running → embedded.
 //
-// Both run the same manual loop so approval gates and logging stay in one
+// All run the same manual loop so approval gates and logging stay in one
 // place — the brain can only call tools the skills expose; trade execution is
 // not one of them.
 
 const Anthropic = require('@anthropic-ai/sdk');
 const config = require('./config');
 const skills = require('./services/skills');
+const llm = require('./services/llm');
 
 const MAX_TURNS = 6;
 
@@ -165,6 +169,35 @@ async function localReady() {
   }
 }
 
+// ---------- Embedded engine (in-process, transformers.js) ----------
+async function askEmbedded(userText, history, toolEvents) {
+  // Flat {role, content} history, like the Ollama engine. Tool results are
+  // wrapped as user turns in <tool_response> tags (Hermes/Qwen convention)
+  // rather than a 'tool' role, which not every chat template accepts.
+  const system = skills.systemPrompt() + '\n\n' + llm.toolPrompt(skills.allTools());
+  const messages = [
+    { role: 'system', content: system },
+    ...history.filter((m) => m.role !== 'system'),
+    { role: 'user', content: userText },
+  ];
+
+  for (let turn = 0; turn < MAX_TURNS; turn++) {
+    const reply = await llm.generate(messages);
+    messages.push({ role: 'assistant', content: reply });
+
+    const calls = llm.parseToolCalls(reply);
+    if (!calls.length) {
+      return { text: llm.stripToolMarkup(reply), history: messages.slice(1) }; // drop system
+    }
+    for (const call of calls) {
+      const { result, ok, error } = await runTool(call.name, call.arguments);
+      toolEvents.push({ name: call.name, input: call.arguments, ok, error });
+      messages.push({ role: 'user', content: `<tool_response>\n${result}\n</tool_response>` });
+    }
+  }
+  return { text: "I worked through several steps but didn't reach a final answer. Try narrowing the request.", history: messages.slice(1) };
+}
+
 // ---------- shared ----------
 async function runTool(name, input) {
   const handler = skills.handlerFor(name);
@@ -177,14 +210,29 @@ async function runTool(name, input) {
   }
 }
 
+function embeddedStatus() {
+  return llm.available()
+    ? { engine: 'embedded', model: config.embeddedModel, ready: true, local: true }
+    : {
+        engine: 'embedded', model: config.embeddedModel, ready: false, local: true,
+        reason: 'The built-in model package (@huggingface/transformers) is missing. Run: npm install',
+      };
+}
+
 async function status() {
-  if (config.brainEngine === 'claude') {
+  const engine = config.brainEngine;
+  if (engine === 'claude' || (engine === 'auto' && config.anthropicApiKey)) {
     return config.anthropicApiKey
       ? { engine: 'claude', model: config.model, ready: true, local: false }
       : { engine: 'claude', model: config.model, ready: false, local: false, reason: 'ANTHROPIC_API_KEY not set' };
   }
+  if (engine === 'embedded') return embeddedStatus();
   const r = await localReady();
-  return { engine: 'local', model: resolvedLocalModel || config.ollamaModel, ready: r.ready, local: true, reason: r.reason };
+  if (r.ready || engine === 'local') {
+    return { engine: 'local', model: resolvedLocalModel || config.ollamaModel, ready: r.ready, local: true, reason: r.reason };
+  }
+  // auto: Ollama isn't available — fall back to the zero-setup embedded brain.
+  return embeddedStatus();
 }
 
 async function ask(userText, history = []) {
@@ -202,7 +250,9 @@ async function ask(userText, history = []) {
     }
     const out = s.engine === 'claude'
       ? await askClaude(userText, history, toolEvents)
-      : await askLocal(userText, history, toolEvents);
+      : s.engine === 'embedded'
+        ? await askEmbedded(userText, history, toolEvents)
+        : await askLocal(userText, history, toolEvents);
     return { ok: true, text: out.text, toolEvents, history: out.history };
   } catch (err) {
     console.error('[brain] error:', err);

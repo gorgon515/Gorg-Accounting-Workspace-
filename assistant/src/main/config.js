@@ -13,13 +13,18 @@ const config = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
   // claude-opus-4-8 is the current most-capable model. Do not downgrade silently.
   model: process.env.ARIA_MODEL || 'claude-opus-4-8',
-  // Brain engine. Fully local by default (Ollama, no API key). If an
-  // ANTHROPIC_API_KEY is present it uses Claude instead. Force either with
-  // BRAIN_ENGINE=local | claude.
-  brainEngine: (process.env.BRAIN_ENGINE || (process.env.ANTHROPIC_API_KEY ? 'claude' : 'local')).toLowerCase(),
+  // Brain engine. 'auto' (default) is fully local with zero setup: Claude if
+  // a key is set → Ollama if it's running → the built-in embedded model.
+  // Force one with BRAIN_ENGINE=embedded | local | claude.
+  brainEngine: (process.env.BRAIN_ENGINE || 'auto').toLowerCase(),
   ollamaUrl: process.env.OLLAMA_URL || 'http://127.0.0.1:11434',
   // qwen2.5 has strong tool-calling; llama3.1:8b also works.
   ollamaModel: process.env.OLLAMA_MODEL || 'qwen2.5:7b',
+  // Built-in zero-setup brain: a small instruct model run in-process via
+  // transformers.js (CPU). Weights download once, then it works offline.
+  embeddedModel: process.env.EMBEDDED_MODEL || 'onnx-community/Qwen2.5-0.5B-Instruct',
+  embeddedDtype: process.env.EMBEDDED_DTYPE || 'q4',
+  embeddedMaxTokens: Number(process.env.EMBEDDED_MAX_TOKENS || 512),
   wakeWord: (process.env.ARIA_WAKE_WORD || 'aria').toLowerCase(),
   // iMessage bridge (macOS only). Reads ~/Library/Messages/chat.db and replies
   // via AppleScript. Only responds to allowlisted handles (safe default: none).
