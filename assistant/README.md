@@ -226,12 +226,14 @@ workflow (`.github/workflows/build-installers.yml`) on native runners:
 - **macOS** — `ARIA-<ver>.dmg` (+ zip), arm64 & Intel
 - **Linux** — `ARIA-<ver>.AppImage` + `.deb`
 
-Two ways to get them:
+Every run attaches all installers to a **GitHub Release** (Releases page →
+Assets). Two ways to trigger one:
 
-1. **One-off:** GitHub → Actions → *Build ARIA installers* → *Run workflow* →
-   download the artifacts from the run page.
-2. **Versioned release:** `git tag v0.1.0 && git push origin v0.1.0` → the
-   workflow attaches all installers to a public GitHub Release.
+1. **Manual:** GitHub → Actions → *Build ARIA installers* → *Run workflow*.
+   Releases under `v<version>` from `package.json`; the same files are also
+   downloadable as artifacts from the run page.
+2. **Versioned tag:** `git tag v0.2.0 && git push origin v0.2.0` → releases
+   under that tag.
 
 Builds are unsigned (no certificates), so expect the usual first-run prompts:
 Windows SmartScreen → "More info → Run anyway"; macOS → right-click → Open.
