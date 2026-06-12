@@ -37,7 +37,7 @@ built-in local model downloads once on first use; `npm run model` pre-fetches
 it). Copy `.env.example` to `.env` only if you want to customize — e.g. use
 Ollama/Claude as the brain, add Google, or enable the phone bridges.
 
-Node 18+ required (uses global `fetch`).
+Node 18+ required (uses global `fetch`); CI builds the installers on Node 24.
 
 ### Web sessions: allow the market-data host
 
