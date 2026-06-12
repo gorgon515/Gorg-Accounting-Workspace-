@@ -121,6 +121,58 @@
       <div class="positions" id="positions"></div>
     </section>
 
+    <!-- Trade ideas -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Trade ideas</h2>
+        <button id="scan-ideas" class="ghost" title="Scan watchlist for setups">Scan</button>
+      </div>
+      <form class="add-row" id="idea-form">
+        <input id="idea-symbol" type="text" placeholder="Ticker (AAPL)" autocomplete="off" />
+        <button type="submit">Idea</button>
+      </form>
+      <div class="ideas" id="ideas"><p class="muted">Get a directional idea with a real options contract, or scan your watchlist. Not financial advice.</p></div>
+    </section>
+
+    <!-- Accounting -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Accounting</h2>
+        <div class="acct-tabs" id="acct-tabs">
+          <button class="t-tab active" data-tab="summary">Summary</button>
+          <button class="t-tab" data-tab="ledger">Ledger</button>
+          <button class="t-tab" data-tab="invoices">Invoices</button>
+        </div>
+      </div>
+
+      <div class="acct-pane" id="pane-summary"></div>
+
+      <div class="acct-pane hidden" id="pane-ledger">
+        <form class="acct-form" id="txn-form">
+          <select id="txn-type">
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+          <input id="txn-amount" type="text" inputmode="decimal" placeholder="Amount" autocomplete="off" />
+          <input id="txn-cat" type="text" placeholder="Category" autocomplete="off" list="txn-cats" />
+          <datalist id="txn-cats"></datalist>
+          <input id="txn-desc" type="text" placeholder="Description (optional)" autocomplete="off" />
+          <button type="submit">Add</button>
+        </form>
+        <div class="acct-list" id="txn-list"></div>
+      </div>
+
+      <div class="acct-pane hidden" id="pane-invoices">
+        <form class="acct-form" id="inv-form">
+          <input id="inv-client" type="text" placeholder="Client" autocomplete="off" />
+          <input id="inv-amount" type="text" inputmode="decimal" placeholder="Amount" autocomplete="off" />
+          <input id="inv-due" type="text" placeholder="Due (YYYY-MM-DD)" autocomplete="off" />
+          <button type="submit">Invoice</button>
+        </form>
+        <div class="acct-list" id="inv-list"></div>
+      </div>
+    </section>
+
     <!-- Tasks -->
     <section class="panel">
       <div class="panel-head">
@@ -133,6 +185,38 @@
         <button type="submit">Add</button>
       </form>
       <div class="tasklist" id="tasklist"></div>
+    </section>
+
+    <!-- Study -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Study</h2>
+        <div class="acct-tabs" id="study-tabs">
+          <button class="t-tab active" data-tab="review">Review</button>
+          <button class="t-tab" data-tab="vocab">Russian</button>
+          <button class="t-tab" data-tab="cpa">CPA</button>
+        </div>
+      </div>
+
+      <div class="acct-pane" id="pane-review">
+        <div class="study-stats muted" id="study-stats"></div>
+        <div class="flashcard" id="flashcard"></div>
+      </div>
+
+      <div class="acct-pane hidden" id="pane-vocab">
+        <form class="acct-form" id="vocab-form">
+          <input id="vocab-word" type="text" placeholder="Слово (word)" autocomplete="off" />
+          <input id="vocab-tr" type="text" placeholder="Translation" autocomplete="off" />
+          <input id="vocab-ex" type="text" placeholder="Example (optional)" autocomplete="off" />
+          <button type="submit">Add card</button>
+        </form>
+        <p class="muted" id="vocab-hint">New vocab enters spaced-repetition review. Ask the assistant to "teach me 5 Russian words" to add a batch.</p>
+      </div>
+
+      <div class="acct-pane hidden" id="pane-cpa">
+        <div class="cpa-list" id="cpa-list"></div>
+        <a class="becker-link" id="becker-link" href="https://www.becker.com/cpa-review" target="_blank" rel="noopener">Open Becker CPA Review ↗</a>
+      </div>
     </section>
 
     <!-- Lookup -->
@@ -152,6 +236,14 @@
       <div class="conn-row">
         <div class="conn-label">Google <span class="muted" id="google-status">checking…</span></div>
         <button id="google-btn" class="ghost">Connect</button>
+      </div>
+
+      <div class="conn-row">
+        <div class="conn-label">iMessage <span class="muted" id="imessage-status">checking…</span></div>
+      </div>
+
+      <div class="conn-row">
+        <div class="conn-label">Telegram <span class="muted" id="telegram-status">checking…</span></div>
       </div>
 
       <div class="conn-block">

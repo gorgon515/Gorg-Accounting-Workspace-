@@ -13,6 +13,7 @@ const store = require('../store');
 const UA = 'Mozilla/5.0 (compatible; ARIA-Assistant/0.1)';
 const CHART = 'https://query1.finance.yahoo.com/v8/finance/chart/';
 const SEARCH = 'https://query1.finance.yahoo.com/v1/finance/search';
+const OPTIONS = 'https://query1.finance.yahoo.com/v7/finance/options/';
 
 async function yahoo(url) {
   const res = await fetch(url, { headers: { 'User-Agent': UA } });
@@ -68,6 +69,41 @@ async function searchSymbol(query) {
       exchange: q.exchDisp || q.exchange || '',
       type: q.quoteType || '',
     }));
+}
+
+function mapOption(o) {
+  return {
+    contractSymbol: o.contractSymbol,
+    strike: o.strike,
+    last: o.lastPrice,
+    bid: o.bid,
+    ask: o.ask,
+    mid: o.bid != null && o.ask != null && (o.bid || o.ask) ? (o.bid + o.ask) / 2 : o.lastPrice,
+    iv: o.impliedVolatility,
+    openInterest: o.openInterest,
+    volume: o.volume,
+    inTheMoney: o.inTheMoney,
+    expiration: o.expiration,
+  };
+}
+
+// Options chain. dateTs (unix seconds) selects a specific expiry; omit for the
+// nearest. Returns underlying price, available expirations, and calls/puts.
+async function getOptions(symbol, dateTs) {
+  const sym = String(symbol).trim().toUpperCase();
+  const url = `${OPTIONS}${encodeURIComponent(sym)}${dateTs ? `?date=${dateTs}` : ''}`;
+  const data = await yahoo(url);
+  const r = data?.optionChain?.result?.[0];
+  if (!r) throw new Error(`No options data for "${sym}".`);
+  const chain = (r.options && r.options[0]) || {};
+  return {
+    symbol: r.underlyingSymbol || sym,
+    price: r.quote?.regularMarketPrice ?? null,
+    expirationDates: r.expirationDates || [],
+    expiration: chain.expirationDate || dateTs || null,
+    calls: (chain.calls || []).map(mapOption),
+    puts: (chain.puts || []).map(mapOption),
+  };
 }
 
 async function getNews(query) {
@@ -211,5 +247,5 @@ module.exports = {
   tools,
   handlers,
   // Direct API used by UI panels (no AI brain needed):
-  api: { getQuote, getQuotes, searchSymbol, getNews, getHistory, getWatchlist, addToWatchlist, removeFromWatchlist },
+  api: { getQuote, getQuotes, searchSymbol, getNews, getHistory, getOptions, getWatchlist, addToWatchlist, removeFromWatchlist },
 };

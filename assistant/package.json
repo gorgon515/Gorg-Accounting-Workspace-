@@ -2,11 +2,20 @@
   "name": "aria-assistant",
   "version": "0.1.0",
   "private": true,
-  "description": "ARIA — an integrated, voice-driven desktop assistant (stocks, accounting, study, productivity). Vertical slice: Stocks.",
+  "description": "ARIA \u2014 an integrated, voice-driven desktop assistant (stocks, trading, productivity).",
+  "author": "Vincent Gregorio",
+  "license": "MIT",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "electron . --enable-logging"
+    "dev": "electron . --enable-logging",
+    "icon": "electron scripts/make-icon.js",
+    "model": "node scripts/get-model.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
   },
   "engines": {
     "node": ">=18"
@@ -16,6 +25,97 @@
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "optionalDependencies": {
+    "@huggingface/transformers": "^3.8.1"
+  },
+  "build": {
+    "appId": "com.gorg.aria",
+    "productName": "ARIA",
+    "copyright": "Copyright \u00a9 2026",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "build/icon.png",
+      "!**/*.map",
+      "!node_modules/onnxruntime-node/bin/**/libonnxruntime_providers_cuda*",
+      "!node_modules/onnxruntime-node/bin/**/libonnxruntime_providers_tensorrt*"
+    ],
+    "extraMetadata": {
+      "main": "src/main/main.js"
+    },
+    "mac": {
+      "category": "public.app-category.finance",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "files": [
+        "!node_modules/onnxruntime-node/bin/napi-v3/{linux,win32}/**"
+      ]
+    },
+    "dmg": {
+      "title": "ARIA ${version}"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "files": [
+        "!node_modules/onnxruntime-node/bin/napi-v3/{linux,darwin}/**"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "ARIA"
+    },
+    "linux": {
+      "category": "Office",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "maintainer": "Vincent Gregorio",
+      "files": [
+        "!node_modules/onnxruntime-node/bin/napi-v3/{win32,darwin}/**"
+      ]
+    }
   }
 }

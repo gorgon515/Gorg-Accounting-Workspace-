@@ -50,6 +50,8 @@ const els = {
   inboxCount: document.getElementById('inbox-count'),
   googleStatus: document.getElementById('google-status'),
   googleBtn: document.getElementById('google-btn'),
+  imessageStatus: document.getElementById('imessage-status'),
+  telegramStatus: document.getElementById('telegram-status'),
   brokerStatus: document.getElementById('broker-status'),
   brokerForm: document.getElementById('broker-form'),
   brokerMode: document.getElementById('broker-mode'),
@@ -57,6 +59,37 @@ const els = {
   brokerSecret: document.getElementById('broker-secret'),
   brokerNote: document.getElementById('broker-note'),
   brokerDisconnect: document.getElementById('broker-disconnect'),
+  acctTabs: document.getElementById('acct-tabs'),
+  paneSummary: document.getElementById('pane-summary'),
+  paneLedger: document.getElementById('pane-ledger'),
+  paneInvoices: document.getElementById('pane-invoices'),
+  txnForm: document.getElementById('txn-form'),
+  txnType: document.getElementById('txn-type'),
+  txnAmount: document.getElementById('txn-amount'),
+  txnCat: document.getElementById('txn-cat'),
+  txnCats: document.getElementById('txn-cats'),
+  txnDesc: document.getElementById('txn-desc'),
+  txnList: document.getElementById('txn-list'),
+  invForm: document.getElementById('inv-form'),
+  invClient: document.getElementById('inv-client'),
+  invAmount: document.getElementById('inv-amount'),
+  invDue: document.getElementById('inv-due'),
+  invList: document.getElementById('inv-list'),
+  studyTabs: document.getElementById('study-tabs'),
+  paneReview: document.getElementById('pane-review'),
+  paneVocab: document.getElementById('pane-vocab'),
+  paneCpa: document.getElementById('pane-cpa'),
+  studyStats: document.getElementById('study-stats'),
+  flashcard: document.getElementById('flashcard'),
+  vocabForm: document.getElementById('vocab-form'),
+  vocabWord: document.getElementById('vocab-word'),
+  vocabTr: document.getElementById('vocab-tr'),
+  vocabEx: document.getElementById('vocab-ex'),
+  cpaList: document.getElementById('cpa-list'),
+  ideaForm: document.getElementById('idea-form'),
+  ideaSymbol: document.getElementById('idea-symbol'),
+  scanIdeas: document.getElementById('scan-ideas'),
+  ideas: document.getElementById('ideas'),
 };
 
 let chatHistory = [];
@@ -142,6 +175,8 @@ async function sendToBrain(text) {
     loadTasks();
     loadAlerts();
     loadAgenda();
+    loadAccounting();
+    loadStudyStats();
   } catch (err) {
     pending.textContent = `Error: ${err.message}`;
   }
@@ -630,6 +665,32 @@ els.googleBtn.addEventListener('click', async () => {
   }
 });
 
+async function loadImessageStatus() {
+  try {
+    const s = await aria.imessage.status();
+    if (s.enabled && s.reason === 'ready') {
+      els.imessageStatus.innerHTML = `<span class="ok">active · ${s.allowCount} handle(s)</span>`;
+    } else if (!s.supported) {
+      els.imessageStatus.textContent = 'macOS only';
+    } else {
+      els.imessageStatus.textContent = s.reason;
+    }
+  } catch {
+    els.imessageStatus.textContent = 'unavailable';
+  }
+}
+
+async function loadTelegramStatus() {
+  try {
+    const s = await aria.telegram.status();
+    els.telegramStatus.innerHTML = s.enabled
+      ? `<span class="ok">${escapeHtml(s.bot || 'active')} · ${s.allowCount} allowed</span>`
+      : escapeHtml(s.reason || 'not configured');
+  } catch {
+    els.telegramStatus.textContent = 'unavailable';
+  }
+}
+
 // ---- connections: broker (trading account) ----
 async function loadBrokerStatus() {
   try {
@@ -739,23 +800,410 @@ function setTalkState(state) {
 }
 
 async function initTalk() {
-  const available = await aria.stt.available().catch(() => false);
+  const sttInfo = await aria.stt.info().catch(() => ({ available: false, engine: 'vosk', local: true }));
   recorder = window.createRecorder({
+    mode: sttInfo.engine === 'whisper-api' ? 'audio' : 'pcm16',
     onText: (text, err) => {
       if (err) { appendMsg('tool', `✗ STT: ${err.message}`); return; }
       if (text) sendToBrain(text);
     },
     onState: setTalkState,
   });
-  if (!recorder.supported || !available) {
+  els.talkBtn.title = sttInfo.local
+    ? 'Push to talk — fully local speech recognition'
+    : 'Push to talk — cloud (Whisper API)';
+  if (!recorder.supported || !sttInfo.available) {
     els.talkBtn.disabled = true;
-    els.talkBtn.title = available
-      ? 'Audio recording not available in this build'
-      : 'Set STT_API_KEY in .env to enable push-to-talk';
     els.talkBtn.style.opacity = '0.5';
+    els.talkBtn.title = !recorder.supported
+      ? 'Audio recording not available in this build'
+      : sttInfo.local
+        ? `Local speech model not found at ${sttInfo.modelPath || 'models/vosk'} — see README`
+        : 'Set STT_API_KEY in .env to enable push-to-talk';
     return;
   }
   els.talkBtn.addEventListener('click', () => recorder.toggle());
+}
+
+// ---- accounting ----
+const acctMoney = (n) =>
+  n == null ? '—' : (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+els.acctTabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('.t-tab');
+  if (!btn) return;
+  els.acctTabs.querySelectorAll('.t-tab').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  const tab = btn.dataset.tab;
+  els.paneSummary.classList.toggle('hidden', tab !== 'summary');
+  els.paneLedger.classList.toggle('hidden', tab !== 'ledger');
+  els.paneInvoices.classList.toggle('hidden', tab !== 'invoices');
+  if (tab === 'ledger') loadTxns();
+  if (tab === 'invoices') loadInvoices();
+});
+
+async function loadAcctSummary() {
+  try {
+    const s = await aria.accounting.summary();
+    const netCls = s.net >= 0 ? 'pos' : 'neg';
+    const catRows = (obj) =>
+      Object.entries(obj)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([k, v]) => `<div class="crow"><span>${escapeHtml(k)}</span><span>${acctMoney(v)}</span></div>`)
+        .join('') || '<div class="crow muted">none</div>';
+    els.paneSummary.innerHTML = `
+      <div class="sum-grid">
+        <div class="sum-card"><div class="k">Income</div><div class="v pos">${acctMoney(s.income)}</div></div>
+        <div class="sum-card"><div class="k">Expenses</div><div class="v neg">${acctMoney(s.expense)}</div></div>
+        <div class="sum-card"><div class="k">Net</div><div class="v ${netCls}">${acctMoney(s.net)}</div></div>
+        <div class="sum-card"><div class="k">Cash position</div><div class="v">${acctMoney(s.cashPosition)}</div></div>
+      </div>
+      <div class="sum-card" style="margin-bottom:10px">
+        <div class="k">Accounts receivable</div>
+        <div class="v">${acctMoney(s.accountsReceivable.outstanding)}</div>
+        <div class="sum-cats">${s.accountsReceivable.openCount} open${s.accountsReceivable.overdue ? ` · ${acctMoney(s.accountsReceivable.overdue)} overdue` : ''}</div>
+      </div>
+      <div class="sum-cats"><div class="crow"><strong>Top expenses</strong></div>${catRows(s.byCategory.expense)}</div>`;
+  } catch (err) {
+    els.paneSummary.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+async function loadTxnCategories() {
+  try {
+    const c = await aria.accounting.categories();
+    const all = [...new Set([...c.income, ...c.expense])];
+    els.txnCats.innerHTML = all.map((x) => `<option value="${escapeHtml(x)}">`).join('');
+  } catch {}
+}
+
+async function loadTxns() {
+  try {
+    const rows = await aria.accounting.txns({ limit: 30 });
+    els.txnList.innerHTML = '';
+    if (!rows.length) {
+      els.txnList.innerHTML = '<p class="muted">No entries yet.</p>';
+      return;
+    }
+    rows.forEach((t) => {
+      const row = document.createElement('div');
+      row.className = 'acct-row';
+      const sign = t.type === 'income' ? '+' : '-';
+      row.innerHTML = `
+        <div class="left">
+          <div class="a-cat">${escapeHtml(t.category)}${t.description ? ` · <span class="a-meta">${escapeHtml(t.description)}</span>` : ''}</div>
+          <div class="a-meta">${t.date} · ${t.account}</div>
+        </div>
+        <div class="a-amt ${t.type}">${sign}${acctMoney(t.amount).replace('$', '$')}</div>
+        <button class="a-del" title="Delete">✕</button>`;
+      row.querySelector('.a-del').addEventListener('click', async () => {
+        await aria.accounting.deleteTxn(t.id);
+        loadTxns();
+        loadAcctSummary();
+      });
+      els.txnList.appendChild(row);
+    });
+  } catch (err) {
+    els.txnList.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+els.txnForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const amount = Number(els.txnAmount.value);
+  if (!amount) return;
+  try {
+    await aria.accounting.addTxn({
+      type: els.txnType.value,
+      amount,
+      category: els.txnCat.value.trim(),
+      description: els.txnDesc.value.trim(),
+    });
+    els.txnAmount.value = '';
+    els.txnCat.value = '';
+    els.txnDesc.value = '';
+    loadTxns();
+    loadAcctSummary();
+    loadTxnCategories();
+  } catch (err) {
+    appendMsg('tool', `✗ ${err.message}`);
+  }
+});
+
+async function loadInvoices() {
+  try {
+    const list = await aria.accounting.invoices();
+    els.invList.innerHTML = '';
+    if (!list.length) {
+      els.invList.innerHTML = '<p class="muted">No invoices yet.</p>';
+      return;
+    }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    list.forEach((inv) => {
+      const row = document.createElement('div');
+      row.className = 'acct-row';
+      const overdue = inv.status !== 'paid' && inv.due && inv.due < todayStr;
+      const statusCls = inv.status === 'paid' ? 'paid' : overdue ? 'overdue' : '';
+      const statusTxt = inv.status === 'paid' ? 'paid' : overdue ? 'overdue' : inv.status;
+      row.innerHTML = `
+        <div class="left">
+          <div class="a-cat">${escapeHtml(inv.client)} <span class="a-meta">${inv.number}</span></div>
+          <div class="a-meta">${acctMoney(inv.amount)}${inv.due ? ` · due ${inv.due}` : ''}</div>
+        </div>
+        <span class="inv-status ${statusCls}">${statusTxt}</span>
+        ${inv.status !== 'paid' ? '<button class="inv-pay">Paid</button>' : ''}
+        <button class="a-del" title="Delete">✕</button>`;
+      const payBtn = row.querySelector('.inv-pay');
+      if (payBtn) payBtn.addEventListener('click', async () => {
+        await aria.accounting.markPaid(inv.id);
+        loadInvoices();
+        loadAcctSummary();
+      });
+      row.querySelector('.a-del').addEventListener('click', async () => {
+        await aria.accounting.deleteInvoice(inv.id);
+        loadInvoices();
+        loadAcctSummary();
+      });
+      els.invList.appendChild(row);
+    });
+  } catch (err) {
+    els.invList.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+els.invForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const client = els.invClient.value.trim();
+  const amount = Number(els.invAmount.value);
+  if (!client || !amount) return;
+  try {
+    await aria.accounting.addInvoice({ client, amount, due: els.invDue.value.trim() });
+    els.invClient.value = '';
+    els.invAmount.value = '';
+    els.invDue.value = '';
+    loadInvoices();
+    loadAcctSummary();
+  } catch (err) {
+    appendMsg('tool', `✗ ${err.message}`);
+  }
+});
+
+function loadAccounting() {
+  loadAcctSummary();
+  loadTxnCategories();
+}
+
+// ---- trade ideas ----
+function fmtNum(n) {
+  return n == null ? '—' : Number(n).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function renderIdea(idea) {
+  const el = document.createElement('div');
+  if (idea.recommendation === 'stand aside') {
+    el.className = 'idea aside';
+    el.innerHTML = `
+      <div class="i-head"><span class="i-sym">${idea.symbol} · ${fmtNum(idea.price)}</span>
+        <span class="i-bias neutral">stand aside</span></div>
+      <div class="i-line">${escapeHtml(idea.note || '')}</div>
+      <div class="i-reasons">${(idea.rationale || []).map(escapeHtml).join(' · ')}</div>
+      <div class="i-disc">${escapeHtml(idea.disclaimer)}</div>`;
+    return el;
+  }
+  const dir = idea.recommendation; // bullish | bearish
+  el.className = 'idea ' + dir;
+  const o = idea.option;
+  const sp = idea.spread;
+  const plan = idea.underlyingPlan || {};
+  let contractHtml = '';
+  if (o) {
+    contractHtml += `<div class="i-contract">${o.type.toUpperCase()} ${idea.symbol} ${fmtNum(o.strike)} exp ${o.expiry} (${o.dte}d)
+      · ~$${fmtNum(o.premium)} · BE ${fmtNum(o.breakeven)} (${o.moveToBreakevenPct >= 0 ? '+' : ''}${fmtNum(o.moveToBreakevenPct)}%)
+      · max loss $${fmtNum(o.maxLossPerContract)}${o.iv != null ? ` · IV ${fmtNum(o.iv)}%` : ''}</div>`;
+  } else if (idea.optionError) {
+    contractHtml += `<div class="i-reasons">${escapeHtml(idea.optionError)}</div>`;
+  }
+  if (sp) {
+    contractHtml += `<div class="i-contract">${sp.type.toUpperCase()} ${fmtNum(sp.longStrike)}/${fmtNum(sp.shortStrike)}
+      · debit $${fmtNum(sp.netDebit)} · max profit $${fmtNum(sp.maxProfit)} · max loss $${fmtNum(sp.maxLoss)} · R:R ${fmtNum(sp.riskReward)}</div>`;
+  }
+  if (idea.futures) {
+    contractHtml += `<div class="i-contract">FUTURES ${idea.futures.direction.toUpperCase()} ${idea.futures.contract} (micro ${idea.futures.microContract}) — ${escapeHtml(idea.futures.underlying)}</div>`;
+  }
+  el.innerHTML = `
+    <div class="i-head"><span class="i-sym">${idea.symbol} · ${fmtNum(idea.price)}</span>
+      <span class="i-bias ${dir}">${dir} · ${idea.setupScore}</span></div>
+    <div class="i-score"><span style="width:${idea.setupScore}%"></span></div>
+    <div class="i-line"><span class="i-label">UNDERLYING</span> entry ${fmtNum(plan.entry)} · stop ${fmtNum(plan.stop)} · target ${fmtNum(plan.target)}</div>
+    ${contractHtml}
+    <div class="i-reasons">${(idea.rationale || []).map(escapeHtml).join(' · ')}</div>
+    <div class="i-disc">${escapeHtml(idea.disclaimer)}</div>`;
+  return el;
+}
+
+async function getIdea(symbol) {
+  els.ideas.innerHTML = '<p class="muted">Analyzing…</p>';
+  try {
+    const idea = await aria.strategy.idea(symbol);
+    els.ideas.innerHTML = '';
+    els.ideas.appendChild(renderIdea(idea));
+  } catch (err) {
+    els.ideas.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+els.ideaForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const s = els.ideaSymbol.value.trim();
+  if (!s) return;
+  getIdea(s);
+});
+
+els.scanIdeas.addEventListener('click', async () => {
+  els.ideas.innerHTML = '<p class="muted">Scanning watchlist…</p>';
+  try {
+    const res = await aria.strategy.scan();
+    els.ideas.innerHTML = '';
+    if (!res.ideas.length) {
+      els.ideas.innerHTML = '<p class="muted">No clean setups on the watchlist right now.</p>';
+    } else {
+      res.ideas.forEach((i) => {
+        const row = document.createElement('div');
+        row.className = 'idea-rank';
+        row.innerHTML = `<span class="r-sym">${i.symbol} · ${i.bias}</span>
+          <span class="r-meta">score ${i.setupScore} · ${escapeHtml((i.top || [])[0] || '')}</span>`;
+        row.addEventListener('click', () => { els.ideaSymbol.value = i.symbol; getIdea(i.symbol); });
+        els.ideas.appendChild(row);
+      });
+    }
+    const note = document.createElement('p');
+    note.className = 'i-disc';
+    note.textContent = res.note;
+    els.ideas.appendChild(note);
+  } catch (err) {
+    els.ideas.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+});
+
+// ---- study ----
+let dueQueue = [];
+
+els.studyTabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('.t-tab');
+  if (!btn) return;
+  els.studyTabs.querySelectorAll('.t-tab').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  const tab = btn.dataset.tab;
+  els.paneReview.classList.toggle('hidden', tab !== 'review');
+  els.paneVocab.classList.toggle('hidden', tab !== 'vocab');
+  els.paneCpa.classList.toggle('hidden', tab !== 'cpa');
+  if (tab === 'review') loadReview();
+  if (tab === 'cpa') loadCpa();
+});
+
+async function loadStudyStats() {
+  try {
+    const s = await aria.study.stats();
+    els.studyStats.textContent =
+      `${s.cards.due} card(s) due · ${s.cards.total} total · ${s.streakDays}-day streak`;
+  } catch {}
+}
+
+function renderCard() {
+  if (!dueQueue.length) {
+    els.flashcard.innerHTML = '<p class="muted" style="text-align:center;margin:auto">No cards due. 🎉 Add vocab or ask the assistant to teach you something.</p>';
+    return;
+  }
+  const c = dueQueue[0];
+  els.flashcard.innerHTML = `
+    <div class="fc-sub">${escapeHtml(c.subject)}</div>
+    <div class="fc-front">${escapeHtml(c.front)}</div>
+    <div class="fc-actions"><button class="fc-reveal">Show answer</button></div>`;
+  els.flashcard.querySelector('.fc-reveal').addEventListener('click', () => revealCard(c));
+}
+
+function revealCard(c) {
+  els.flashcard.innerHTML = `
+    <div class="fc-sub">${escapeHtml(c.subject)}</div>
+    <div class="fc-front">${escapeHtml(c.front)}</div>
+    <div class="fc-back">${escapeHtml(c.back)}</div>
+    <div class="fc-actions">
+      <button class="fc-grade again" data-g="1">Again</button>
+      <button class="fc-grade" data-g="3">Hard</button>
+      <button class="fc-grade good" data-g="4">Good</button>
+      <button class="fc-grade easy" data-g="5">Easy</button>
+    </div>`;
+  els.flashcard.querySelectorAll('.fc-grade').forEach((b) =>
+    b.addEventListener('click', async () => {
+      try { await aria.study.review(c.id, Number(b.dataset.g)); } catch {}
+      dueQueue.shift();
+      renderCard();
+      loadStudyStats();
+    })
+  );
+}
+
+async function loadReview() {
+  try {
+    dueQueue = await aria.study.due({ limit: 50 });
+    renderCard();
+  } catch (err) {
+    els.flashcard.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+els.vocabForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const word = els.vocabWord.value.trim();
+  const translation = els.vocabTr.value.trim();
+  if (!word || !translation) return;
+  try {
+    await aria.study.addVocab({ word, translation, example: els.vocabEx.value.trim() });
+    els.vocabWord.value = '';
+    els.vocabTr.value = '';
+    els.vocabEx.value = '';
+    loadStudyStats();
+    appendMsg('tool', `✓ Added Russian card: ${word}`);
+  } catch (err) {
+    appendMsg('tool', `✗ ${err.message}`);
+  }
+});
+
+async function loadCpa() {
+  try {
+    const s = await aria.study.cpa();
+    els.cpaList.innerHTML = '';
+    s.sections.forEach((sec) => {
+      const row = document.createElement('div');
+      row.className = 'cpa-row';
+      row.innerHTML = `
+        <span class="cpa-sec">${sec.section}</span>
+        <div class="cpa-bar"><span style="width:${sec.progress}%"></span></div>
+        <input class="cpa-input" type="text" inputmode="numeric" value="${sec.progress}" title="progress %" />
+        <span class="cpa-pct">%</span>`;
+      const input = row.querySelector('.cpa-input');
+      input.addEventListener('change', async () => {
+        const v = Number(input.value);
+        if (Number.isFinite(v)) {
+          await aria.study.setCpa({ section: sec.section, progress: v });
+          loadCpa();
+        }
+      });
+      els.cpaList.appendChild(row);
+    });
+    const overall = document.createElement('div');
+    overall.className = 'study-stats muted';
+    overall.textContent = `Overall ${s.overallProgress}% · Becker (progress tracked here; study in Becker)`;
+    els.cpaList.appendChild(overall);
+  } catch (err) {
+    els.cpaList.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+function loadStudy() {
+  loadStudyStats();
+  loadReview();
 }
 
 // ---- voice ----
@@ -797,16 +1245,17 @@ async function boot() {
   try {
     cfg = await aria.config();
   } catch {}
-  if (cfg.hasBrain) {
+  const b = cfg.brain || { engine: '?', model: cfg.model, ready: cfg.hasBrain };
+  if (b.ready) {
     els.brainDot.classList.add('on');
-    els.brainLabel.textContent = `brain online · ${cfg.model}`;
+    els.brainLabel.textContent = `brain online · ${b.local ? 'local' : 'claude'} · ${b.model}`;
   } else {
     els.brainDot.classList.add('off');
-    els.brainLabel.textContent = 'brain offline · add API key';
+    els.brainLabel.textContent = `brain offline · ${b.local ? 'start Ollama' : 'add API key'}`;
     appendMsg(
       'assistant',
-      'Hi — I\'m ARIA. The AI brain is offline (no API key), but the Stocks panels work now: ' +
-        'try adding a ticker or searching a company. Add ANTHROPIC_API_KEY to .env to unlock chat and voice.'
+      `Hi — I'm ARIA. The brain is offline: ${b.reason || 'not configured'} ` +
+        'The data panels (stocks, chart, alerts, tasks, trading) all still work.'
     );
   }
   initVoice();
@@ -816,8 +1265,12 @@ async function boot() {
   loadTasks();
   loadAlerts();
   loadGoogleStatus();
+  loadImessageStatus();
+  loadTelegramStatus();
   loadBrokerStatus();
   loadAgenda();
+  loadAccounting();
+  loadStudy();
 
   // Chart the first watchlist symbol on load.
   try {

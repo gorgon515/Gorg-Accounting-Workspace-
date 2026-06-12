@@ -5,11 +5,42 @@ const path = require('path');
 const store = require('./store');
 const ipc = require('./ipc');
 const skills = require('./services/skills');
+const brain = require('./brain');
+const config = require('./config');
+const imessage = require('./services/imessage');
+const telegram = require('./services/telegram');
 
 let stopAlertChecker = null;
+let stopImessage = null;
+let stopTelegram = null;
+const imHistories = new Map(); // per-handle conversation history
+const tgHistories = new Map(); // per-chat conversation history
 
 let mainWindow = null;
 let tray = null;
+
+app.setName('ARIA');
+
+function buildAppMenu() {
+  const isMac = process.platform === 'darwin';
+  const template = [
+    ...(isMac ? [{ role: 'appMenu' }] : []),
+    { label: 'File', submenu: [isMac ? { role: 'close' } : { role: 'quit' }] },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' },
+    {
+      role: 'help',
+      submenu: [
+        {
+          label: 'ARIA on GitHub',
+          click: () => shell.openExternal('https://github.com/gorgon515/Gorg-Accounting-Workspace-'),
+        },
+      ],
+    },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -19,6 +50,7 @@ function createWindow() {
     minHeight: 640,
     backgroundColor: '#0E0E10',
     title: 'ARIA',
+    icon: path.join(__dirname, '..', '..', 'build', 'icon.png'),
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -59,11 +91,20 @@ function createWindow() {
   });
 }
 
-function createTray() {
-  // 1x1 transparent placeholder so the app runs before a real icon is added.
-  const icon = nativeImage.createFromDataURL(
+function trayIcon() {
+  // Use the generated app icon, downscaled for the tray. Falls back to a 1x1
+  // transparent pixel if the file isn't present.
+  try {
+    const img = nativeImage.createFromPath(path.join(__dirname, '..', '..', 'build', 'icon.png'));
+    if (!img.isEmpty()) return img.resize({ width: 18, height: 18 });
+  } catch { /* fall through */ }
+  return nativeImage.createFromDataURL(
     'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
   );
+}
+
+function createTray() {
+  const icon = trayIcon();
   try {
     tray = new Tray(icon);
     tray.setToolTip('ARIA — desktop assistant');
@@ -93,27 +134,79 @@ function startAlertChecker() {
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('alert:triggered', a);
       }
+      // Also text the alert to the user's phone via iMessage, if enabled.
+      if (config.imessageEnabled && config.imessageAlerts) {
+        for (const handle of config.imessageAllow) {
+          imessage.send(handle, `ARIA alert: ${body}`).catch(() => {});
+        }
+      }
+      // And via Telegram (works on Windows/anywhere).
+      if (config.telegramToken && config.telegramAlerts) {
+        telegram.broadcast(`ARIA alert: ${body}`).catch(() => {});
+      }
     },
   });
 }
 
-app.whenReady().then(() => {
-  store.init();
-  // Allow microphone access for voice capture (getUserMedia).
-  session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => {
-    cb(permission === 'media' || permission === 'audioCapture');
+function startTelegramBridge() {
+  if (!config.telegramToken) return;
+  stopTelegram = telegram.start(async (chatId, text) => {
+    const history = tgHistories.get(chatId) || [];
+    const res = await brain.ask(text, history);
+    tgHistories.set(chatId, res.history || history);
+    return res.ok ? res.text : (res.text || 'Sorry — I hit an error.');
   });
-  ipc.register();
-  createWindow();
-  createTray();
-  startAlertChecker();
+  console.log('[telegram] bridge polling.');
+}
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+function startImessageBridge() {
+  const info = imessage.available();
+  if (!info.enabled) {
+    if (info.supported) console.log('[imessage]', info.reason);
+    return;
+  }
+  stopImessage = imessage.start(async (handle, text) => {
+    const history = imHistories.get(handle) || [];
+    const res = await brain.ask(text, history);
+    imHistories.set(handle, res.history || history);
+    return res.ok ? res.text : (res.text || 'Sorry — I hit an error.');
   });
-});
+  console.log(`[imessage] bridge active for ${config.imessageAllow.length} handle(s).`);
+}
 
-app.on('window-all-closed', () => {
-  // Keep running in the tray on macOS; quit elsewhere.
-  if (process.platform !== 'darwin') app.quit();
-});
+// Single-instance: focus the existing window instead of launching a second app.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  app.whenReady().then(() => {
+    store.init();
+    // Allow microphone access for voice capture (getUserMedia).
+    session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => {
+      cb(permission === 'media' || permission === 'audioCapture');
+    });
+    buildAppMenu();
+    ipc.register();
+    createWindow();
+    createTray();
+    startAlertChecker();
+    startImessageBridge();
+    startTelegramBridge();
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
+  });
+
+  app.on('window-all-closed', () => {
+    // Keep running in the tray on macOS; quit elsewhere.
+    if (process.platform !== 'darwin') app.quit();
+  });
+}

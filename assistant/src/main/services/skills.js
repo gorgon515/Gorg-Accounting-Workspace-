@@ -10,8 +10,13 @@ const trading = require('./trading');
 const productivity = require('./productivity');
 const alerts = require('./alerts');
 const google = require('./google');
+const analysis = require('./analysis');
+const accounting = require('./accounting');
+const study = require('./study');
+const strategy = require('./strategy');
+const memory = require('./memory');
 
-const skills = [stocks, trading, productivity, alerts, google];
+const skills = [stocks, trading, productivity, alerts, google, analysis, accounting, study, strategy, memory];
 
 function allTools() {
   return skills.flatMap((s) => s.tools || []);
@@ -38,6 +43,7 @@ function systemPrompt() {
     'Capabilities:',
     fragments,
     config.persona ? '\nOperator persona/instructions:\n' + config.persona : '',
+    memory.api.promptBlock(),
   ].join('\n');
 }
 
