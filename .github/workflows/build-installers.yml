@@ -1,13 +1,16 @@
 name: Build ARIA installers
 
 # Builds downloadable installers for Windows (.exe), macOS (.dmg/.zip), and
-# Linux (.AppImage/.deb) on their native runners.
+# Linux (.AppImage/.deb) on their native runners and attaches them to a GitHub
+# Release. Each platform job uploads its own installers straight to the Release
+# (no Actions-artifact round-trip — that storage is quota-limited on private
+# repos; Release assets are not).
 #
-# Run it two ways — both end in a GitHub Release with the installers attached
-# (manual runs release under v<package.json version>; they also appear as
-# downloadable artifacts on the run page):
+# Run it two ways — both publish to a Release:
 #   • Manually: Actions tab → "Build ARIA installers" → Run workflow
+#     → releases under v<package.json version>.
 #   • Tag a release: git tag v0.1.0 && git push origin v0.1.0
+#     → releases under that tag.
 
 on:
   workflow_dispatch:
@@ -22,6 +25,8 @@ jobs:
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write          # required to upload assets to the Release
     strategy:
       fail-fast: false
       matrix:
@@ -63,32 +68,12 @@ jobs:
             npx electron-builder --publish never
           fi
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v5
-        with:
-          name: aria-${{ runner.os }}
-          path: |
-            assistant/dist/*.exe
-            assistant/dist/*.dmg
-            assistant/dist/*.zip
-            assistant/dist/*.AppImage
-            assistant/dist/*.deb
-          if-no-files-found: error
-
-  release:
-    name: Attach to GitHub Release
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v5
-
-      # Tag-triggered runs release under that tag; manual runs release under
-      # v<package.json version> (created at this commit if it doesn't exist,
-      # assets refreshed if it does) — so no run ever skips the release.
+      # Tag-triggered runs release under that tag; manual runs derive
+      # v<package.json version>. The release already existing is fine — assets
+      # are upserted, so no creation race between the three platform jobs.
       - name: Work out the release tag
         id: tag
+        shell: bash
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
@@ -96,15 +81,17 @@ jobs:
             echo "tag=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/download-artifact@v6
-        with:
-          path: artifacts
-          merge-multiple: true
-
-      - name: Create release with installers
+      # Upload this platform's installers directly to the Release. Globs that
+      # match nothing on a given OS are ignored (fail_on_unmatched_files=false).
+      - name: Publish installers to the Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          files: artifacts/**
-          generate_release_notes: true
+          fail_on_unmatched_files: false
+          files: |
+            assistant/dist/*.exe
+            assistant/dist/*.dmg
+            assistant/dist/*.zip
+            assistant/dist/*.AppImage
+            assistant/dist/*.deb
