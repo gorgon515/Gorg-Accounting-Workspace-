@@ -49,8 +49,19 @@ jobs:
         env:
           MODELS_DIR: models
 
+      # On macOS, build the two arches in separate, sequential invocations.
+      # A single run builds the arm64 and x64 DMGs concurrently and they race
+      # on electron-builder's shared cache lock ("Lock file is already being
+      # held"); serializing the arches avoids that contention deterministically.
       - name: Build installers
-        run: npx electron-builder --publish never
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            npx electron-builder --mac --arm64 --publish never
+            npx electron-builder --mac --x64 --publish never
+          else
+            npx electron-builder --publish never
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v5
