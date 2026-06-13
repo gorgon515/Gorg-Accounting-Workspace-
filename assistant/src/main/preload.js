@@ -24,6 +24,12 @@ contextBridge.exposeInMainWorld('aria', {
     watchlistQuotes: () => ipcRenderer.invoke('stocks:watchlist:quotes'),
     addToWatchlist: (symbol) => ipcRenderer.invoke('stocks:watchlist:add', symbol),
     removeFromWatchlist: (symbol) => ipcRenderer.invoke('stocks:watchlist:remove', symbol),
+    fundamentals: (symbol) => ipcRenderer.invoke('stocks:fundamentals', symbol),
+    profile: (symbol) => ipcRenderer.invoke('stocks:profile', symbol),
+  },
+  analysis: {
+    analyze: (symbol, range) => ipcRenderer.invoke('analysis:analyze', { symbol, range }),
+    scan: () => ipcRenderer.invoke('analysis:scan'),
   },
   trading: {
     portfolio: () => ipcRenderer.invoke('trading:portfolio'),
@@ -85,6 +91,11 @@ contextBridge.exposeInMainWorld('aria', {
     log: (s) => ipcRenderer.invoke('study:log', s),
     cpa: () => ipcRenderer.invoke('study:cpa'),
     setCpa: (p) => ipcRenderer.invoke('study:cpa:set', p),
+    ruThemes: () => ipcRenderer.invoke('study:ru:themes'),
+    ruVocab: (p) => ipcRenderer.invoke('study:ru:vocab', p),
+    ruLessons: (p) => ipcRenderer.invoke('study:ru:lessons', p),
+    ruLesson: (p) => ipcRenderer.invoke('study:ru:lesson', p),
+    ruSeed: (p) => ipcRenderer.invoke('study:ru:seed', p),
   },
   strategy: {
     idea: (symbol) => ipcRenderer.invoke('strategy:idea', symbol),

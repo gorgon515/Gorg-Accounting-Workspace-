@@ -22,6 +22,7 @@ function register() {
   const accounting = skills.getSkill('accounting').api;
   const study = skills.getSkill('study').api;
   const strategy = skills.getSkill('strategy').api;
+  const analysis = skills.getSkill('analysis').api;
 
   ipcMain.handle('aria:config', async () => {
     const b = await brain.status();
@@ -52,6 +53,12 @@ function register() {
   ipcMain.handle('stocks:watchlist:quotes', () => stocks.getQuotes(stocks.getWatchlist()));
   ipcMain.handle('stocks:watchlist:add', (_e, symbol) => stocks.addToWatchlist(symbol));
   ipcMain.handle('stocks:watchlist:remove', (_e, symbol) => stocks.removeFromWatchlist(symbol));
+  ipcMain.handle('stocks:fundamentals', (_e, symbol) => stocks.getFundamentals(symbol));
+  ipcMain.handle('stocks:profile', (_e, symbol) => stocks.getProfile(symbol));
+
+  // Technical analysis (computed locally from price history)
+  ipcMain.handle('analysis:analyze', (_e, { symbol, range }) => analysis.analyze(symbol, range));
+  ipcMain.handle('analysis:scan', () => analysis.scanWatchlist());
 
   // Trading (paper). propose stages an order; only approve fills it.
   ipcMain.handle('trading:portfolio', () => trading.getPortfolio());
@@ -111,6 +118,13 @@ function register() {
   ipcMain.handle('study:log', (_e, s) => study.logStudy(s));
   ipcMain.handle('study:cpa', () => study.cpaStatus());
   ipcMain.handle('study:cpa:set', (_e, p) => study.setCpaProgress(p));
+
+  // Russian curriculum (vocab themes, lessons, spaced-repetition seeding)
+  ipcMain.handle('study:ru:themes', () => study.russianThemes());
+  ipcMain.handle('study:ru:vocab', (_e, p) => study.russianVocab(p || {}));
+  ipcMain.handle('study:ru:lessons', (_e, p) => study.russianLessons(p || {}));
+  ipcMain.handle('study:ru:lesson', (_e, p) => study.russianLesson(p || {}));
+  ipcMain.handle('study:ru:seed', (_e, p) => study.seedRussianVocab(p || {}));
 
   // Trade ideas
   ipcMain.handle('strategy:idea', (_e, symbol) => strategy.tradeIdea(symbol));
