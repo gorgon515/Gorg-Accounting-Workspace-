@@ -5,11 +5,13 @@
 //   • Flashcards — spaced repetition (SM-2), incl. language vocab
 //   • Study log  — minutes/topic per session, with stats + streak
 //   • CPA tracker— Becker exam-prep progress per section (manual; no Becker API)
+//   • Russian    — built-in curriculum: themed vocab corpus + grammar lessons
 //
 // "Synopsis" is the brain's job: it reads saved notes via list_notes and writes
 // a summary. Russian tutoring is the brain conversing + saving vocab as cards.
 
 const store = require('../store');
+const russianData = require('./russian-data');
 
 const ledgerKeys = { notes: 'studyNotes', cards: 'flashcards', log: 'studyLog', cpa: 'cpaProgress' };
 const get = (k, d) => store.get(ledgerKeys[k], d);
@@ -190,6 +192,67 @@ function cpaStatus() {
   return { provider: s.provider, sections, overallProgress: overall, link: 'https://www.becker.com/cpa-review' };
 }
 
+// ---------- Russian curriculum ----------
+
+/** List all themes present in the corpus with entry counts. */
+function russianThemes() {
+  return russianData.vocabThemes();
+}
+
+/** Return vocab entries, optionally filtered by theme and/or capped at limit. */
+function russianVocab({ theme, limit } = {}) {
+  return russianData.filterVocab({ theme, limit });
+}
+
+/** Return grammar lessons, optionally filtered by level ('beginner'|'intermediate'). */
+function russianLessons({ level } = {}) {
+  return russianData.filterGrammar({ level });
+}
+
+/** Return a single grammar lesson by its id string. Throws if not found. */
+function russianLesson({ id }) {
+  if (!id) throw new Error('id is required');
+  return russianData.findLesson({ id });
+}
+
+/**
+ * Bulk-load corpus vocab into the SM-2 flashcard system as Russian cards.
+ * Idempotent: skips words already present as russian cards (matched by front/ru).
+ * Optionally scoped to one theme. Returns { added, skipped, total }.
+ */
+function seedRussianVocab({ theme } = {}) {
+  const seededKey = 'russianSeeded';
+  const alreadySeeded = store.get(seededKey, {});
+
+  const entries = russianData.filterVocab({ theme });
+  const existing = get('cards', [])
+    .filter((c) => c.subject === 'russian')
+    .map((c) => c.front);
+  const existingSet = new Set(existing);
+
+  let added = 0;
+  let skipped = 0;
+
+  entries.forEach((entry) => {
+    const front = entry.ru;
+    if (existingSet.has(front)) {
+      skipped += 1;
+      return;
+    }
+    const back = `${entry.translit} — ${entry.en}`;
+    addFlashcard({ front, back, subject: 'russian' });
+    existingSet.add(front);
+    added += 1;
+  });
+
+  // Record which themes have been seeded to speed up future idempotency checks.
+  const themeKey = theme ? String(theme).trim().toLowerCase() : '__all__';
+  alreadySeeded[themeKey] = true;
+  store.set(seededKey, alreadySeeded);
+
+  return { added, skipped, total: added + skipped };
+}
+
 const tools = [
   {
     name: 'add_note',
@@ -281,6 +344,48 @@ const tools = [
       required: ['section'],
     },
   },
+  {
+    name: 'russian_vocab',
+    description: 'Retrieve Russian vocabulary entries from the built-in corpus. Call this when the user asks for Russian vocabulary, wants to study a specific theme (e.g. "greetings", "verbs", "food"), or when you need words to teach from. Pass theme to filter by category; pass limit to cap the result.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        theme: { type: 'string', description: 'Vocab theme, e.g. "greetings", "verbs", "food", "numbers", "travel". Omit for all.' },
+        limit: { type: 'number', description: 'Max number of entries to return.' },
+      },
+    },
+  },
+  {
+    name: 'russian_lessons',
+    description: 'List Russian grammar lessons from the built-in curriculum, optionally filtered by level. Call this when the user asks about Russian grammar, wants a lesson on a topic (cases, verbs, adjectives, etc.), or needs an overview of available grammar content.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        level: { type: 'string', enum: ['beginner', 'intermediate'], description: 'Filter by difficulty. Omit for all.' },
+      },
+    },
+  },
+  {
+    name: 'russian_grammar',
+    description: 'Get the full text of a single Russian grammar lesson by its id. Call this when the user asks to learn or review a specific grammar topic (e.g. "accusative case", "verb aspect", "past tense"). Use russian_lessons first to find the right id if you are unsure.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Lesson id, e.g. "accusative", "aspect", "past_tense", "gender". See russian_lessons for the full list.' },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'seed_russian',
+    description: 'Bulk-add Russian corpus vocabulary into the SM-2 flashcard deck (subject "russian"). Idempotent — will not create duplicates. Call this when the user asks to load, seed, or import Russian vocabulary into their flashcard deck. Optionally scoped to one theme.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        theme: { type: 'string', description: 'Only seed vocab from this theme. Omit to seed everything.' },
+      },
+    },
+  },
 ];
 
 const handlers = {
@@ -294,12 +399,18 @@ const handlers = {
   study_stats: async () => studyStats(),
   cpa_status: async () => cpaStatus(),
   set_cpa_progress: (i) => setCpaProgress(i),
+  russian_vocab: (i) => russianVocab(i),
+  russian_lessons: (i) => russianLessons(i),
+  russian_grammar: (i) => russianLesson(i),
+  seed_russian: (i) => seedRussianVocab(i),
 };
 
 module.exports = {
   name: 'study',
   systemPromptFragment:
     'You are also a study tutor. You actively help the user continue their RUSSIAN language education — teach and quiz vocabulary and grammar, converse in simple Russian when useful, and save new words with add_vocab so they enter spaced-repetition review. ' +
+    'ARIA ships with a complete built-in Russian curriculum: use russian_vocab (themed vocabulary corpus, 300+ entries) and russian_grammar / russian_lessons (17 grammar lessons from the Cyrillic alphabet through verb aspect and case system) to teach real content without waiting for the user to supply material. ' +
+    'When teaching Russian: pull vocab with russian_vocab (filter by theme), explain grammar with russian_grammar (use the lesson id), and use seed_russian to bulk-load cards into spaced repetition when the user wants to drill a topic. ' +
     'You track BECKER CPA exam prep (sections AUD, FAR, REG, BAR, ISC, TCP) via cpa_status/set_cpa_progress — note that Becker has no public API, so progress is tracked manually here; point the user to becker.com to study the actual lessons. ' +
     'When the user shares material or asks for a SYNOPSIS of what they\'re learning, call list_notes (and/or use what they pasted) and write a concise, well-structured summary with the key points, then offer to turn it into flashcards. Use spaced repetition: quiz due_flashcards and grade with review_flashcard.',
   tools,
@@ -309,5 +420,6 @@ module.exports = {
     addFlashcard, addVocab, dueFlashcards, reviewFlashcard, deleteFlashcard, cardCounts,
     logStudy, studyStats,
     cpaStatus, setCpaProgress, cpaSections: CPA_SECTIONS,
+    russianThemes, russianVocab, russianLessons, russianLesson, seedRussianVocab,
   },
 };
