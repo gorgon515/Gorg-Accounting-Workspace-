@@ -753,6 +753,17 @@ input[type="text"]:focus, textarea:focus { border-color: var(--cyan-soft); box-s
 .ru-lesson .rl-ex-tr { font-size: 10px; color: var(--cyan-dim); }
 .ru-lesson .rl-ex-en { font-size: 11px; color: var(--warm-gray); }
 
+/* Voice controls: speak toggle + voice picker + test, under the composer. */
+.voice-bar { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.voice-bar #voice-select {
+  flex: 1; min-width: 0; background: var(--obsidian); color: var(--ivory);
+  border: 1px solid var(--hairline); border-radius: 6px; padding: 6px 8px;
+  font-size: 11px; font-family: var(--mono);
+}
+.voice-bar #voice-select:focus { border-color: var(--cyan, var(--gold)); outline: none; }
+.voice-bar #voice-test { font-size: 11px; padding: 5px 10px; }
+#speak-toggle.live { border-color: var(--cyan, var(--green)); color: var(--cyan, var(--green)); }
+
 /* Keep glow/contrast accessible + cut motion for reduced-motion users. */
 @media (prefers-reduced-motion: reduce) {
   body::after { animation: none; }

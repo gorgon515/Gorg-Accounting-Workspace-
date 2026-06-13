@@ -7,6 +7,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('aria', {
   config: () => ipcRenderer.invoke('aria:config'),
   ask: (text, history) => ipcRenderer.invoke('aria:ask', { text, history }),
+  warmup: () => ipcRenderer.invoke('aria:warmup'),
   stt: {
     available: () => ipcRenderer.invoke('stt:available'),
     info: () => ipcRenderer.invoke('stt:info'),

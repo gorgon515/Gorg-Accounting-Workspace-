@@ -260,4 +260,17 @@ async function ask(userText, history = []) {
   }
 }
 
-module.exports = { ask, status };
+// Preload the local model in the background when the embedded engine is the
+// active one, so the user's first message gets a fast (warm) reply. No-op for
+// the claude/ollama engines. Never throws to the caller.
+async function warmup() {
+  try {
+    const s = await status();
+    if (s.engine === 'embedded' && s.ready) await llm.warmup();
+    return { engine: s.engine, warmed: s.engine === 'embedded' };
+  } catch {
+    return { warmed: false };
+  }
+}
+
+module.exports = { ask, status, warmup };

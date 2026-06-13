@@ -42,6 +42,7 @@ function register() {
 
   // Brain (natural language / voice)
   ipcMain.handle('aria:ask', async (_e, { text, history }) => brain.ask(text, history || []));
+  ipcMain.handle('aria:warmup', () => brain.warmup());
 
   // Direct stock data for panels
   ipcMain.handle('stocks:quote', (_e, symbol) => stocks.getQuote(symbol));

@@ -112,6 +112,9 @@ const els = {
 let chatHistory = [];
 let voice = null;
 let cfg = { hasBrain: false, wakeWord: 'aria' };
+// Speak replies aloud (female voice). Default ON so ARIA has a voice for typed
+// chat too; persisted across sessions.
+let speakReplies = (() => { try { return localStorage.getItem('aria.speak') !== 'off'; } catch { return true; } })();
 
 // ---- helpers ----
 const fmtPrice = (q) =>
@@ -184,7 +187,9 @@ async function sendToBrain(text) {
       tdiv.textContent = `↳ used: ${tools}`;
       els.transcript.insertBefore(tdiv, pending);
     }
-    if (res.ok && voice && voice.isListening && voice.isListening()) voice.speak(res.text);
+    // Speak the reply aloud (female voice) whenever "Speak" is on — not only
+    // in mic mode — so ARIA has a voice for typed chat too.
+    if (res.ok && res.text && speakReplies && voice && voice.speak) voice.speak(res.text);
     // Refresh panels in case the brain changed the watchlist, staged a trade,
     // or added/completed a task.
     loadWatchlist();
@@ -1655,6 +1660,53 @@ function initVoice() {
   els.micBtn.addEventListener('click', () => voice.toggle());
 }
 
+// Speak toggle + voice picker + test. Works even when speech recognition is
+// unavailable (the voice object still exposes TTS/list/set).
+function initVoiceControls() {
+  const toggle = document.getElementById('speak-toggle');
+  const select = document.getElementById('voice-select');
+  const test = document.getElementById('voice-test');
+  if (!voice || !voice.speak) {
+    if (toggle) toggle.style.display = 'none';
+    if (select) select.style.display = 'none';
+    if (test) test.style.display = 'none';
+    return;
+  }
+
+  const reflectToggle = () => {
+    toggle.textContent = speakReplies ? '🔊 Speak: on' : '🔇 Speak: off';
+    toggle.classList.toggle('live', speakReplies);
+  };
+  reflectToggle();
+  toggle.addEventListener('click', () => {
+    speakReplies = !speakReplies;
+    try { localStorage.setItem('aria.speak', speakReplies ? 'on' : 'off'); } catch {}
+    reflectToggle();
+    if (speakReplies) voice.speak("Voice on. I'm ARIA.");
+  });
+
+  const populate = () => {
+    const voices = voice.listVoices();
+    if (!voices.length) { select.innerHTML = '<option value="">(system default)</option>'; return; }
+    const cur = voice.getVoiceURI();
+    select.innerHTML = voices
+      .map((v) => {
+        const tag = v.female ? ' ♀' : v.male ? ' ♂' : '';
+        const sel = v.voiceURI === cur ? ' selected' : '';
+        return `<option value="${escapeHtml(v.voiceURI)}"${sel}>${escapeHtml(v.name)} (${escapeHtml(v.lang)})${tag}</option>`;
+      })
+      .join('');
+  };
+  populate();
+  if (voice.onVoices) voice.onVoices(populate); // repopulate when the OS list loads
+
+  select.addEventListener('change', () => {
+    voice.setVoice(select.value);
+    if (speakReplies) voice.speak('This is how I sound.');
+  });
+  test.addEventListener('click', () => voice.speak("Hello, I'm ARIA, your assistant. How can I help you today?"));
+}
+
 // ---- boot ----
 async function boot() {
   try {
@@ -1676,7 +1728,11 @@ async function boot() {
     );
   }
   initVoice();
+  initVoiceControls();
   initTalk();
+  // Warm the local brain in the background so the first reply isn't a cold
+  // model load — makes the first interaction feel instant.
+  if (aria.warmup) setTimeout(() => { aria.warmup().catch(() => {}); }, 1200);
   loadWatchlist();
   refreshTrading();
   loadTasks();

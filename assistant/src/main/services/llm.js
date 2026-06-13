@@ -152,4 +152,14 @@ function info() {
   };
 }
 
-module.exports = { generate, toolPrompt, parseToolCalls, stripToolMarkup, available, info };
+// Preload the model so the first real request isn't a cold load. Resolves
+// when the pipeline is ready (or rejects if the package/model is missing).
+let warmed = null;
+function warmup() {
+  if (warmed) return warmed;
+  if (!pkgInstalled()) return Promise.reject(new Error('embedded brain package not installed'));
+  warmed = getPipeline().then(() => true).catch((err) => { warmed = null; throw err; });
+  return warmed;
+}
+
+module.exports = { generate, toolPrompt, parseToolCalls, stripToolMarkup, available, info, warmup };
