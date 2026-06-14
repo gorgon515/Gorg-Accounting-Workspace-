@@ -1707,6 +1707,133 @@ function initVoiceControls() {
   test.addEventListener('click', () => voice.speak("Hello, I'm ARIA, your assistant. How can I help you today?"));
 }
 
+// ---- brain switcher (one-click stronger brain) ----
+let brainState = null;
+let brainView = null; // which engine's detail is currently shown
+
+const brainLabelFor = (e) => (e === 'claude' ? 'claude' : e === 'embedded' ? 'built-in' : 'local');
+const shortModel = (m) => String(m || '').split('/').pop();
+
+function brainHeader(b) {
+  if (!b) return;
+  els.brainDot.classList.remove('on', 'off');
+  if (b.ready) {
+    els.brainDot.classList.add('on');
+    els.brainLabel.textContent = `brain online · ${brainLabelFor(b.engine)} · ${shortModel(b.model)}`;
+  } else {
+    els.brainDot.classList.add('off');
+    els.brainLabel.textContent = `brain offline · ${b.reason || 'not configured'}`;
+  }
+}
+
+async function loadBrainPanel() {
+  const panel = document.getElementById('brain-panel');
+  if (!panel || !aria.brain) { if (panel) panel.style.display = 'none'; return; }
+  try { brainState = await aria.brain.settings(); } catch { return; }
+  brainHeader(brainState.status);
+  document.getElementById('brain-now').textContent = brainState.status.ready
+    ? `${brainLabelFor(brainState.status.engine)} · ${shortModel(brainState.status.model)}`
+    : 'offline';
+  document.querySelectorAll('#brain-opts .brain-opt').forEach((b) =>
+    b.classList.toggle('active', b.dataset.engine === brainState.status.engine));
+  if (!brainView) brainView = brainState.status.engine;
+  renderBrainDetail();
+}
+
+function activateMarkup(engine) {
+  const isActive = brainState.status.engine === engine && brainState.status.ready;
+  const label = engine === 'embedded' ? 'Use built-in' : engine === 'local' ? 'Use Ollama' : 'Use Claude';
+  return isActive ? '<p class="brain-active">✓ Currently active</p>'
+    : `<button class="brain-activate" data-engine="${engine}">${label}</button>`;
+}
+
+function renderBrainDetail() {
+  const d = document.getElementById('brain-detail');
+  const s = brainState;
+  const engine = brainView || s.status.engine;
+  if (engine === 'embedded') {
+    d.innerHTML = '<p class="muted">Runs fully on-device — no account, no internet. Fast and private; best for quick commands.</p>' + activateMarkup('embedded');
+  } else if (engine === 'local') {
+    d.innerHTML = s.ollama.ready
+      ? '<p class="muted">Ollama detected — stronger than the built-in model, still fully local and free.</p>' + activateMarkup('local')
+      : `<p class="muted">Ollama isn't running. Install it and pull a model, then click below:</p>
+         <pre class="brain-code">ollama pull qwen2.5:7b</pre>
+         <a class="becker-link" href="https://ollama.com" target="_blank" rel="noopener">Get Ollama ↗</a>
+         <p class="muted">${escapeHtml(s.ollama.reason || '')}</p>` + activateMarkup('local');
+  } else if (engine === 'claude') {
+    if (s.hasKey) {
+      d.innerHTML = `<p class="muted">Claude key saved (${s.keySource}${s.encryptionAvailable ? ', encrypted' : ''}). The strongest brain — best for multi-step reasoning.</p>`
+        + activateMarkup('claude')
+        + '<button class="ghost brain-remove" id="brain-remove-key">Remove key</button>';
+    } else {
+      d.innerHTML = `<p class="muted">Paste an Anthropic API key to use Claude — the smartest brain. Stored ${s.encryptionAvailable ? 'encrypted ' : ''}on-device; only ever sent to Anthropic.</p>
+        <div class="brain-keyrow">
+          <input id="brain-key" type="password" placeholder="sk-ant-…" autocomplete="off" />
+          <button id="brain-key-save">Connect</button>
+        </div>
+        <a class="becker-link" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a key ↗</a>
+        <p class="brain-msg muted" id="brain-key-msg"></p>`;
+    }
+  }
+  wireBrainDetail();
+}
+
+async function switchEngine(engine) {
+  try {
+    brainState = await aria.brain.setEngine(engine);
+    brainView = engine;
+    brainHeader(brainState.status);
+    if (aria.warmup) aria.warmup().catch(() => {});
+    appendMsg('tool', `✓ Brain set to ${brainLabelFor(engine)}`);
+    loadBrainPanel();
+  } catch (err) { appendMsg('tool', `✗ ${err.message}`); }
+}
+
+function wireBrainDetail() {
+  const act = document.querySelector('#brain-detail .brain-activate');
+  if (act) act.addEventListener('click', () => switchEngine(act.dataset.engine));
+
+  const save = document.getElementById('brain-key-save');
+  if (save) {
+    const input = document.getElementById('brain-key');
+    const msg = document.getElementById('brain-key-msg');
+    const submit = async () => {
+      const key = input.value.trim();
+      if (!key) return;
+      save.disabled = true; msg.textContent = 'Checking key…';
+      try {
+        const res = await aria.brain.setKey(key);
+        brainState = res; brainView = 'claude';
+        msg.textContent = res.verified ? 'Connected — Claude is active.' : 'Saved (could not verify online); Claude is active.';
+        brainHeader(res.status);
+        if (aria.warmup) aria.warmup().catch(() => {});
+        appendMsg('tool', '✓ Brain set to claude');
+        setTimeout(loadBrainPanel, 600);
+      } catch (err) { msg.textContent = err.message; save.disabled = false; }
+    };
+    save.addEventListener('click', submit);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  }
+
+  const rm = document.getElementById('brain-remove-key');
+  if (rm) rm.addEventListener('click', async () => {
+    try { brainState = await aria.brain.clearKey(); brainView = 'claude'; brainHeader(brainState.status); loadBrainPanel(); }
+    catch (err) { appendMsg('tool', `✗ ${err.message}`); }
+  });
+}
+
+function initBrainPanel() {
+  const opts = document.getElementById('brain-opts');
+  if (!opts) return;
+  opts.addEventListener('click', (e) => {
+    const btn = e.target.closest('.brain-opt');
+    if (!btn) return;
+    brainView = btn.dataset.engine;
+    if (brainState) renderBrainDetail();
+  });
+  loadBrainPanel();
+}
+
 // ---- boot ----
 async function boot() {
   try {
@@ -1729,6 +1856,7 @@ async function boot() {
   }
   initVoice();
   initVoiceControls();
+  initBrainPanel();
   initTalk();
   // Warm the local brain in the background so the first reply isn't a cold
   // model load — makes the first interaction feel instant.

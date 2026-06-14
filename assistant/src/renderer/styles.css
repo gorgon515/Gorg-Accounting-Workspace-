@@ -764,6 +764,32 @@ input[type="text"]:focus, textarea:focus { border-color: var(--cyan-soft); box-s
 .voice-bar #voice-test { font-size: 11px; padding: 5px 10px; }
 #speak-toggle.live { border-color: var(--cyan, var(--green)); color: var(--cyan, var(--green)); }
 
+/* Brain switcher: pick the engine; Claude needs a key. */
+.brain-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.brain-opt {
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+  padding: 8px 9px; background: var(--obsidian); border: 1px solid var(--hairline);
+  border-radius: 8px; cursor: pointer; text-align: left;
+}
+.brain-opt .bo-name { font-size: 12px; color: var(--ivory); }
+.brain-opt .bo-sub { font-family: var(--mono); font-size: 8.5px; color: var(--warm-gray); letter-spacing: .02em; }
+.brain-opt:hover { border-color: var(--cyan, var(--gold)); }
+.brain-opt.active { border-color: var(--cyan, var(--green)); box-shadow: 0 0 10px -2px var(--cyan, var(--green)); }
+.brain-opt.active .bo-name { color: var(--cyan, var(--green)); }
+.brain-detail { display: flex; flex-direction: column; gap: 8px; }
+.brain-detail .muted { font-size: 11px; line-height: 1.5; }
+.brain-code {
+  font-family: var(--mono); font-size: 11px; background: var(--obsidian);
+  border: 1px solid var(--hairline); border-radius: 6px; padding: 7px 9px; margin: 0;
+  color: var(--cyan, var(--gold)); user-select: all; white-space: pre-wrap;
+}
+.brain-keyrow { display: flex; gap: 6px; }
+.brain-keyrow input { flex: 1; min-width: 0; }
+.brain-activate { align-self: flex-start; border-color: var(--cyan, var(--green)); color: var(--cyan, var(--green)); }
+.brain-active { font-family: var(--mono); font-size: 11px; color: var(--cyan, var(--green)); margin: 0; }
+.brain-remove { align-self: flex-start; font-size: 11px; }
+.brain-msg { min-height: 13px; }
+
 /* Keep glow/contrast accessible + cut motion for reduced-motion users. */
 @media (prefers-reduced-motion: reduce) {
   body::after { animation: none; }

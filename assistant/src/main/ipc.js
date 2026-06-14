@@ -44,6 +44,13 @@ function register() {
   ipcMain.handle('aria:ask', async (_e, { text, history }) => brain.ask(text, history || []));
   ipcMain.handle('aria:warmup', () => brain.warmup());
 
+  // Brain engine switcher ("stronger brain"). The API key never returns to the
+  // renderer; only presence/source is reported.
+  ipcMain.handle('brain:settings', () => brain.getSettings());
+  ipcMain.handle('brain:setEngine', (_e, engine) => brain.setEngine(engine));
+  ipcMain.handle('brain:setKey', (_e, key) => brain.setKey(key));
+  ipcMain.handle('brain:clearKey', () => brain.clearKey());
+
   // Direct stock data for panels
   ipcMain.handle('stocks:quote', (_e, symbol) => stocks.getQuote(symbol));
   ipcMain.handle('stocks:quotes', (_e, symbols) => stocks.getQuotes(symbols));

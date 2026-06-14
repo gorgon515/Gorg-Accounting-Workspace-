@@ -53,6 +53,26 @@
     </section>
 
     <aside class="sidebar">
+    <!-- Brain: one-click stronger-brain switcher -->
+    <section class="panel" id="brain-panel">
+      <div class="panel-head">
+        <h2>Brain</h2>
+        <span class="muted" id="brain-now">—</span>
+      </div>
+      <div class="brain-opts" id="brain-opts">
+        <button class="brain-opt" data-engine="embedded">
+          <span class="bo-name">Built-in</span><span class="bo-sub">fast · offline · no setup</span>
+        </button>
+        <button class="brain-opt" data-engine="local">
+          <span class="bo-name">Ollama</span><span class="bo-sub">local · stronger · free</span>
+        </button>
+        <button class="brain-opt" data-engine="claude">
+          <span class="bo-name">Claude</span><span class="bo-sub">smartest · API key</span>
+        </button>
+      </div>
+      <div class="brain-detail" id="brain-detail"></div>
+    </section>
+
     <!-- Chart -->
     <section class="panel">
       <div class="panel-head">

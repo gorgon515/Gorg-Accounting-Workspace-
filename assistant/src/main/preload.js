@@ -8,6 +8,12 @@ contextBridge.exposeInMainWorld('aria', {
   config: () => ipcRenderer.invoke('aria:config'),
   ask: (text, history) => ipcRenderer.invoke('aria:ask', { text, history }),
   warmup: () => ipcRenderer.invoke('aria:warmup'),
+  brain: {
+    settings: () => ipcRenderer.invoke('brain:settings'),
+    setEngine: (engine) => ipcRenderer.invoke('brain:setEngine', engine),
+    setKey: (key) => ipcRenderer.invoke('brain:setKey', key),
+    clearKey: () => ipcRenderer.invoke('brain:clearKey'),
+  },
   stt: {
     available: () => ipcRenderer.invoke('stt:available'),
     info: () => ipcRenderer.invoke('stt:info'),

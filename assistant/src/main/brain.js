@@ -21,25 +21,40 @@ const Anthropic = require('@anthropic-ai/sdk');
 const config = require('./config');
 const skills = require('./services/skills');
 const llm = require('./services/llm');
+const store = require('./store');
 
 const MAX_TURNS = 6;
 
+// Live brain preferences: persisted choices (set in-app) override .env defaults
+// so the user can switch engines/keys at runtime without editing files. The
+// Anthropic key is read from the encrypted secret store, falling back to env.
+function prefs() {
+  const s = store.get('brainPrefs', {}) || {};
+  return {
+    engine: String(s.engine || config.brainEngine || 'auto').toLowerCase(),
+    anthropicApiKey: store.getSecret('anthropicKey') || config.anthropicApiKey || '',
+    model: s.claudeModel || config.model,
+  };
+}
+
 // ---------- Claude engine ----------
 let client = null;
-function getClient() {
-  if (!config.anthropicApiKey) return null;
-  if (!client) client = new Anthropic({ apiKey: config.anthropicApiKey });
+let clientKey = null;
+function getClient(apiKey) {
+  if (!apiKey) return null;
+  if (!client || clientKey !== apiKey) { client = new Anthropic({ apiKey }); clientKey = apiKey; }
   return client;
 }
 
 async function askClaude(userText, history, toolEvents) {
-  const anthropic = getClient();
+  const p = prefs();
+  const anthropic = getClient(p.anthropicApiKey);
   const messages = [...history, { role: 'user', content: userText }];
   const tools = skills.allTools();
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     const res = await anthropic.messages.create({
-      model: config.model,
+      model: p.model,
       max_tokens: 4000,
       thinking: { type: 'adaptive' },
       system: skills.systemPrompt(),
@@ -220,11 +235,12 @@ function embeddedStatus() {
 }
 
 async function status() {
-  const engine = config.brainEngine;
-  if (engine === 'claude' || (engine === 'auto' && config.anthropicApiKey)) {
-    return config.anthropicApiKey
-      ? { engine: 'claude', model: config.model, ready: true, local: false }
-      : { engine: 'claude', model: config.model, ready: false, local: false, reason: 'ANTHROPIC_API_KEY not set' };
+  const p = prefs();
+  const engine = p.engine;
+  if (engine === 'claude' || (engine === 'auto' && p.anthropicApiKey)) {
+    return p.anthropicApiKey
+      ? { engine: 'claude', model: p.model, ready: true, local: false }
+      : { engine: 'claude', model: p.model, ready: false, local: false, reason: 'No Anthropic API key — add one to use Claude.' };
   }
   if (engine === 'embedded') return embeddedStatus();
   const r = await localReady();
@@ -233,6 +249,71 @@ async function status() {
   }
   // auto: Ollama isn't available — fall back to the zero-setup embedded brain.
   return embeddedStatus();
+}
+
+// ---------- in-app brain settings (the "stronger brain" switcher) ----------
+const VALID_ENGINES = ['auto', 'embedded', 'local', 'claude'];
+
+// Snapshot for the UI: which engine is chosen, whether a key is present, how
+// each option's availability looks, and the resolved live status. The key
+// itself is never returned to the renderer.
+async function getSettings() {
+  const s = store.get('brainPrefs', {}) || {};
+  const storedKey = store.getSecret('anthropicKey');
+  const live = await status();
+  const ollama = await localReady();
+  return {
+    engine: String(s.engine || config.brainEngine || 'auto').toLowerCase(),
+    status: live,
+    hasKey: Boolean(storedKey || config.anthropicApiKey),
+    keySource: storedKey ? 'stored' : (config.anthropicApiKey ? 'env' : null),
+    encryptionAvailable: store.encryptionAvailable(),
+    claudeModel: prefs().model,
+    ollama: { ready: ollama.ready, reason: ollama.reason },
+    embeddedAvailable: llm.available(),
+  };
+}
+
+function setEngine(engine) {
+  engine = String(engine || '').toLowerCase();
+  if (!VALID_ENGINES.includes(engine)) throw new Error(`engine must be one of ${VALID_ENGINES.join(', ')}`);
+  const s = store.get('brainPrefs', {}) || {};
+  s.engine = engine;
+  store.set('brainPrefs', s);
+  return getSettings();
+}
+
+// Validate the key with a 1-token call, then persist (encrypted) and switch to
+// Claude. A clear auth failure is rejected; a network/other error still saves
+// the key (marked unverified) so offline setup isn't blocked.
+async function setKey(apiKey) {
+  apiKey = String(apiKey || '').trim();
+  if (!apiKey) throw new Error('API key is required.');
+  let verified = false;
+  try {
+    const test = new Anthropic({ apiKey });
+    await test.messages.create({ model: config.model, max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] });
+    verified = true;
+  } catch (e) {
+    const code = e && (e.status || e.statusCode);
+    if (code === 401 || code === 403) throw new Error('That API key was rejected by Anthropic. Check it and try again.');
+    // else: network/other — accept but unverified.
+  }
+  store.setSecret('anthropicKey', apiKey);
+  const s = store.get('brainPrefs', {}) || {};
+  s.engine = 'claude';
+  store.set('brainPrefs', s);
+  client = null; clientKey = null; // force rebuild with the new key
+  return { ...(await getSettings()), verified };
+}
+
+function clearKey() {
+  store.setSecret('anthropicKey', null);
+  const s = store.get('brainPrefs', {}) || {};
+  if (s.engine === 'claude') s.engine = 'auto'; // don't strand on a keyless Claude
+  store.set('brainPrefs', s);
+  client = null; clientKey = null;
+  return getSettings();
 }
 
 async function ask(userText, history = []) {
@@ -273,4 +354,4 @@ async function warmup() {
   }
 }
 
-module.exports = { ask, status, warmup };
+module.exports = { ask, status, warmup, getSettings, setEngine, setKey, clearKey };
