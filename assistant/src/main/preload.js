@@ -7,6 +7,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('aria', {
   config: () => ipcRenderer.invoke('aria:config'),
   ask: (text, history) => ipcRenderer.invoke('aria:ask', { text, history }),
+  // Streaming brain events (delta / tool_result / done / error). Register once.
+  onBrainEvent: (cb) => ipcRenderer.on('brain:event', (_e, evt) => cb(evt)),
   stt: {
     available: () => ipcRenderer.invoke('stt:available'),
     info: () => ipcRenderer.invoke('stt:info'),
@@ -24,6 +26,16 @@ contextBridge.exposeInMainWorld('aria', {
     watchlistQuotes: () => ipcRenderer.invoke('stocks:watchlist:quotes'),
     addToWatchlist: (symbol) => ipcRenderer.invoke('stocks:watchlist:add', symbol),
     removeFromWatchlist: (symbol) => ipcRenderer.invoke('stocks:watchlist:remove', symbol),
+    candles: (symbol, range) => ipcRenderer.invoke('stocks:candles', { symbol, range }),
+    marketNews: () => ipcRenderer.invoke('stocks:marketNews'),
+    calendar: (symbols) => ipcRenderer.invoke('stocks:calendar', symbols),
+  },
+  realtime: {
+    subscribe: (symbols) => ipcRenderer.invoke('realtime:subscribe', symbols),
+    unsubscribe: () => ipcRenderer.invoke('realtime:unsubscribe'),
+    status: () => ipcRenderer.invoke('realtime:status'),
+    // main -> renderer push per price tick { symbol, price, time }
+    onTick: (cb) => ipcRenderer.on('quote:tick', (_e, t) => cb(t)),
   },
   trading: {
     portfolio: () => ipcRenderer.invoke('trading:portfolio'),
@@ -54,6 +66,7 @@ contextBridge.exposeInMainWorld('aria', {
     disconnect: () => ipcRenderer.invoke('google:disconnect'),
     agenda: () => ipcRenderer.invoke('google:agenda'),
     inbox: () => ipcRenderer.invoke('google:inbox'),
+    addEvent: (payload) => ipcRenderer.invoke('google:event:add', payload),
   },
   broker: {
     status: () => ipcRenderer.invoke('broker:status'),
@@ -89,6 +102,8 @@ contextBridge.exposeInMainWorld('aria', {
   strategy: {
     idea: (symbol) => ipcRenderer.invoke('strategy:idea', symbol),
     scan: () => ipcRenderer.invoke('strategy:scan'),
+    tranche: (symbol, opts) => ipcRenderer.invoke('strategy:tranche', { symbol, ...(opts || {}) }),
+    actionPlan: (symbols) => ipcRenderer.invoke('strategy:actionPlan', { symbols }),
   },
   imessage: {
     status: () => ipcRenderer.invoke('imessage:status'),

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- CSP: allow only what we need; no remote scripts. -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:;" />
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:; frame-src https://s.tradingview.com https://www.tradingview.com; child-src https://s.tradingview.com https://www.tradingview.com;" />
   <title>ARIA</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -28,12 +28,14 @@
       <div class="panel-head">
         <h2>Assistant</h2>
         <div class="head-actions">
+          <button id="plan-btn" class="ghost" title="Synthesize news + events into a plan of action">◴ Plan</button>
           <button id="brief-btn" class="ghost" title="Daily briefing">☀ Briefing</button>
           <button id="talk-btn" class="mic" title="Push to talk (Whisper)">🎤 Talk</button>
           <button id="mic-btn" class="mic" title="Wake-word listening (Web Speech)">🎙 Voice: off</button>
         </div>
       </div>
       <div class="transcript" id="transcript"></div>
+      <div class="actionplan hidden" id="actionplan"></div>
       <form class="composer" id="composer">
         <input id="composer-input" type="text" autocomplete="off"
                placeholder="Ask anything — e.g. “how is NVDA doing?”" />
@@ -47,12 +49,15 @@
     <section class="panel">
       <div class="panel-head">
         <h2>Chart <span class="mono" id="chart-symbol">—</span></h2>
-        <div class="ranges" id="chart-ranges">
-          <button class="r-btn" data-range="1d">1D</button>
-          <button class="r-btn" data-range="5d">5D</button>
-          <button class="r-btn active" data-range="1mo">1M</button>
-          <button class="r-btn" data-range="6mo">6M</button>
-          <button class="r-btn" data-range="1y">1Y</button>
+        <div class="head-actions">
+          <div class="ranges" id="chart-ranges">
+            <button class="r-btn" data-range="1d">1D</button>
+            <button class="r-btn" data-range="5d">5D</button>
+            <button class="r-btn active" data-range="1mo">1M</button>
+            <button class="r-btn" data-range="6mo">6M</button>
+            <button class="r-btn" data-range="1y">1Y</button>
+          </div>
+          <button id="fullchart-btn" class="ghost" title="Open full TradingView chart">Full chart ⤢</button>
         </div>
       </div>
       <canvas id="chart-canvas" height="150"></canvas>
@@ -72,6 +77,13 @@
         <span class="muted" id="inbox-count"></span>
       </div>
       <div class="agenda" id="agenda"><p class="muted">Connect Google to see your day.</p></div>
+      <form class="event-form" id="event-form">
+        <input id="event-title" type="text" placeholder="Event title" autocomplete="off" />
+        <input id="event-start" type="datetime-local" />
+        <label class="ev-allday"><input id="event-allday" type="checkbox" /> all day</label>
+        <button type="submit">Add event</button>
+      </form>
+      <p class="conn-note muted" id="event-note"></p>
     </section>
 
     <!-- Watchlist -->
@@ -263,6 +275,30 @@
     </section>
     </aside>
   </main>
+
+  <!-- Full TradingView chart modal (opens from a watchlist ticker or "Full chart ⤢") -->
+  <div class="tv-overlay hidden" id="tv-overlay" aria-hidden="true">
+    <div class="tv-modal">
+      <div class="tv-head">
+        <h2>Trading view <span class="mono" id="tv-symbol">—</span></h2>
+        <div class="head-actions">
+          <span class="muted" id="tv-exchange"></span>
+          <button id="tv-close" class="ghost" title="Close">✕ Close</button>
+        </div>
+      </div>
+      <div class="tv-body">
+        <div class="tv-chart">
+          <iframe id="tv-iframe" title="TradingView chart" frameborder="0"
+                  allowtransparency="true" scrolling="no"
+                  referrerpolicy="no-referrer"></iframe>
+          <div class="tv-fallback hidden" id="tv-fallback"></div>
+        </div>
+        <aside class="tv-rail" id="tv-rail">
+          <p class="muted">Loading plan…</p>
+        </aside>
+      </div>
+    </div>
+  </div>
 
   <script src="voice.js"></script>
   <script src="recorder.js"></script>

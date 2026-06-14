@@ -11,6 +11,7 @@ const broker = require('./services/broker');
 const stt = require('./services/stt');
 const imessage = require('./services/imessage');
 const telegram = require('./services/telegram');
+const realtime = require('./services/realtime');
 const store = require('./store');
 
 function register() {
@@ -39,8 +40,12 @@ function register() {
   ipcMain.handle('stt:info', () => stt.info());
   ipcMain.handle('stt:transcribe', (_e, payload) => stt.transcribe(payload));
 
-  // Brain (natural language / voice)
-  ipcMain.handle('aria:ask', async (_e, { text, history }) => brain.ask(text, history || []));
+  // Brain (natural language / voice). onEvent forwards streaming deltas, tool
+  // chips, and the final message to the renderer over the 'brain:event' channel;
+  // the resolved promise still carries the final text + history as a fallback.
+  ipcMain.handle('aria:ask', async (e, { text, history }) =>
+    brain.ask(text, history || [], { onEvent: (evt) => e.sender.send('brain:event', evt) })
+  );
 
   // Direct stock data for panels
   ipcMain.handle('stocks:quote', (_e, symbol) => stocks.getQuote(symbol));
@@ -52,6 +57,17 @@ function register() {
   ipcMain.handle('stocks:watchlist:quotes', () => stocks.getQuotes(stocks.getWatchlist()));
   ipcMain.handle('stocks:watchlist:add', (_e, symbol) => stocks.addToWatchlist(symbol));
   ipcMain.handle('stocks:watchlist:remove', (_e, symbol) => stocks.removeFromWatchlist(symbol));
+  ipcMain.handle('stocks:candles', (_e, { symbol, range }) => stocks.getCandles(symbol, range));
+  ipcMain.handle('stocks:marketNews', () => stocks.getMarketNews());
+  ipcMain.handle('stocks:calendar', (_e, symbols) => stocks.getCalendar(symbols));
+
+  // Real-time price ticks (REST-poll provider). Streams to the renderer over
+  // 'quote:tick'; returns status so the UI can decide whether to keep polling.
+  ipcMain.handle('realtime:subscribe', (e, symbols) =>
+    realtime.subscribe(symbols, (tick) => e.sender.send('quote:tick', tick))
+  );
+  ipcMain.handle('realtime:unsubscribe', () => { realtime.unsubscribe(); return realtime.status(); });
+  ipcMain.handle('realtime:status', () => realtime.status());
 
   // Trading (paper). propose stages an order; only approve fills it.
   ipcMain.handle('trading:portfolio', () => trading.getPortfolio());
@@ -80,6 +96,7 @@ function register() {
   ipcMain.handle('google:disconnect', () => google.disconnect());
   ipcMain.handle('google:agenda', () => google.listEvents());
   ipcMain.handle('google:inbox', () => google.listUnread());
+  ipcMain.handle('google:event:add', (_e, payload) => google.createEvent(payload));
 
   // Broker (trading account). The secret never crosses back to the renderer.
   ipcMain.handle('broker:status', () => broker.status());
@@ -115,6 +132,10 @@ function register() {
   // Trade ideas
   ipcMain.handle('strategy:idea', (_e, symbol) => strategy.tradeIdea(symbol));
   ipcMain.handle('strategy:scan', () => strategy.scanIdeas());
+  ipcMain.handle('strategy:tranche', (_e, { symbol, riskPct, equity } = {}) =>
+    strategy.buildTranchePlan(symbol, { riskPct, equity })
+  );
+  ipcMain.handle('strategy:actionPlan', (_e, { symbols } = {}) => strategy.buildActionPlan({ symbols }));
 
   // iMessage bridge status (macOS)
   ipcMain.handle('imessage:status', () => imessage.available());

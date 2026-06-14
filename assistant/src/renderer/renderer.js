@@ -90,6 +90,22 @@ const els = {
   ideaSymbol: document.getElementById('idea-symbol'),
   scanIdeas: document.getElementById('scan-ideas'),
   ideas: document.getElementById('ideas'),
+  planBtn: document.getElementById('plan-btn'),
+  actionplan: document.getElementById('actionplan'),
+  fullchartBtn: document.getElementById('fullchart-btn'),
+  eventForm: document.getElementById('event-form'),
+  eventTitle: document.getElementById('event-title'),
+  eventStart: document.getElementById('event-start'),
+  eventAllday: document.getElementById('event-allday'),
+  eventNote: document.getElementById('event-note'),
+  tvOverlay: document.getElementById('tv-overlay'),
+  tvModal: document.querySelector('.tv-modal'),
+  tvSymbol: document.getElementById('tv-symbol'),
+  tvExchange: document.getElementById('tv-exchange'),
+  tvClose: document.getElementById('tv-close'),
+  tvIframe: document.getElementById('tv-iframe'),
+  tvFallback: document.getElementById('tv-fallback'),
+  tvRail: document.getElementById('tv-rail'),
 };
 
 let chatHistory = [];
@@ -108,6 +124,7 @@ const fmtChg = (q) => {
 function quoteRow(q, { removable = false, clickable = false, onSelect = null } = {}) {
   const row = document.createElement('div');
   row.className = 'row' + (clickable || onSelect ? ' clickable' : '');
+  row.dataset.symbol = q.symbol;
   if (q.error) {
     row.innerHTML = `<div class="left"><span class="sym">${q.symbol}</span>
       <span class="name err">${q.error}</span></div>`;
@@ -153,21 +170,54 @@ function appendMsg(role, text) {
   return div;
 }
 
+// Streaming state for the in-flight assistant bubble. The brain streams events
+// over 'brain:event'; the awaited aria.ask() promise carries history + a final
+// fallback. We track the current pending turn here so the single global event
+// listener (registered once in boot) can render live deltas into it.
+let stream = null; // { bubble, text, gotDelta }
+
+function setTyping(bubble) {
+  bubble.classList.add('streaming');
+  bubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+}
+
+function handleBrainEvent(evt) {
+  if (!stream || !evt) return;
+  if (evt.type === 'delta') {
+    if (!stream.gotDelta) { stream.bubble.classList.remove('streaming'); stream.bubble.textContent = ''; }
+    stream.gotDelta = true;
+    stream.text += evt.text || '';
+    stream.bubble.textContent = stream.text;
+    els.transcript.scrollTop = els.transcript.scrollHeight;
+  } else if (evt.type === 'tool_result') {
+    // Small chip above the in-flight bubble: "↳ used: name".
+    const tdiv = document.createElement('div');
+    tdiv.className = 'msg tool';
+    tdiv.textContent = `↳ used: ${evt.name}${evt.ok === false ? ' (failed)' : ''}`;
+    els.transcript.insertBefore(tdiv, stream.bubble);
+    els.transcript.scrollTop = els.transcript.scrollHeight;
+  } else if (evt.type === 'done') {
+    if (evt.text) { stream.text = evt.text; stream.bubble.classList.remove('streaming'); stream.bubble.textContent = evt.text; }
+  } else if (evt.type === 'error') {
+    stream.bubble.classList.remove('streaming');
+    stream.bubble.textContent = `Error: ${evt.error}`;
+  }
+}
+
 async function sendToBrain(text) {
   appendMsg('user', text);
   const pending = appendMsg('assistant', '…');
+  setTyping(pending);
+  stream = { bubble: pending, text: '', gotDelta: false };
   try {
     const res = await aria.ask(text, chatHistory);
     chatHistory = res.history || chatHistory;
-    pending.textContent = res.text || '(no reply)';
-    if (res.toolEvents && res.toolEvents.length) {
-      const tools = res.toolEvents.map((t) => t.name).join(', ');
-      const tdiv = document.createElement('div');
-      tdiv.className = 'msg tool';
-      tdiv.textContent = `↳ used: ${tools}`;
-      els.transcript.insertBefore(tdiv, pending);
-    }
-    if (res.ok && voice && voice.isListening && voice.isListening()) voice.speak(res.text);
+    // If no live deltas arrived (e.g. engine offline), fall back to the resolved
+    // text. If deltas did arrive, prefer the final resolved text for accuracy.
+    const finalText = res.text || stream.text || '(no reply)';
+    pending.classList.remove('streaming');
+    pending.textContent = finalText;
+    if (res.ok && voice && voice.isListening && voice.isListening()) voice.speak(finalText);
     // Refresh panels in case the brain changed the watchlist, staged a trade,
     // or added/completed a task.
     loadWatchlist();
@@ -178,7 +228,10 @@ async function sendToBrain(text) {
     loadAccounting();
     loadStudyStats();
   } catch (err) {
+    pending.classList.remove('streaming');
     pending.textContent = `Error: ${err.message}`;
+  } finally {
+    stream = null;
   }
 }
 
@@ -201,12 +254,311 @@ async function loadWatchlist() {
       return;
     }
     quotes.forEach((q) =>
-      els.watchlist.appendChild(quoteRow(q, { removable: true, onSelect: setChart }))
+      els.watchlist.appendChild(quoteRow(q, { removable: true, onSelect: onWatchlistSelect }))
     );
+    subscribeWatchlist(quotes.map((q) => q.symbol).filter(Boolean));
   } catch (err) {
     els.watchlist.innerHTML = `<p class="err">${err.message}</p>`;
   }
 }
+
+// Clicking a watchlist ticker charts it in the sidebar (fast/offline default)
+// and opens the full TradingView modal (the headline feature).
+function onWatchlistSelect(symbol) {
+  setChart(symbol);
+  openTradingView(symbol);
+}
+
+// ---- live ticks ----
+// Last seen price per symbol, so a tick can flash green/red vs the prior value.
+const lastTick = {};
+let realtimeOn = false;
+let subscribedKey = '';
+
+async function subscribeWatchlist(symbols) {
+  if (!aria.realtime || !symbols.length) return;
+  // Avoid tearing down + re-creating the poller on every 60s watchlist refresh:
+  // only (re)subscribe when the symbol set actually changes.
+  const key = [...symbols].sort().join(',');
+  if (key === subscribedKey) return;
+  subscribedKey = key;
+  try {
+    const status = await aria.realtime.subscribe(symbols);
+    realtimeOn = !!(status && status.streaming);
+    // When no provider key is set, status.streaming is false — we do nothing
+    // extra and the existing setInterval polling stays as the fallback.
+  } catch { realtimeOn = false; }
+}
+
+// Update a single watchlist price cell live, flashing on direction of change.
+function applyTick(tick) {
+  if (!tick || tick.price == null) return;
+  const sym = String(tick.symbol).toUpperCase();
+  const row = els.watchlist.querySelector(`.row[data-symbol="${cssEscape(sym)}"]`);
+  if (!row) return;
+  const cell = row.querySelector('.price');
+  if (!cell) return;
+  const prev = lastTick[sym];
+  lastTick[sym] = tick.price;
+  // Preserve currency suffix if the cell already shows one.
+  const curMatch = cell.textContent.match(/[A-Z]{3}$/);
+  const cur = curMatch ? ' ' + curMatch[0] : '';
+  cell.textContent = `${tick.price.toFixed(2)}${cur}`.trim();
+  if (prev != null && tick.price !== prev) {
+    const dir = tick.price > prev ? 'flash-up' : 'flash-down';
+    cell.classList.remove('flash-up', 'flash-down');
+    // Force reflow so the animation re-triggers on rapid ticks.
+    void cell.offsetWidth;
+    cell.classList.add(dir);
+  }
+}
+
+// Minimal CSS.escape fallback for attribute selectors (tickers are simple, but
+// be safe for symbols with dots like BRK.B).
+function cssEscape(s) {
+  if (window.CSS && CSS.escape) return CSS.escape(s);
+  return String(s).replace(/["\\\]]/g, '\\$&');
+}
+
+// ---- TradingView full chart modal ----
+// 0x1F is TradingView's study separator inside the studies query param.
+const TV_STUDY_SEP = '%1F';
+const TV_STUDIES = [
+  'RSI%40tv-basicstudies',
+  'MACD%40tv-basicstudies',
+  'MASimple%40tv-basicstudies',
+].join(TV_STUDY_SEP);
+
+// Resolve a bare ticker to TradingView's EXCHANGE:SYMBOL form. We read the
+// exchange via the symbol search (exchDisp) and map common venues; unknown
+// exchanges fall back to the bare symbol (TradingView auto-resolves). Crypto and
+// forex stay bare too.
+const TV_EXCHANGE_MAP = {
+  NASDAQ: 'NASDAQ', NMS: 'NASDAQ', NGM: 'NASDAQ', NCM: 'NASDAQ',
+  NYSE: 'NYSE', NYQ: 'NYSE',
+  NYSEARCA: 'AMEX', 'NYSE ARCA': 'AMEX', ARCA: 'AMEX', PCX: 'AMEX',
+  AMEX: 'AMEX', ASE: 'AMEX', 'NYSE AMERICAN': 'AMEX', BATS: 'AMEX',
+};
+
+async function resolveTvSymbol(symbol) {
+  const sym = String(symbol).trim().toUpperCase();
+  try {
+    const matches = await aria.stocks.search(sym);
+    const hit = (matches || []).find((m) => String(m.symbol).toUpperCase() === sym) || (matches || [])[0];
+    if (hit) {
+      const type = String(hit.type || '').toUpperCase();
+      // Crypto / forex resolve fine bare; don't prefix an equity exchange.
+      if (type === 'CRYPTOCURRENCY' || type === 'CURRENCY') return { tv: sym, exchange: hit.exchange || '' };
+      const exch = String(hit.exchange || '').toUpperCase().trim();
+      const mapped = TV_EXCHANGE_MAP[exch];
+      if (mapped) return { tv: `${mapped}:${sym}`, exchange: hit.exchange };
+      return { tv: sym, exchange: hit.exchange || '' };
+    }
+  } catch { /* fall through to bare symbol */ }
+  return { tv: sym, exchange: '' };
+}
+
+function tvUrl(tvSymbol) {
+  return (
+    'https://s.tradingview.com/widgetembed/?symbol=' + encodeURIComponent(tvSymbol) +
+    '&interval=D&theme=dark&style=1&hide_side_toolbar=0' +
+    '&studies=' + TV_STUDIES +
+    '&timezone=Etc%2FUTC'
+  );
+}
+
+let tvCurrentSymbol = null;
+
+async function openTradingView(symbol) {
+  const sym = String(symbol).trim().toUpperCase();
+  if (!sym) return;
+  tvCurrentSymbol = sym;
+  els.tvSymbol.textContent = sym;
+  els.tvExchange.textContent = '';
+  els.tvFallback.classList.add('hidden');
+  els.tvRail.innerHTML = '<p class="muted">Loading plan…</p>';
+  els.tvOverlay.classList.remove('hidden');
+  els.tvOverlay.setAttribute('aria-hidden', 'false');
+
+  // Resolve exchange + load the iframe.
+  const { tv, exchange } = await resolveTvSymbol(sym);
+  if (tvCurrentSymbol !== sym) return; // user moved on while resolving
+  els.tvExchange.textContent = exchange ? String(exchange) : '';
+  loadTvIframe(tv);
+
+  // Build the side rail (tranche plan + insight + catalyst + news) in parallel.
+  renderTvRail(sym);
+}
+
+function loadTvIframe(tvSymbol) {
+  const iframe = els.tvIframe;
+  els.tvFallback.classList.add('hidden');
+  // Graceful offline message if the iframe can't load (no network).
+  let settled = false;
+  const fail = () => {
+    if (settled) return;
+    settled = true;
+    els.tvFallback.textContent =
+      'Could not load the live TradingView chart (offline?). The lightweight chart in the sidebar still works.';
+    els.tvFallback.classList.remove('hidden');
+  };
+  iframe.onload = () => { settled = true; els.tvFallback.classList.add('hidden'); };
+  iframe.onerror = fail;
+  // If nothing loads within a few seconds, show the fallback.
+  setTimeout(() => { if (!settled) fail(); }, 6000);
+  iframe.src = tvUrl(tvSymbol);
+}
+
+function closeTradingView() {
+  els.tvOverlay.classList.add('hidden');
+  els.tvOverlay.setAttribute('aria-hidden', 'true');
+  els.tvIframe.src = 'about:blank'; // stop the embed when hidden
+  tvCurrentSymbol = null;
+}
+
+// Build the modal side rail: analysis insight + the tranche plan + next catalyst
+// + a couple of headlines. Reused (the tranche-plan portion) by the ideas panel.
+async function renderTvRail(symbol) {
+  const sym = String(symbol).trim().toUpperCase();
+  els.tvRail.innerHTML = '<p class="muted">Building tranche plan…</p>';
+  let plan = null;
+  try {
+    plan = await aria.strategy.tranche(sym);
+  } catch (err) {
+    els.tvRail.innerHTML = `<p class="err">${escapeHtml(err.message)}</p>`;
+    return;
+  }
+  if (tvCurrentSymbol !== sym) return;
+
+  els.tvRail.innerHTML = '';
+
+  // Analysis insight: a plain-language read derived from the plan.
+  const insight = document.createElement('div');
+  insight.className = 'tp-section';
+  const dirWord = plan.direction === 'long' ? 'long' : 'short';
+  insight.innerHTML = `<div class="tp-k">Insight</div>
+    <div class="tp-insight">${escapeHtml(plan.symbol)} reads <strong>${escapeHtml(plan.bias)}</strong> — planning the ${escapeHtml(dirWord)} side from ${fmtNum(plan.blendedEntry)} with a ${escapeHtml(plan.stop ? plan.stop.basis : 'ATR')} stop at ${fmtNum(plan.stop && plan.stop.price)}. Targets ladder to ${fmtNum((plan.targets || [])[plan.targets.length - 1] && plan.targets[plan.targets.length - 1].price)}.${plan.biasNote ? ' ' + escapeHtml(plan.biasNote) : ''}</div>`;
+  els.tvRail.appendChild(insight);
+
+  const planEl = renderTranchePlan(plan, { propose: true });
+  els.tvRail.appendChild(planEl);
+
+  // Next catalyst + headlines, best-effort and independently defensive.
+  const extra = document.createElement('div');
+  extra.className = 'tp-section';
+  extra.innerHTML = `<div class="tp-k">Next catalyst</div><div class="tp-event" data-cal>—</div>
+    <div class="tp-k" style="margin-top:10px">Headlines</div><div class="tp-news" data-news><p class="muted">Loading…</p></div>`;
+  els.tvRail.appendChild(extra);
+
+  aria.stocks.calendar([sym]).then((rows) => {
+    if (tvCurrentSymbol !== sym) return;
+    const c = (rows || [])[0];
+    const slot = extra.querySelector('[data-cal]');
+    if (c && c.earningsDate) slot.textContent = `Earnings ${String(c.earningsDate).slice(0, 10)}`;
+    else if (c && c.exDividendDate) slot.textContent = `Ex-dividend ${String(c.exDividendDate).slice(0, 10)}`;
+    else slot.textContent = 'None scheduled.';
+  }).catch(() => { const s = extra.querySelector('[data-cal]'); if (s) s.textContent = '—'; });
+
+  aria.stocks.news(sym).then((items) => {
+    if (tvCurrentSymbol !== sym) return;
+    const slot = extra.querySelector('[data-news]');
+    slot.innerHTML = '';
+    const list = (items || []).slice(0, 3);
+    if (!list.length) { slot.innerHTML = '<p class="muted">No recent headlines.</p>'; return; }
+    list.forEach((n) => {
+      const a = document.createElement('a');
+      a.href = n.link; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = n.title;
+      slot.appendChild(a);
+    });
+  }).catch(() => {});
+}
+
+// Shared tranche-plan renderer (modal side rail + single-symbol idea cards).
+// When opts.propose is true, each entry tranche gets a "Propose" button that
+// stages an equity order through the EXISTING approval gate.
+function renderTranchePlan(plan, { propose = false } = {}) {
+  const el = document.createElement('div');
+  el.className = 'tp';
+  if (!plan) { el.innerHTML = '<p class="muted">No plan available.</p>'; return el; }
+  const side = plan.direction === 'long' ? 'buy' : 'sell';
+
+  const entriesHtml = (plan.entries || []).map((e, i) =>
+    `<div class="tp-tranche">
+       <div class="tp-left">
+         <div class="tp-lbl">${escapeHtml(e.label)} · ${e.weightPct}%</div>
+         <div class="tp-sub">@ ${fmtNum(e.price)}${e.fromMarketPct != null ? ` (${e.fromMarketPct >= 0 ? '+' : ''}${fmtNum(e.fromMarketPct)}%)` : ''} · ${e.shares} sh · $${fmtNum(e.notional)}</div>
+       </div>
+       ${propose ? `<button class="tp-propose" data-i="${i}">Propose</button>` : ''}
+     </div>`
+  ).join('');
+
+  const targetsHtml = (plan.targets || []).map((t) =>
+    `<div class="tp-tline"><span>${escapeHtml(t.label)} <span class="tp-tm">${t.rMultiple}R</span> · ${fmtNum(t.price)} (${t.gainPct >= 0 ? '+' : ''}${fmtNum(t.gainPct)}%)</span><span>scale ${t.scaleOutPct}%</span></div>`
+  ).join('');
+
+  const sz = plan.sizing || {};
+  el.innerHTML = `
+    <div class="tp-head">
+      <span class="tp-sym">${escapeHtml(plan.symbol)} · ${fmtNum(plan.price)}</span>
+      <span class="tp-bias ${plan.direction}">${escapeHtml(plan.bias)} · ${escapeHtml(plan.direction)}</span>
+    </div>
+    ${plan.biasNote ? `<div class="tp-note">${escapeHtml(plan.biasNote)}</div>` : ''}
+    <div class="tp-section">
+      <div class="tp-k">Entry ladder · blended ${fmtNum(plan.blendedEntry)}</div>
+      ${entriesHtml}
+    </div>
+    <div class="tp-section">
+      <div class="tp-k">Stop · ${escapeHtml(plan.stop ? plan.stop.basis : '')}</div>
+      <div class="tp-stop">${fmtNum(plan.stop && plan.stop.price)} (${plan.stop && plan.stop.distancePct != null ? (plan.stop.distancePct >= 0 ? '+' : '') + fmtNum(plan.stop.distancePct) + '%' : '—'}) · ATR ${fmtNum(plan.atr14)} · risk/sh $${fmtNum(plan.riskPerShare)}</div>
+    </div>
+    <div class="tp-section tp-targets">
+      <div class="tp-k">Targets</div>
+      ${targetsHtml}
+    </div>
+    <div class="tp-section">
+      <div class="tp-k">Sizing · ${sz.riskPct != null ? sz.riskPct + '% of equity' : ''}</div>
+      <div class="tp-sizing">
+        <div class="tp-cell"><span>Total shares</span>${sz.totalShares != null ? sz.totalShares : '—'}</div>
+        <div class="tp-cell"><span>Total notional</span>$${fmtNum(sz.totalNotional)}</div>
+        <div class="tp-cell"><span>Max $ risk</span>$${fmtNum(sz.maxRiskDollars)}</div>
+        <div class="tp-cell"><span>Equity</span>$${fmtNum(sz.equity)}</div>
+      </div>
+    </div>
+    <div class="tp-disc">${escapeHtml(plan.disclaimer || '')}</div>`;
+
+  if (propose) {
+    el.querySelectorAll('.tp-propose').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const e = plan.entries[Number(btn.dataset.i)];
+        if (!e || !e.shares) { appendMsg('tool', `✗ Tranche has 0 shares — nothing to propose.`); return; }
+        btn.disabled = true;
+        try {
+          await aria.trading.propose({ side, symbol: plan.symbol, qty: e.shares });
+          appendMsg('tool', `↳ Staged ${side} ${e.shares} ${plan.symbol} (${e.label}) — approve in Trading.`);
+          refreshTrading();
+        } catch (err) {
+          appendMsg('tool', `✗ ${err.message}`);
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+  return el;
+}
+
+// Modal controls: close button, backdrop click, Escape, and the "Full chart ⤢"
+// button (opens the modal for whatever the sidebar chart currently shows).
+els.tvClose.addEventListener('click', closeTradingView);
+els.tvOverlay.addEventListener('click', (e) => { if (e.target === els.tvOverlay) closeTradingView(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !els.tvOverlay.classList.contains('hidden')) closeTradingView();
+});
+els.fullchartBtn.addEventListener('click', () => {
+  const sym = chartState.symbol;
+  if (!sym) { appendMsg('tool', 'Click a ticker first to pick a symbol to chart.'); return; }
+  openTradingView(sym);
+});
 
 async function addTicker() {
   const sym = els.addInput.value.trim();
@@ -781,6 +1133,39 @@ async function loadAgenda() {
   }
 }
 
+// ---- add-to-calendar (manual UI; the brain can also add via its tool) ----
+els.eventForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const gs = await aria.google.status().catch(() => ({ connected: false }));
+  if (!gs.connected) {
+    els.eventNote.textContent = gs.configured === false
+      ? 'Set GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET, then connect Google.'
+      : 'Connect Google (Connections panel) to add events.';
+    return;
+  }
+  const summary = els.eventTitle.value.trim();
+  const when = els.eventStart.value; // "YYYY-MM-DDTHH:mm" (local) or "" if empty
+  const allDay = els.eventAllday.checked;
+  if (!summary) { els.eventNote.textContent = 'Add a title.'; return; }
+  if (!when) { els.eventNote.textContent = 'Pick a date/time.'; return; }
+  // datetime-local has no timezone; build an ISO start. createEvent slices the
+  // date portion for all-day events and uses the host tz otherwise.
+  const start = allDay ? when.slice(0, 10) : new Date(when).toISOString();
+  els.eventNote.textContent = 'Adding…';
+  try {
+    const ev = await aria.google.addEvent({ summary, start, allDay });
+    els.eventNote.innerHTML = ev.htmlLink
+      ? `✓ Added — <a href="${ev.htmlLink}" target="_blank" rel="noopener">open in Google Calendar ↗</a>`
+      : '✓ Added.';
+    els.eventTitle.value = '';
+    els.eventStart.value = '';
+    els.eventAllday.checked = false;
+    loadAgenda();
+  } catch (err) {
+    els.eventNote.textContent = `✗ ${err.message}`;
+  }
+});
+
 // ---- push-to-talk (Whisper STT) ----
 let recorder = null;
 
@@ -1039,6 +1424,13 @@ function renderIdea(idea) {
     ${contractHtml}
     <div class="i-reasons">${(idea.rationale || []).map(escapeHtml).join(' · ')}</div>
     <div class="i-disc">${escapeHtml(idea.disclaimer)}</div>`;
+  // The tranche ladder + sizing + Propose buttons (reuses the side-rail renderer).
+  if (idea.tranchePlan) {
+    const tp = document.createElement('div');
+    tp.style.marginTop = '8px';
+    tp.appendChild(renderTranchePlan(idea.tranchePlan, { propose: true }));
+    el.appendChild(tp);
+  }
   return el;
 }
 
@@ -1083,6 +1475,92 @@ els.scanIdeas.addEventListener('click', async () => {
     els.ideas.appendChild(note);
   } catch (err) {
     els.ideas.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+});
+
+// ---- action plan / briefing (synthesize news + events into a plan) ----
+function actionChipClass(action) {
+  return String(action || '').replace(/\s+/g, '-').toLowerCase(); // "stand aside" -> "stand-aside"
+}
+
+function renderActionPlan(plan) {
+  els.actionplan.innerHTML = '';
+  els.actionplan.classList.remove('hidden');
+
+  const head = document.createElement('div');
+  head.className = 'ap-head';
+  head.innerHTML = `<h3>Plan of action</h3><button class="ap-close" title="Hide">✕</button>`;
+  head.querySelector('.ap-close').addEventListener('click', () => els.actionplan.classList.add('hidden'));
+  els.actionplan.appendChild(head);
+
+  if (plan.marketContext) {
+    const ctx = document.createElement('div');
+    ctx.className = 'ap-context';
+    ctx.textContent = plan.marketContext;
+    els.actionplan.appendChild(ctx);
+  }
+
+  if ((plan.topActions || []).length) {
+    const top = document.createElement('div');
+    top.className = 'ap-top';
+    plan.topActions.forEach((t) => {
+      const line = document.createElement('div');
+      line.className = 'ap-line';
+      line.textContent = t;
+      top.appendChild(line);
+    });
+    els.actionplan.appendChild(top);
+  }
+
+  const items = document.createElement('div');
+  items.className = 'ap-items';
+  (plan.items || []).forEach((it) => {
+    const row = document.createElement('div');
+    row.className = 'ap-item';
+    if (it.error) {
+      row.innerHTML = `<div class="ap-r1"><span class="ap-sym">${escapeHtml(it.symbol)}</span>
+        <span class="ap-chip stand-aside">error</span></div>
+        <div class="ap-meta">${escapeHtml(it.error)}</div>`;
+      items.appendChild(row);
+      return;
+    }
+    const kl = it.keyLevels || {};
+    const levels = `entries ${(kl.entries || []).map(fmtNum).join(' / ') || '—'} · stop ${fmtNum(kl.stop)} · targets ${(kl.targets || []).map(fmtNum).join(' / ') || '—'}`;
+    const sizing = it.sizing ? ` · ~${it.sizing.totalShares} sh (max risk $${fmtNum(it.sizing.maxRiskDollars)})` : '';
+    const ev = it.nextEvent ? `<div class="ap-meta">next: ${escapeHtml(it.nextEvent.type)} ${String(it.nextEvent.date).slice(0, 10)}</div>` : '';
+    const head1 = (it.catalysts || [])[0];
+    row.innerHTML = `
+      <div class="ap-r1">
+        <span class="ap-sym">${escapeHtml(it.symbol)} · ${fmtNum(it.price)} <span class="muted">(${escapeHtml(it.bias)} · ${it.setupScore})</span></span>
+        <span class="ap-chip ${actionChipClass(it.action)}">${escapeHtml(it.action)}</span>
+      </div>
+      <div class="ap-meta">${escapeHtml(levels)}${escapeHtml(sizing)}</div>
+      ${ev}
+      ${head1 ? `<div class="ap-head-line">📰 ${escapeHtml(head1)}</div>` : ''}`;
+    // Clicking the symbol opens its full TradingView view.
+    row.querySelector('.ap-sym').style.cursor = 'pointer';
+    row.querySelector('.ap-sym').addEventListener('click', () => openTradingView(it.symbol));
+    items.appendChild(row);
+  });
+  els.actionplan.appendChild(items);
+
+  if (plan.disclaimer) {
+    const disc = document.createElement('div');
+    disc.className = 'ap-disc';
+    disc.textContent = plan.disclaimer;
+    els.actionplan.appendChild(disc);
+  }
+  els.transcript.scrollTop = els.transcript.scrollHeight;
+}
+
+els.planBtn.addEventListener('click', async () => {
+  els.actionplan.classList.remove('hidden');
+  els.actionplan.innerHTML = '<p class="muted">Synthesizing news + events into a plan…</p>';
+  try {
+    const plan = await aria.strategy.actionPlan();
+    renderActionPlan(plan);
+  } catch (err) {
+    els.actionplan.innerHTML = `<p class="err">${escapeHtml(err.message)}</p>`;
   }
 });
 
@@ -1258,6 +1736,11 @@ async function boot() {
         'The data panels (stocks, chart, alerts, tasks, trading) all still work.'
     );
   }
+  // Streaming brain events (delta / tool_result / done / error) — register ONCE.
+  if (aria.onBrainEvent) aria.onBrainEvent(handleBrainEvent);
+  // Live price ticks — register ONCE; subscription happens after watchlist load.
+  if (aria.realtime && aria.realtime.onTick) aria.realtime.onTick(applyTick);
+
   initVoice();
   initTalk();
   loadWatchlist();
