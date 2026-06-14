@@ -592,7 +592,3 @@ input[type="text"]:focus { box-shadow: 0 0 0 3px rgba(184,151,106,0.10); }
 .tp-news a { color: var(--ivory); font-size: 11px; text-decoration: none; line-height: 1.4; display: block; padding: 3px 0; }
 .tp-news a:hover { color: var(--gold); }
 .tp-disc { font-size: 10px; color: var(--warm-gray); font-style: italic; }
-
-/* Make watchlist rows feel interactive even without onSelect's clickable class */
-.row.tappable { cursor: pointer; }
-.row.tappable:hover { border-color: var(--gold); }

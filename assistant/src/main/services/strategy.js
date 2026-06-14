@@ -560,5 +560,5 @@ module.exports = {
     'ALWAYS include a brief risk reminder: scores are confluence not win probability, options/futures can lose 100%, size positions, use stops, this is not financial advice. If the engine says "stand aside", relay that honestly rather than inventing a trade. Never guarantee outcomes or claim an edge you cannot show. To act on an idea, equities go through propose_trade + approval; options/futures are placed manually at the user\'s broker.',
   tools,
   handlers,
-  api: { tradeIdea, scanIdeas, scoreFromAnalysis, buildTranchePlan, buildActionPlan },
+  api: { tradeIdea, scanIdeas, buildTranchePlan, buildActionPlan },
 };
