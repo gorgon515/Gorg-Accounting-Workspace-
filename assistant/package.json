@@ -5,6 +5,7 @@
   "description": "ARIA \u2014 an integrated, voice-driven desktop assistant (stocks, trading, productivity).",
   "author": "Vincent Gregorio",
   "license": "MIT",
+  "homepage": "https://github.com/gorgon515/Gorg-Accounting-Workspace-",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
