@@ -1,9 +1,10 @@
 'use strict';
 
-// Renderer controller. Talks to the main process only through window.aria
-// (the preload bridge). No Node access here.
-
-const aria = window.aria;
+// Renderer controller. Talks to the main process only through `aria`, the
+// preload bridge. contextBridge exposes it as a NON-CONFIGURABLE global, so we
+// reference that global directly — declaring `const aria = window.aria` here is
+// a redeclaration SyntaxError that aborts this entire script (dead UI). No Node
+// access here.
 
 const els = {
   brainDot: document.getElementById('brain-dot'),
