@@ -51,6 +51,11 @@ const config = {
   sttApiKey: process.env.STT_API_KEY || '',
   sttBaseUrl: process.env.STT_BASE_URL || 'https://api.openai.com/v1',
   sttModel: process.env.STT_MODEL || 'whisper-1',
+  // Real-time market data provider for the streaming price layer.
+  // One of: 'none' (default, polling disabled) | 'finnhub' | 'polygon' | 'alpaca'.
+  // Pair with MARKETDATA_API_KEY; for Alpaca supply KEY_ID:SECRET as the value.
+  marketdataProvider: (process.env.MARKETDATA_PROVIDER || 'none').toLowerCase(),
+  marketdataApiKey: process.env.MARKETDATA_API_KEY || '',
   hasBrain() {
     return Boolean(this.anthropicApiKey);
   },

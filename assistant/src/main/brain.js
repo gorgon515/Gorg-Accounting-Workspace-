@@ -20,6 +20,21 @@ const skills = require('./services/skills');
 
 const MAX_TURNS = 6;
 
+// Real-time web news: Anthropic's server-side web_search tool. Executed on
+// Anthropic's side (we never runTool it). ON by default whenever a Claude key
+// is present; force off with BRAIN_WEB_SEARCH=false. Read straight from the
+// environment so we don't have to touch config.js.
+const WEB_SEARCH = process.env.BRAIN_WEB_SEARCH !== 'false';
+
+// Blocks the manual loop must never hand to runTool — they're server-side.
+function isServerToolBlock(block) {
+  return (
+    block.name === 'web_search' ||
+    block.type === 'server_tool_use' ||
+    block.type === 'web_search_tool_result'
+  );
+}
+
 // ---------- Claude engine ----------
 let client = null;
 function getClient() {
@@ -28,38 +43,88 @@ function getClient() {
   return client;
 }
 
-async function askClaude(userText, history, toolEvents) {
+// Build the tools array sent to Claude: the skill tools plus (optionally) the
+// server-side web_search tool. The LAST entry carries cache_control so the tool
+// schemas are cached alongside the system prompt — they're stable across turns.
+function claudeTools() {
+  const tools = skills.allTools().map((t) => ({ ...t }));
+  if (WEB_SEARCH && config.anthropicApiKey) {
+    tools.push({ type: 'web_search_20250305', name: 'web_search', max_uses: 5 });
+  }
+  if (tools.length) {
+    tools[tools.length - 1] = {
+      ...tools[tools.length - 1],
+      cache_control: { type: 'ephemeral' },
+    };
+  }
+  return tools;
+}
+
+// System prompt as cacheable blocks. Last block carries cache_control so the
+// (stable) preamble is cached across turns and requests.
+function claudeSystem() {
+  return [{ type: 'text', text: skills.systemPrompt(), cache_control: { type: 'ephemeral' } }];
+}
+
+async function askClaude(userText, history, toolEvents, onEvent) {
   const anthropic = getClient();
   const messages = [...history, { role: 'user', content: userText }];
-  const tools = skills.allTools();
+  const tools = claudeTools();
+  const system = claudeSystem();
+  let fullText = '';
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
-    const res = await anthropic.messages.create({
+    const stream = anthropic.messages.stream({
       model: config.model,
       max_tokens: 4000,
       thinking: { type: 'adaptive' },
-      system: skills.systemPrompt(),
+      system,
       tools,
       messages,
     });
 
+    // Forward assistant text deltas as they arrive.
+    if (onEvent) {
+      stream.on('text', (delta) => {
+        fullText += delta;
+        onEvent({ type: 'delta', text: delta });
+      });
+    } else {
+      // Still accumulate text even when nobody's listening for deltas.
+      stream.on('text', (delta) => { fullText += delta; });
+    }
+
+    const res = await stream.finalMessage();
     messages.push({ role: 'assistant', content: res.content });
 
     if (res.stop_reason !== 'tool_use') {
-      const text = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+      const text = fullText.trim();
+      if (onEvent) onEvent({ type: 'done', text, history: messages, toolEvents });
       return { text, history: messages };
     }
 
+    // Run only the local skill tools. The server-side web_search blocks are
+    // already resolved inside the streamed turn, so we skip them here.
     const toolResults = [];
     for (const block of res.content) {
       if (block.type !== 'tool_use') continue;
+      if (isServerToolBlock(block)) continue;
       const { result, ok, error } = await runTool(block.name, block.input || {});
       toolEvents.push({ name: block.name, input: block.input, ok, error });
+      if (onEvent) onEvent({ type: 'tool_result', name: block.name, ok, error });
       toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: result });
+    }
+
+    if (!toolResults.length) {
+      // Only server-side tools ran this turn — nothing to feed back; the next
+      // turn continues so Claude can synthesize the final answer.
+      continue;
     }
     messages.push({ role: 'user', content: toolResults });
   }
-  return { text: "I worked through several steps but didn't reach a final answer. Try narrowing the request.", history: messages };
+  const text = (fullText || "I worked through several steps but didn't reach a final answer. Try narrowing the request.").trim();
+  if (onEvent) onEvent({ type: 'done', text, history: messages, toolEvents });
+  return { text, history: messages };
 }
 
 // ---------- Local engine (Ollama) ----------
@@ -90,7 +155,7 @@ async function ollamaChat(messages, tools) {
   return res.json();
 }
 
-async function askLocal(userText, history, toolEvents) {
+async function askLocal(userText, history, toolEvents, onEvent) {
   // history is kept in Ollama's flat {role, content} shape for this engine.
   const messages = [
     { role: 'system', content: skills.systemPrompt() },
@@ -99,6 +164,8 @@ async function askLocal(userText, history, toolEvents) {
   ];
   const tools = toOllamaTools(skills.allTools());
 
+  // Ollama runs non-streaming here, but we still emit a single delta+done so the
+  // UI has one code path regardless of engine.
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     const data = await ollamaChat(messages, tools);
     const msg = data.message || {};
@@ -106,7 +173,13 @@ async function askLocal(userText, history, toolEvents) {
 
     const calls = msg.tool_calls || [];
     if (!calls.length) {
-      return { text: (msg.content || '').trim(), history: messages.slice(1) }; // drop system
+      const text = (msg.content || '').trim();
+      const hist = messages.slice(1); // drop system
+      if (onEvent) {
+        if (text) onEvent({ type: 'delta', text });
+        onEvent({ type: 'done', text, history: hist, toolEvents });
+      }
+      return { text, history: hist };
     }
     for (const call of calls) {
       const name = call.function?.name;
@@ -116,10 +189,17 @@ async function askLocal(userText, history, toolEvents) {
       }
       const { result, ok, error } = await runTool(name, input);
       toolEvents.push({ name, input, ok, error });
+      if (onEvent) onEvent({ type: 'tool_result', name, ok, error });
       messages.push({ role: 'tool', content: result });
     }
   }
-  return { text: "I worked through several steps but didn't reach a final answer. Try narrowing the request.", history: messages.slice(1) };
+  const text = "I worked through several steps but didn't reach a final answer. Try narrowing the request.";
+  const hist = messages.slice(1);
+  if (onEvent) {
+    onEvent({ type: 'delta', text });
+    onEvent({ type: 'done', text, history: hist, toolEvents });
+  }
+  return { text, history: hist };
 }
 
 // Names that aren't usable as the chat brain (embedders, STT, etc.).
@@ -187,25 +267,23 @@ async function status() {
   return { engine: 'local', model: resolvedLocalModel || config.ollamaModel, ready: r.ready, local: true, reason: r.reason };
 }
 
-async function ask(userText, history = []) {
+async function ask(userText, history = [], { onEvent } = {}) {
   const toolEvents = [];
   try {
     const s = await status();
     if (!s.ready) {
-      return {
-        ok: false,
-        text: `The brain is offline: ${s.reason || 'not configured'} ` +
-          '(Panels still work without it.)',
-        toolEvents,
-        history,
-      };
+      const text = `The brain is offline: ${s.reason || 'not configured'} ` +
+        '(Panels still work without it.)';
+      if (onEvent) onEvent({ type: 'error', error: s.reason || 'not configured' });
+      return { ok: false, text, toolEvents, history };
     }
     const out = s.engine === 'claude'
-      ? await askClaude(userText, history, toolEvents)
-      : await askLocal(userText, history, toolEvents);
+      ? await askClaude(userText, history, toolEvents, onEvent)
+      : await askLocal(userText, history, toolEvents, onEvent);
     return { ok: true, text: out.text, toolEvents, history: out.history };
   } catch (err) {
     console.error('[brain] error:', err);
+    if (onEvent) onEvent({ type: 'error', error: err.message });
     return { ok: false, text: `Brain error: ${err.message}`, toolEvents, history };
   }
 }

@@ -1,9 +1,9 @@
 'use strict';
 
-// Google integration — Gmail (unread) + Calendar (today) for the Productivity
-// pillar. Uses the OAuth 2.0 desktop "loopback" flow with PKCE: we spin a tiny
-// localhost server, open the consent screen in the system browser, capture the
-// redirect, and exchange the code for tokens. Read-only scopes.
+// Google integration — Gmail (unread) + Calendar (today + write) for the
+// Productivity pillar. Uses the OAuth 2.0 desktop "loopback" flow with PKCE:
+// we spin a tiny localhost server, open the consent screen in the system
+// browser, capture the redirect, and exchange the code for tokens.
 //
 // Setup (one-time, by the user): create an OAuth client of type "Desktop app"
 // in Google Cloud Console, enable the Gmail + Calendar APIs, and put the client
@@ -19,6 +19,10 @@ const TOKEN = 'https://oauth2.googleapis.com/token';
 const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/calendar.readonly',
+  // calendar.events grants write access to create/update events; broadening
+  // scopes requires the user to re-consent on next connect — the flow already
+  // uses prompt=consent + access_type=offline so that happens automatically.
+  'https://www.googleapis.com/auth/calendar.events',
 ];
 
 const clientId = () => process.env.GOOGLE_CLIENT_ID || '';
@@ -54,6 +58,18 @@ async function gfetch(url, accessToken) {
   const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!res.ok) throw new Error(`Google API ${res.status}`);
   return res.json();
+}
+
+// POST JSON with bearer auth — mirrors gfetch for write operations.
+async function gpost(url, accessToken, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error?.message || `Google API ${res.status}`);
+  return data;
 }
 
 // Interactive consent. Resolves { connected, email }.
@@ -174,6 +190,69 @@ async function listEvents() {
   }));
 }
 
+// Creates a Google Calendar event on the user's primary calendar. Returns a
+// tidy summary object; the full event is also reachable via htmlLink.
+// Parameters:
+//   summary      (string, required) — event title
+//   start        (string, required) — ISO 8601 datetime or YYYY-MM-DD for allDay
+//   end          (string, optional) — ISO 8601 datetime / YYYY-MM-DD; defaults
+//                                     to start+60 min (timed) or start+1 day (allDay)
+//   description  (string, optional)
+//   location     (string, optional)
+//   timeZone     (string, optional) — IANA tz; defaults to the host system tz
+//   allDay       (boolean, optional) — when true uses date-only start/end fields
+async function createEvent({ summary, start, end, description, location, timeZone, allDay } = {}) {
+  if (!summary) throw new Error('createEvent: summary is required.');
+  if (!start) throw new Error('createEvent: start is required.');
+
+  const at = await getAccessToken();
+  const tz = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  let startField, endField;
+  if (allDay) {
+    // Google all-day events use date-only strings; end date is exclusive.
+    const startDate = start.slice(0, 10); // keep YYYY-MM-DD portion
+    let endDate;
+    if (end) {
+      endDate = end.slice(0, 10);
+    } else {
+      const d = new Date(startDate + 'T00:00:00');
+      d.setDate(d.getDate() + 1);
+      endDate = d.toISOString().slice(0, 10);
+    }
+    startField = { date: startDate };
+    endField = { date: endDate };
+  } else {
+    const startDt = new Date(start);
+    let endDt;
+    if (end) {
+      endDt = new Date(end);
+    } else {
+      endDt = new Date(startDt.getTime() + 60 * 60 * 1000); // +60 minutes
+    }
+    startField = { dateTime: startDt.toISOString(), timeZone: tz };
+    endField = { dateTime: endDt.toISOString(), timeZone: tz };
+  }
+
+  const body = { summary, start: startField, end: endField };
+  if (description) body.description = description;
+  if (location) body.location = location;
+
+  const ev = await gpost(
+    'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+    at,
+    body
+  );
+
+  return {
+    id: ev.id,
+    summary: ev.summary,
+    start: ev.start,
+    end: ev.end,
+    htmlLink: ev.htmlLink,
+  };
+}
+
 function status() {
   return { configured: configured(), connected: Boolean(refreshToken()), email: auth()?.email || null };
 }
@@ -195,6 +274,44 @@ const tools = [
     description: 'Get the user\'s Google Calendar events for today. Call when they ask about their schedule, agenda, or meetings. Requires Google to be connected.',
     input_schema: { type: 'object', properties: {} },
   },
+  {
+    name: 'add_calendar_event',
+    description: 'Create an event on the user\'s Google Calendar (syncs to their phone). Call when the user asks to schedule/add/remind something with a date or time. Requires Google connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        summary: {
+          type: 'string',
+          description: 'Event title (required).',
+        },
+        start: {
+          type: 'string',
+          description: 'ISO 8601 datetime (e.g. 2026-06-14T09:00:00) or YYYY-MM-DD for all-day events (required).',
+        },
+        end: {
+          type: 'string',
+          description: 'ISO 8601 datetime or YYYY-MM-DD. Optional — omit to use durationMinutes or the default of 60 min.',
+        },
+        durationMinutes: {
+          type: 'number',
+          description: 'Duration in minutes, used to compute end when end is omitted. Defaults to 60.',
+        },
+        description: {
+          type: 'string',
+          description: 'Optional event notes or description.',
+        },
+        location: {
+          type: 'string',
+          description: 'Optional event location (address or room).',
+        },
+        allDay: {
+          type: 'boolean',
+          description: 'Set to true for all-day events. start/end should be YYYY-MM-DD strings.',
+        },
+      },
+      required: ['summary', 'start'],
+    },
+  },
 ];
 
 const handlers = {
@@ -206,13 +323,26 @@ const handlers = {
     if (!status().connected) return { connected: false, note: 'Google is not connected. Ask the user to connect it in the app.' };
     return { events: await listEvents() };
   },
+  add_calendar_event: async ({ summary, start, end, durationMinutes, description, location, allDay } = {}) => {
+    if (!status().connected) return { connected: false, note: 'Google is not connected. Ask the user to connect it in the Connections panel.' };
+    // Translate durationMinutes into an explicit end time when end is omitted.
+    let resolvedEnd = end;
+    if (!resolvedEnd && !allDay && durationMinutes) {
+      const startDt = new Date(start);
+      resolvedEnd = new Date(startDt.getTime() + durationMinutes * 60 * 1000).toISOString();
+    }
+    const event = await createEvent({ summary, start, end: resolvedEnd, description, location, allDay });
+    return { created: true, event };
+  },
 };
 
 module.exports = {
   name: 'google',
   systemPromptFragment:
-    'When Google is connected you can read the user\'s unread Gmail and today\'s Calendar (read-only). If a call returns connected:false, tell the user to connect Google via the Connections panel rather than guessing.',
+    'When Google is connected you can read the user\'s unread Gmail, read today\'s Google Calendar events, AND add new events to the user\'s Google Calendar via add_calendar_event (events sync to their phone automatically). ' +
+    'If any tool call returns connected:false, tell the user to connect Google in the Connections panel — do not guess or fabricate data. ' +
+    'After successfully creating a calendar event, confirm the event title and time back to the user.',
   tools,
   handlers,
-  api: { startAuth, status, disconnect, listUnread, listEvents },
+  api: { startAuth, status, disconnect, listUnread, listEvents, createEvent },
 };
