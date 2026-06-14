@@ -11,6 +11,11 @@ name: Build ARIA installers
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Publish a GitHub Release at this tag (e.g. v0.2.0). Leave blank to only build downloadable artifacts."
+        required: false
+        default: ""
   push:
     tags: ["v*"]
 
@@ -58,7 +63,8 @@ jobs:
 
   release:
     name: Attach to GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Runs on a version tag push, or on a manual run when a release_tag is given.
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -72,5 +78,7 @@ jobs:
       - name: Create release with installers
         uses: softprops/action-gh-release@v2
         with:
+          # On a manual run, create the tag from the input; on a tag push, use it.
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
           files: artifacts/**
           generate_release_notes: true
