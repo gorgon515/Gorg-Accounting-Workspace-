@@ -47,7 +47,9 @@ jobs:
         run: npm install
 
       - name: Build installers
-        run: npx electron-builder --publish never
+        # macOS .dmg packaging intermittently fails on `hdiutil detach` (the
+        # disk image is briefly still in use). It's transient — retry once.
+        run: npx electron-builder --publish never || (echo "electron-builder failed; retrying once after 10s…" && sleep 10 && npx electron-builder --publish never)
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
