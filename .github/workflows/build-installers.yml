@@ -27,6 +27,9 @@ jobs:
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    # A macOS runner flake shouldn't block the Windows/Linux release; mac assets
+    # attach when it does succeed.
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
     strategy:
       fail-fast: false
       matrix:
@@ -49,6 +52,8 @@ jobs:
       - name: Build installers
         # macOS packaging on GitHub runners flakes intermittently (hdiutil
         # detach, app-builder exec failures). Retry the whole build a few times.
+        # shell: bash so this loop runs on Windows runners too (default is pwsh).
+        shell: bash
         run: |
           n=0
           until npx electron-builder --publish never; do
