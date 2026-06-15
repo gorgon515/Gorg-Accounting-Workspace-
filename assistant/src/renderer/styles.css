@@ -592,3 +592,92 @@ input[type="text"]:focus { box-shadow: 0 0 0 3px rgba(184,151,106,0.10); }
 .tp-news a { color: var(--ivory); font-size: 11px; text-decoration: none; line-height: 1.4; display: block; padding: 3px 0; }
 .tp-news a:hover { color: var(--gold); }
 .tp-disc { font-size: 10px; color: var(--warm-gray); font-style: italic; }
+
+/* ============================================================
+   Russian language program panel
+   ============================================================ */
+.ru-head-controls { display: flex; align-items: center; gap: 8px; }
+.ru-head-controls select { background: var(--obsidian); color: var(--ivory); border: 1px solid var(--hairline);
+  border-radius: 4px; padding: 3px 6px; font-family: var(--mono); font-size: 10px; }
+.ru-roman-toggle { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 10px; color: var(--warm-gray); cursor: pointer; }
+
+/* Header stats row */
+.ru-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ru-badge { font-family: var(--mono); font-size: 11px; color: var(--gold); border: 1px solid var(--gold);
+  border-radius: 4px; padding: 1px 7px; letter-spacing: 0.06em; }
+.ru-stat { font-family: var(--mono); font-size: 11px; color: var(--warm-gray); }
+.ru-goal { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.ru-goal-bar { width: 70px; height: 6px; background: var(--obsidian); border: 1px solid var(--hairline);
+  border-radius: 4px; overflow: hidden; }
+.ru-goal-bar > span { display: block; height: 100%; background: var(--gold); }
+.ru-goal-txt { font-family: var(--mono); font-size: 10px; color: var(--warm-gray); }
+
+/* Continue card */
+.ru-continue { display: flex; align-items: center; gap: 10px; padding: 11px; margin-bottom: 12px;
+  background: var(--obsidian); border: 1px solid var(--gold-soft); border-radius: var(--radius-sm); }
+.ru-cont-info { min-width: 0; flex: 1; }
+.ru-cont-k { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); }
+.ru-cont-title { font-size: 14px; color: var(--ivory); margin-top: 2px; }
+.ru-cont-meta { font-family: var(--mono); font-size: 10px; color: var(--warm-gray); margin-top: 2px; }
+.ru-cont-go { flex: 0 0 auto; border-color: var(--gold); color: var(--gold); }
+
+.ru-tabs { margin-bottom: 8px; }
+
+/* Learn pane: curriculum tree */
+.ru-tree { display: flex; flex-direction: column; gap: 4px; }
+.ru-level-group { border: 1px solid var(--hairline); border-radius: var(--radius-sm); padding: 6px 9px; background: var(--obsidian); }
+.ru-level-sum { display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+  font-family: var(--mono); font-size: 11px; list-style: none; }
+.ru-level-sum::-webkit-details-marker { display: none; }
+.ru-level-name { color: var(--gold); letter-spacing: 0.06em; }
+.ru-level-prog { color: var(--warm-gray); font-size: 10px; }
+.ru-level-blurb { margin: 6px 0; line-height: 1.5; }
+.ru-unit { margin-top: 8px; }
+.ru-unit-head { font-size: 12px; color: var(--ivory); }
+.ru-unit-goal { margin: 2px 0 4px; line-height: 1.4; }
+.ru-lesson { display: flex; align-items: center; gap: 7px; width: 100%; text-align: left;
+  background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 5px 7px; margin-top: 2px; }
+.ru-lesson:hover { border-color: var(--hairline); }
+.ru-lesson.active { border-color: var(--gold); }
+.ru-lesson.done .ru-lesson-title { color: var(--warm-gray); }
+.ru-check { flex: 0 0 14px; color: var(--green); font-size: 12px; }
+.ru-lesson-title { flex: 1; font-size: 12px; color: var(--ivory); }
+.ru-lesson-cefr { flex: 0 0 auto; font-family: var(--mono); font-size: 9px; color: var(--warm-gray); }
+
+/* Lesson detail */
+.ru-detail { margin-top: 12px; }
+.ru-d-head { border-bottom: 1px solid var(--hairline); padding-bottom: 8px; margin-bottom: 8px; }
+.ru-d-title { font-size: 15px; color: var(--ivory); }
+.ru-d-meta { font-family: var(--mono); font-size: 10px; color: var(--warm-gray); margin-top: 2px; }
+.ru-d-block { margin-bottom: 12px; }
+.ru-d-k { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--gold); margin-bottom: 4px; }
+.ru-d-expl { font-size: 12px; line-height: 1.6; color: var(--ivory); margin: 0; }
+.ru-d-cando { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.5; color: var(--ivory); }
+.ru-vocab { width: 100%; border-collapse: collapse; }
+.ru-vocab td { padding: 4px 8px 4px 0; font-size: 12px; vertical-align: top; border-bottom: 1px solid var(--hairline); }
+.ru-ex-row td { border-bottom: 1px solid var(--hairline); }
+.ru-ex { font-size: 11px; color: var(--warm-gray); padding-top: 0; padding-bottom: 6px; }
+.ru-ex-line, .ru-dlg-line { font-size: 13px; line-height: 1.6; margin-bottom: 4px; }
+/* Cyrillic should read clearly — a touch larger and brighter */
+.ru-cyr { font-size: 1.08em; color: var(--ivory); }
+.ru-translit { font-family: var(--mono); font-size: 11px; color: var(--gold); }
+.ru-d-acts { display: flex; gap: 8px; margin-top: 6px; }
+.ru-start { border-color: var(--gold); color: var(--gold); }
+
+/* Alphabet grid */
+.ru-alpha-hint { margin: 0 0 8px; }
+.ru-alpha-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 6px; }
+.ru-alpha-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+  padding: 8px 9px; background: var(--obsidian); border: 1px solid var(--hairline); border-radius: var(--radius-sm); }
+.ru-alpha-cell:hover { border-color: var(--gold); }
+.ru-alpha-char { font-size: 18px; color: var(--ivory); letter-spacing: 0.04em; }
+.ru-alpha-translit { font-family: var(--mono); font-size: 11px; color: var(--gold); }
+.ru-alpha-sound { font-size: 10px; color: var(--warm-gray); line-height: 1.3; }
+.ru-alpha-ex { font-size: 11px; color: var(--warm-gray); margin-top: 2px; }
+
+/* Practice pane */
+.ru-prac-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.ru-prac { font-size: 12px; padding: 9px 10px; text-align: left; }
+.ru-prac:hover { border-color: var(--gold); color: var(--gold); }
+.ru-prac-seed { grid-column: 1 / -1; border-color: var(--gold-soft); }

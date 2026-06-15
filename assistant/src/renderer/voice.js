@@ -15,6 +15,45 @@
 (function () {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
+  // True if the text contains any Cyrillic character — then we speak Russian.
+  const CYRILLIC = /[Ѐ-ӿ]/;
+
+  // Pick an installed ru-RU voice if one exists; null means "use the default".
+  // speechSynthesis.getVoices() can be empty until voices load asynchronously,
+  // so we look it up lazily on each call rather than caching at startup.
+  function pickRussianVoice() {
+    if (!window.speechSynthesis) return null;
+    const voices = window.speechSynthesis.getVoices() || [];
+    return (
+      voices.find((v) => v.lang === 'ru-RU') ||
+      voices.find((v) => /^ru(-|_|$)/i.test(v.lang || '')) ||
+      voices.find((v) => /russ/i.test(v.name || '')) ||
+      null
+    );
+  }
+
+  // Speak `text`, auto-switching to Russian (ru-RU + a Russian voice if any) for
+  // Cyrillic input and leaving English behavior untouched otherwise. If no
+  // Russian voice is installed it still requests ru-RU and never throws.
+  function speakText(text) {
+    if (!text || !window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.02;
+    u.pitch = 1.0;
+    if (CYRILLIC.test(text)) {
+      u.lang = 'ru-RU';
+      const rv = pickRussianVoice();
+      if (rv) u.voice = rv;
+    }
+    try { window.speechSynthesis.cancel(); } catch {}
+    window.speechSynthesis.speak(u);
+  }
+
+  // Standalone helper the renderer can call to speak an arbitrary string (e.g.
+  // an alphabet letter) without holding a voice instance. CSP-safe (no inline
+  // handlers): the renderer wires this via addEventListener.
+  window.ariaSpeak = speakText;
+
   function createVoice({ wakeWord = 'aria', onCommand, onState } = {}) {
     if (!SR) {
       return { supported: false, start() {}, stop() {}, speak() {}, toggle() { return false; } };
@@ -97,14 +136,9 @@
 
     function toggle() { listening ? stop() : start(); return listening; }
 
-    function speak(text) {
-      if (!text || !window.speechSynthesis) return;
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.02;
-      u.pitch = 1.0;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    }
+    // Reads replies aloud. Russian (Cyrillic) text auto-uses a ru-RU voice;
+    // English is unchanged. See speakText for the detection.
+    function speak(text) { speakText(text); }
 
     return { supported: true, start, stop, toggle, speak, isListening: () => listening };
   }

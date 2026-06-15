@@ -87,6 +87,14 @@ const els = {
   vocabTr: document.getElementById('vocab-tr'),
   vocabEx: document.getElementById('vocab-ex'),
   cpaList: document.getElementById('cpa-list'),
+  ruStats: document.getElementById('ru-stats'),
+  ruContinue: document.getElementById('ru-continue'),
+  ruTabs: document.getElementById('ru-tabs'),
+  ruPaneLearn: document.getElementById('ru-pane-learn'),
+  ruPaneAlpha: document.getElementById('ru-pane-alpha'),
+  ruPanePractice: document.getElementById('ru-pane-practice'),
+  ruLevel: document.getElementById('ru-level'),
+  ruRoman: document.getElementById('ru-roman'),
   ideaForm: document.getElementById('idea-form'),
   ideaSymbol: document.getElementById('idea-symbol'),
   scanIdeas: document.getElementById('scan-ideas'),
@@ -228,6 +236,7 @@ async function sendToBrain(text) {
     loadAgenda();
     loadAccounting();
     loadStudyStats();
+    loadRussian();
   } catch (err) {
     pending.classList.remove('streaming');
     pending.textContent = `Error: ${err.message}`;
@@ -1685,6 +1694,348 @@ function loadStudy() {
   loadReview();
 }
 
+// ---- Russian language program (A1→C2) ----
+// State for the Learn pane: the curriculum tree, the romanization toggle, and
+// the lesson currently open in the detail area. Kept local to this section.
+let ruCurriculum = [];
+let ruShowRoman = true;
+let ruOpenLessonId = null;
+
+// Speak an arbitrary Russian string. Prefers the standalone window helper that
+// voice.js exposes (picks a ru-RU voice); falls back to the shared voice object.
+function ruSpeak(text) {
+  if (!text) return;
+  if (typeof window.ariaSpeak === 'function') { window.ariaSpeak(text); return; }
+  if (voice && voice.speak) voice.speak(text);
+}
+
+// Header stats: level badge, streak, words learned, daily-goal progress.
+function renderRuStats(p) {
+  const goal = p.dailyGoalMins || 15;
+  const done = p.minutesToday || 0;
+  const pct = goal ? Math.min(100, Math.round((done / goal) * 100)) : 0;
+  els.ruStats.innerHTML = `
+    <span class="ru-badge">${escapeHtml(p.level || 'A1')}</span>
+    <span class="ru-stat" title="Day streak">🔥 ${p.streak || 0}</span>
+    <span class="ru-stat" title="Words learned">${p.wordsLearned || 0} words</span>
+    <span class="ru-stat" title="Lessons done">${p.completedCount || 0}/${p.totalLessons || 0} lessons</span>
+    <span class="ru-goal" title="Daily goal">
+      <span class="ru-goal-bar"><span style="width:${pct}%"></span></span>
+      <span class="ru-goal-txt">${done}/${goal} min</span>
+    </span>`;
+}
+
+// Continue card: the lesson to resume (current, else next) + a launch button.
+function renderRuContinue(p) {
+  const lesson = p.currentLesson || p.nextLesson || null;
+  if (!lesson) {
+    els.ruContinue.innerHTML = '<p class="muted">All lessons complete — practice or set a higher level. 🎉</p>';
+    return;
+  }
+  els.ruContinue.innerHTML = `
+    <div class="ru-cont-info">
+      <div class="ru-cont-k">${p.currentLesson ? 'Continue' : 'Start'}</div>
+      <div class="ru-cont-title">${escapeHtml(lesson.title)}</div>
+      <div class="ru-cont-meta">${escapeHtml(lesson.unitTitle || '')}${lesson.level ? ' · ' + escapeHtml(lesson.level) : ''}</div>
+    </div>
+    <button class="ru-cont-go">Learn with ARIA ▶</button>`;
+  els.ruContinue.querySelector('.ru-cont-go').addEventListener('click', () =>
+    ruStartLesson(lesson.id, lesson.title)
+  );
+}
+
+// Fetch progress and render the header + continue card + level/roman controls.
+async function loadRussian() {
+  try {
+    const p = await aria.russian.progress();
+    ruShowRoman = !(p.settings && p.settings.showRomanization === false);
+    if (els.ruLevel && p.level) els.ruLevel.value = p.level;
+    if (els.ruRoman) els.ruRoman.checked = ruShowRoman;
+    renderRuStats(p);
+    renderRuContinue(p);
+    // Refresh whichever pane is active so done-flags etc. stay in sync.
+    const active = els.ruTabs.querySelector('.t-tab.active');
+    const tab = active ? active.dataset.tab : 'learn';
+    if (tab === 'learn') loadRuCurriculum();
+    else if (tab === 'alpha') renderAlphabet();
+    else if (tab === 'practice') renderRuPractice();
+  } catch (err) {
+    if (els.ruStats) els.ruStats.innerHTML = `<p class="err">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+// Tab bar: Learn | Alphabet | Practice.
+els.ruTabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('.t-tab');
+  if (!btn) return;
+  els.ruTabs.querySelectorAll('.t-tab').forEach((b) => b.classList.remove('active'));
+  btn.classList.add('active');
+  const tab = btn.dataset.tab;
+  els.ruPaneLearn.classList.toggle('hidden', tab !== 'learn');
+  els.ruPaneAlpha.classList.toggle('hidden', tab !== 'alpha');
+  els.ruPanePractice.classList.toggle('hidden', tab !== 'practice');
+  if (tab === 'learn') loadRuCurriculum();
+  if (tab === 'alpha') renderAlphabet();
+  if (tab === 'practice') renderRuPractice();
+});
+
+// Learn pane: levels → units → lessons, with a ✓ on done lessons. Clicking a
+// lesson opens its full content in the detail area below the list.
+async function loadRuCurriculum() {
+  els.ruPaneLearn.innerHTML = '<p class="muted">Loading curriculum…</p>';
+  try {
+    ruCurriculum = await aria.russian.curriculum();
+    renderRuCurriculum();
+  } catch (err) {
+    els.ruPaneLearn.innerHTML = `<p class="err">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderRuCurriculum() {
+  els.ruPaneLearn.innerHTML = '';
+  const tree = document.createElement('div');
+  tree.className = 'ru-tree';
+  (ruCurriculum || []).forEach((lvl) => {
+    const total = (lvl.units || []).reduce((n, u) => n + (u.lessons || []).length, 0);
+    const done = (lvl.units || []).reduce((n, u) => n + (u.lessons || []).filter((l) => l.done).length, 0);
+    const levelEl = document.createElement('details');
+    levelEl.className = 'ru-level-group';
+    // Open the level that still has unfinished lessons (first incomplete).
+    if (done < total && !tree.querySelector('details[open]')) levelEl.open = true;
+    const sum = document.createElement('summary');
+    sum.className = 'ru-level-sum';
+    sum.innerHTML = `<span class="ru-level-name">${escapeHtml(lvl.level)}</span>
+      <span class="ru-level-prog">${done}/${total}</span>`;
+    levelEl.appendChild(sum);
+
+    if (lvl.summary) {
+      const s = document.createElement('div');
+      s.className = 'ru-level-blurb muted';
+      s.textContent = lvl.summary;
+      levelEl.appendChild(s);
+    }
+
+    (lvl.units || []).forEach((unit) => {
+      const ue = document.createElement('div');
+      ue.className = 'ru-unit';
+      ue.innerHTML = `<div class="ru-unit-head">${escapeHtml(unit.title)}</div>
+        ${unit.goal ? `<div class="ru-unit-goal muted">${escapeHtml(unit.goal)}</div>` : ''}`;
+      (unit.lessons || []).forEach((l) => {
+        const row = document.createElement('button');
+        row.className = 'ru-lesson' + (l.done ? ' done' : '') + (l.id === ruOpenLessonId ? ' active' : '');
+        row.type = 'button';
+        row.innerHTML = `<span class="ru-check">${l.done ? '✓' : ''}</span>
+          <span class="ru-lesson-title">${escapeHtml(l.title)}</span>
+          <span class="ru-lesson-cefr">${escapeHtml(l.cefr || '')}</span>`;
+        row.addEventListener('click', () => openRuLesson(l.id));
+        ue.appendChild(row);
+      });
+      levelEl.appendChild(ue);
+    });
+    tree.appendChild(levelEl);
+  });
+  els.ruPaneLearn.appendChild(tree);
+
+  const detail = document.createElement('div');
+  detail.className = 'ru-detail';
+  detail.id = 'ru-detail';
+  if (!ruOpenLessonId) detail.innerHTML = '<p class="muted">Pick a lesson to see its content.</p>';
+  els.ruPaneLearn.appendChild(detail);
+
+  // Re-open whatever lesson was showing (after a refresh).
+  if (ruOpenLessonId) openRuLesson(ruOpenLessonId);
+}
+
+// Load a full lesson into the detail area. Every field is rendered defensively
+// — outline lessons (B1+) may omit explanation/vocab/examples/dialogue.
+async function openRuLesson(id) {
+  ruOpenLessonId = id;
+  // Highlight the active row without re-fetching the whole tree.
+  els.ruPaneLearn.querySelectorAll('.ru-lesson').forEach((b) => b.classList.remove('active'));
+  const detail = document.getElementById('ru-detail');
+  if (!detail) return;
+  detail.innerHTML = '<p class="muted">Loading lesson…</p>';
+  let l;
+  try {
+    l = await aria.russian.lesson(id);
+  } catch (err) {
+    detail.innerHTML = `<p class="err">${escapeHtml(err.message)}</p>`;
+    return;
+  }
+  if (ruOpenLessonId !== id) return; // user moved on
+
+  const parts = [];
+  parts.push(`<div class="ru-d-head">
+    <div class="ru-d-title">${escapeHtml(l.title || '')}</div>
+    <div class="ru-d-meta">${escapeHtml(l.unitTitle || '')}${l.level ? ' · ' + escapeHtml(l.level) : ''}${l.cefr ? ' · ' + escapeHtml(l.cefr) : ''}</div>
+  </div>`);
+
+  if (l.grammarFocus) parts.push(`<div class="ru-d-block"><div class="ru-d-k">Grammar focus</div><div>${escapeHtml(l.grammarFocus)}</div></div>`);
+
+  if (Array.isArray(l.canDo) && l.canDo.length) {
+    parts.push(`<div class="ru-d-block"><div class="ru-d-k">Can-do</div><ul class="ru-d-cando">${
+      l.canDo.map((c) => `<li>${escapeHtml(c)}</li>`).join('')
+    }</ul></div>`);
+  }
+
+  if (l.explanation) parts.push(`<div class="ru-d-block"><div class="ru-d-k">Explanation</div><p class="ru-d-expl">${escapeHtml(l.explanation)}</p></div>`);
+
+  if (Array.isArray(l.vocab) && l.vocab.length) {
+    const rows = l.vocab.map((v) => `<tr>
+        <td class="ru-cyr">${escapeHtml(v.ru || '')}</td>
+        ${ruShowRoman ? `<td class="ru-translit">${escapeHtml(v.translit || '')}</td>` : ''}
+        <td>${escapeHtml(v.en || '')}</td>
+      </tr>${v.ex ? `<tr class="ru-ex-row"><td colspan="${ruShowRoman ? 3 : 2}" class="ru-ex">${escapeHtml(v.ex)}</td></tr>` : ''}`).join('');
+    parts.push(`<div class="ru-d-block"><div class="ru-d-k">Vocabulary</div>
+      <table class="ru-vocab"><tbody>${rows}</tbody></table></div>`);
+  }
+
+  if (Array.isArray(l.examples) && l.examples.length) {
+    const rows = l.examples.map((ex) => `<div class="ru-ex-line">
+        <span class="ru-cyr">${escapeHtml(ex.ru || '')}</span>
+        ${ruShowRoman && ex.translit ? `<span class="ru-translit"> · ${escapeHtml(ex.translit)}</span>` : ''}
+        <span class="muted"> — ${escapeHtml(ex.en || '')}</span>
+      </div>`).join('');
+    parts.push(`<div class="ru-d-block"><div class="ru-d-k">Examples</div>${rows}</div>`);
+  }
+
+  if (Array.isArray(l.dialogue) && l.dialogue.length) {
+    const rows = l.dialogue.map((d) => `<div class="ru-dlg-line">
+        <span class="ru-cyr">${escapeHtml(d.ru || '')}</span>
+        <span class="muted"> — ${escapeHtml(d.en || '')}</span>
+      </div>`).join('');
+    parts.push(`<div class="ru-d-block"><div class="ru-d-k">Dialogue</div>${rows}</div>`);
+  } else if (typeof l.dialogue === 'string' && l.dialogue.trim()) {
+    parts.push(`<div class="ru-d-block"><div class="ru-d-k">Dialogue</div><p class="ru-cyr">${escapeHtml(l.dialogue)}</p></div>`);
+  }
+
+  if (l.notes) parts.push(`<div class="ru-d-block"><div class="ru-d-k">Notes</div><p class="muted">${escapeHtml(l.notes)}</p></div>`);
+
+  parts.push(`<div class="ru-d-acts">
+    <button class="ru-start">Start with ARIA</button>
+    <button class="ru-complete ghost">Mark complete</button>
+  </div>`);
+
+  detail.innerHTML = parts.join('');
+  // Highlight the matching row in the tree (matched by title text).
+  els.ruPaneLearn.querySelectorAll('.ru-lesson').forEach((b) => {
+    const t = b.querySelector('.ru-lesson-title');
+    if (t && t.textContent === (l.title || '')) b.classList.add('active');
+  });
+  detail.querySelector('.ru-start').addEventListener('click', () => ruStartLesson(l.id, l.title));
+  detail.querySelector('.ru-complete').addEventListener('click', () => ruCompleteLesson(l.id));
+}
+
+// Start a lesson: mark it current in the program, then hand the brain a precise
+// tutor prompt so ARIA teaches it step by step.
+async function ruStartLesson(id, title) {
+  try { await aria.russian.start(id); } catch {}
+  sendToBrain(`Let's do my Russian lesson: "${title}" (id ${id}). Teach it to me step by step in tutor mode — explain, give examples, then quiz me.`);
+}
+
+async function ruCompleteLesson(id) {
+  try {
+    await aria.russian.complete({ id });
+    appendMsg('tool', '✓ Marked Russian lesson complete.');
+  } catch (err) {
+    appendMsg('tool', `✗ ${err.message}`);
+  }
+  loadRussian();
+}
+
+// Alphabet pane: the full Cyrillic grid. Clicking a letter speaks its example
+// Russian word (or the letter name) using the Russian voice.
+async function renderAlphabet() {
+  els.ruPaneAlpha.innerHTML = '<p class="muted">Loading alphabet…</p>';
+  let letters;
+  try {
+    letters = await aria.russian.alphabet();
+  } catch (err) {
+    els.ruPaneAlpha.innerHTML = `<p class="err">${escapeHtml(err.message)}</p>`;
+    return;
+  }
+  els.ruPaneAlpha.innerHTML = '';
+  const hint = document.createElement('p');
+  hint.className = 'muted ru-alpha-hint';
+  hint.textContent = 'Tap a letter to hear it spoken in Russian.';
+  els.ruPaneAlpha.appendChild(hint);
+
+  const grid = document.createElement('div');
+  grid.className = 'ru-alpha-grid';
+  (letters || []).forEach((a) => {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'ru-alpha-cell';
+    const ex = a.example || {};
+    cell.innerHTML = `
+      <span class="ru-alpha-char">${escapeHtml(a.char || '')}</span>
+      <span class="ru-alpha-translit">${escapeHtml(a.translit || '')}</span>
+      <span class="ru-alpha-sound">${escapeHtml(a.sound || '')}</span>
+      ${ex.ru ? `<span class="ru-alpha-ex"><span class="ru-cyr">${escapeHtml(ex.ru)}</span> — ${escapeHtml(ex.en || '')}</span>` : ''}`;
+    cell.addEventListener('click', () => ruSpeak(ex.ru || a.char || a.name || ''));
+    grid.appendChild(cell);
+  });
+  els.ruPaneAlpha.appendChild(grid);
+}
+
+// Practice pane: tutor-driving buttons + SRS seeding. Each logs a practice
+// session so the streak / daily-goal progress reflects real activity.
+function renderRuPractice() {
+  els.ruPanePractice.innerHTML = `
+    <p class="muted">Drills that hand ARIA a focused prompt — answer back in chat or by voice.</p>
+    <div class="ru-prac-grid">
+      <button class="ru-prac" data-act="conversation">💬 Conversation (Russian)</button>
+      <button class="ru-prac" data-act="review">📖 Review vocabulary</button>
+      <button class="ru-prac" data-act="grammar">✍️ Grammar drill</button>
+      <button class="ru-prac" data-act="reading">📚 Reading</button>
+      <button class="ru-prac ru-prac-seed" data-act="seed">➕ Add starter vocabulary</button>
+    </div>`;
+  els.ruPanePractice.querySelectorAll('.ru-prac').forEach((btn) =>
+    btn.addEventListener('click', () => ruPractice(btn.dataset.act))
+  );
+}
+
+async function ruPractice(act) {
+  if (act === 'seed') {
+    try {
+      const res = await aria.russian.seedVocab();
+      appendMsg('tool', `✓ Added ${res && res.added != null ? res.added : ''} starter word(s) to your review queue.`);
+    } catch (err) {
+      appendMsg('tool', `✗ ${err.message}`);
+    }
+    loadRussian();
+    loadStudyStats();
+    return;
+  }
+  const prompts = {
+    conversation: { kind: 'conversation', text: "Let's have a short conversation in Russian at my level. Start, correct my mistakes, keep it simple." },
+    review: { kind: 'review', text: 'Quiz me on my due Russian flashcards now, one at a time.' },
+    grammar: { kind: 'grammar', text: 'Give me a short Russian grammar drill on my current topic, then check my answers.' },
+    reading: { kind: 'reading', text: 'Give me a short Russian reading passage at my level with a glossary, then ask me about it.' },
+  };
+  const p = prompts[act];
+  if (!p) return;
+  // Log a few minutes so the daily goal/streak move; best-effort.
+  try { aria.russian.logPractice({ minutes: 5, kind: p.kind }); } catch {}
+  // Conversation practice is most natural with voice on, if available.
+  if (act === 'conversation' && voice && voice.isListening && !voice.isListening()) {
+    try { voice.start(); } catch {}
+  }
+  sendToBrain(p.text);
+}
+
+// Level select → set the program level. Romanization checkbox → persist the
+// setting. Both reload progress + the active pane.
+els.ruLevel.addEventListener('change', async () => {
+  try { await aria.russian.setLevel(els.ruLevel.value); } catch (err) { appendMsg('tool', `✗ ${err.message}`); }
+  loadRussian();
+});
+
+els.ruRoman.addEventListener('change', async () => {
+  try { await aria.russian.settings({ showRomanization: els.ruRoman.checked }); } catch (err) { appendMsg('tool', `✗ ${err.message}`); }
+  loadRussian();
+});
+
 // ---- voice ----
 function setVoiceHint(state) {
   const map = {
@@ -1755,6 +2106,7 @@ async function boot() {
   loadAgenda();
   loadAccounting();
   loadStudy();
+  loadRussian();
 
   // Chart the first watchlist symbol on load.
   try {

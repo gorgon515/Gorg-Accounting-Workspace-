@@ -23,6 +23,7 @@ function register() {
   const accounting = skills.getSkill('accounting').api;
   const study = skills.getSkill('study').api;
   const strategy = skills.getSkill('strategy').api;
+  const russian = skills.getSkill('russian').api;
 
   ipcMain.handle('aria:config', async () => {
     const b = await brain.status();
@@ -128,6 +129,20 @@ function register() {
   ipcMain.handle('study:log', (_e, s) => study.logStudy(s));
   ipcMain.handle('study:cpa', () => study.cpaStatus());
   ipcMain.handle('study:cpa:set', (_e, p) => study.setCpaProgress(p));
+
+  // Russian language program (in-depth A1→C2). Direct API for the UI panel;
+  // the brain drives the conversational tutoring via its own russian tools.
+  ipcMain.handle('russian:progress', () => russian.getProgress());
+  ipcMain.handle('russian:curriculum', () => russian.getCurriculum());
+  ipcMain.handle('russian:lesson', (_e, id) => russian.getLesson(id));
+  ipcMain.handle('russian:alphabet', () => russian.getAlphabet());
+  ipcMain.handle('russian:start', (_e, id) => russian.startLesson(id));
+  ipcMain.handle('russian:complete', (_e, p) => russian.completeLesson(p));
+  ipcMain.handle('russian:setLevel', (_e, level) => russian.setLevel(level));
+  ipcMain.handle('russian:seedVocab', (_e, p) => russian.seedVocab(p || {}));
+  ipcMain.handle('russian:logPractice', (_e, p) => russian.logPractice(p));
+  ipcMain.handle('russian:settings', (_e, s) => russian.setSettings(s));
+  ipcMain.handle('russian:review', () => russian.reviewQueue());
 
   // Trade ideas
   ipcMain.handle('strategy:idea', (_e, symbol) => strategy.tradeIdea(symbol));
