@@ -1252,16 +1252,30 @@ async function onHandsfreeUtterance(payload) {
   if (!handsfreeOn || handsfreeBusy) return;
   handsfreeBusy = true;
   setHandsfreeUi('thinking');
+  els.voiceHint.textContent = '🎧 Heard you — transcribing…';
   try {
     let text = handsfreeText(await aria.stt.transcribe(payload));
     if (els.handsfreeWake && els.handsfreeWake.checked) {
       const w = (cfg.wakeWord || 'aria').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const re = new RegExp(w, 'i');
-      if (!re.test(text)) { handsfreeBusy = false; setHandsfreeUi('listening'); return; }
+      if (!re.test(text)) {
+        handsfreeBusy = false; setHandsfreeUi('listening');
+        els.voiceHint.textContent = `Heard “${text || '…'}” — say “${cfg.wakeWord || 'aria'}” first.`;
+        return;
+      }
       text = text.replace(re, '').replace(/^[\s,:.!-]+/, '').trim();
     }
-    if (text.replace(/[^\p{L}\p{N}]/gu, '').length >= 2) await sendToBrain(text);
-  } catch { /* ignore a bad utterance and keep listening */ }
+    if (text.replace(/[^\p{L}\p{N}]/gu, '').length >= 2) {
+      els.voiceHint.textContent = '';
+      await sendToBrain(text);
+    } else {
+      els.voiceHint.textContent = 'Didn’t catch that — say it again, a bit louder.';
+    }
+  } catch (e) {
+    // Surface the failure instead of swallowing it — usually the local Whisper
+    // model is still downloading on first use, or STT isn't set up.
+    els.voiceHint.textContent = `Speech recognition error: ${(e && e.message) || e}. The on-device model may still be downloading — give it a moment and try again.`;
+  }
   handsfreeBusy = false;
   setHandsfreeUi(handsfreeOn ? 'listening' : 'off');
 }
@@ -1282,10 +1296,12 @@ async function setHandsfree(on) {
       els.voiceHint.textContent = 'Microphone blocked — allow mic access for hands-free.';
     } else {
       handsfreeOn = true; setHandsfreeUi('listening');
+      els.voiceHint.textContent = 'Hands-free on — just talk, no button needed.';
     }
   } else {
     recorder.stopContinuous();
     handsfreeOn = false; setHandsfreeUi('off');
+    els.voiceHint.textContent = '';
   }
   try { localStorage.setItem(HF_KEY, handsfreeOn ? '1' : '0'); } catch {}
 }

@@ -134,12 +134,16 @@
     let contGate = null;         // () => boolean : true means "may capture now"
 
     const VAD_TARGET_RATE = 16000;
-    const VAD_START_RMS = 0.018;   // speech-onset energy threshold
-    const VAD_END_RMS = 0.012;     // below this counts toward silence
-    const VAD_START_FRAMES = 3;    // consecutive loud frames to start
-    const VAD_HANG_MS = 800;       // trailing silence before endpoint
-    const VAD_MAX_MS = 15000;      // hard cap per utterance
-    const VAD_MIN_MS = 280;        // ignore sub-word blips
+    // Adaptive VAD: trigger relative to the ambient noise floor (works across
+    // quiet and loud mics) with a LOW absolute floor so soft speech is heard.
+    const VAD_ABS_START = 0.008;       // absolute speech-onset floor
+    const VAD_ABS_END = 0.006;         // absolute silence floor
+    const VAD_FLOOR_MULT_START = 2.2;  // start when rms > noiseFloor * this
+    const VAD_FLOOR_MULT_END = 1.6;    // silence when rms < noiseFloor * this
+    const VAD_START_FRAMES = 2;        // consecutive loud frames to start
+    const VAD_HANG_MS = 800;           // trailing silence before endpoint
+    const VAD_MAX_MS = 15000;          // hard cap per utterance
+    const VAD_MIN_MS = 280;            // ignore sub-word blips
 
     function startContinuous(onUtterance) {
       if (contActive || !continuousSupported) return Promise.resolve(false);
@@ -147,6 +151,9 @@
       return navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => {
         contStream = s;
         contCtx = new AC();
+        // Hands-free auto-starts without a user gesture, so the context can come
+        // up 'suspended' under the autoplay policy → no audio frames. Resume it.
+        if (contCtx.state === 'suspended' && contCtx.resume) contCtx.resume().catch(() => {});
         contSource = contCtx.createMediaStreamSource(contStream);
         const inRate = contCtx.sampleRate || 48000;
         const ratio = inRate / VAD_TARGET_RATE;
@@ -158,6 +165,7 @@
         let spokenMs = 0;
         let frames = [];
         let total = 0;
+        let noiseFloor = 0.01; // adaptive ambient-energy estimate (updated while quiet)
 
         const finish = () => {
           const captured = frames;
@@ -204,8 +212,13 @@
           for (let i = 0; i < block.length; i++) sum += block[i] * block[i];
           const rms = Math.sqrt(sum / (block.length || 1));
 
+          const startThresh = Math.max(VAD_ABS_START, noiseFloor * VAD_FLOOR_MULT_START);
+          const endThresh = Math.max(VAD_ABS_END, noiseFloor * VAD_FLOOR_MULT_END);
+
           if (!speaking) {
-            if (rms >= VAD_START_RMS) {
+            // Track the ambient noise floor while no one is talking.
+            noiseFloor = noiseFloor * 0.95 + rms * 0.05;
+            if (rms >= startThresh) {
               loudRun += 1;
               if (loudRun >= VAD_START_FRAMES) {
                 speaking = true;
@@ -224,7 +237,7 @@
           frames.push(block);
           total += block.length;
           spokenMs += blockMs;
-          if (rms < VAD_END_RMS) {
+          if (rms < endThresh) {
             silenceMs += blockMs;
             if (silenceMs >= VAD_HANG_MS) finish();
           } else {
