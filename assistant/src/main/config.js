@@ -18,8 +18,9 @@ const config = {
   // BRAIN_ENGINE=local | claude.
   brainEngine: (process.env.BRAIN_ENGINE || (process.env.ANTHROPIC_API_KEY ? 'claude' : 'local')).toLowerCase(),
   ollamaUrl: process.env.OLLAMA_URL || 'http://127.0.0.1:11434',
-  // qwen2.5 has strong tool-calling; llama3.1:8b also works.
-  ollamaModel: process.env.OLLAMA_MODEL || 'qwen2.5:7b',
+  // ARIA auto-detects and uses the LARGEST Qwen you've pulled; this is only the
+  // fallback and the model the setup hint suggests pulling.
+  ollamaModel: process.env.OLLAMA_MODEL || 'qwen2.5:14b',
   wakeWord: (process.env.ARIA_WAKE_WORD || 'aria').toLowerCase(),
   // iMessage bridge (macOS only). Reads ~/Library/Messages/chat.db and replies
   // via AppleScript. Only responds to allowlisted handles (safe default: none).

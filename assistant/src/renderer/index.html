@@ -31,8 +31,16 @@
           <button id="plan-btn" class="ghost" title="Synthesize news + events into a plan of action">◴ Plan</button>
           <button id="brief-btn" class="ghost" title="Daily briefing">☀ Briefing</button>
           <button id="talk-btn" class="mic" title="Push to talk (Whisper)">🎤 Talk</button>
+          <button id="handsfree-btn" class="mic" title="Always-listening hands-free voice (local)">🎧 Hands-free: off</button>
+          <label class="hf-wake" title="Only respond to utterances containing the wake word">
+            <input type="checkbox" id="handsfree-wake" /> require “aria”
+          </label>
           <button id="mic-btn" class="mic" title="Wake-word listening (Web Speech)">🎙 Voice: off</button>
         </div>
+      </div>
+      <div class="hf-status hidden" id="hf-status">
+        <span class="hf-dot"></span>
+        <span id="hf-state">idle</span>
       </div>
       <div class="transcript" id="transcript"></div>
       <div class="actionplan hidden" id="actionplan"></div>

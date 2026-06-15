@@ -31,6 +31,10 @@ const els = {
   orderQty: document.getElementById('order-qty'),
   briefBtn: document.getElementById('brief-btn'),
   talkBtn: document.getElementById('talk-btn'),
+  handsfreeBtn: document.getElementById('handsfree-btn'),
+  handsfreeWake: document.getElementById('handsfree-wake'),
+  hfStatus: document.getElementById('hf-status'),
+  hfState: document.getElementById('hf-state'),
   taskForm: document.getElementById('task-form'),
   taskInput: document.getElementById('task-input'),
   taskDue: document.getElementById('task-due'),
@@ -120,6 +124,7 @@ const els = {
 let chatHistory = [];
 let voice = null;
 let cfg = { hasBrain: false, wakeWord: 'aria' };
+let brainReady = false; // last-known brain state, for the auto-connect poller
 
 // ---- helpers ----
 const fmtPrice = (q) =>
@@ -226,7 +231,7 @@ async function sendToBrain(text) {
     const finalText = res.text || stream.text || '(no reply)';
     pending.classList.remove('streaming');
     pending.textContent = finalText;
-    if (res.ok && voice && voice.isListening && voice.isListening()) voice.speak(finalText);
+    if (res.ok && finalText && ((voice && voice.isListening && voice.isListening()) || handsfreeOn)) voice.speak(finalText);
     // Refresh panels in case the brain changed the watchlist, staged a trade,
     // or added/completed a task.
     loadWatchlist();
@@ -1220,6 +1225,82 @@ async function initTalk() {
   els.talkBtn.addEventListener('click', () => recorder.toggle());
 }
 
+// ---- hands-free (always-on) listening ----
+let handsfreeOn = false;
+let handsfreeBusy = false;
+const HF_KEY = 'aria.handsfree';
+
+function ariaSpeaking() {
+  return !!(window.speechSynthesis && window.speechSynthesis.speaking);
+}
+
+function setHandsfreeUi(state) {
+  if (!els.handsfreeBtn) return;
+  const label = { off: '🎧 Hands-free: off', listening: '🎧 Listening…', thinking: '🎧 Thinking…' };
+  els.handsfreeBtn.textContent = label[state] || '🎧 Hands-free';
+  els.handsfreeBtn.classList.toggle('live', state === 'listening' || state === 'thinking');
+}
+
+function handsfreeText(r) {
+  const t = r && (r.text != null ? r.text : (typeof r === 'string' ? r : ''));
+  return String(t || '').trim();
+}
+
+// Each endpointed utterance: transcribe on-device, optionally gate on the wake
+// word, then hand to the brain (sendToBrain speaks the reply in hands-free).
+async function onHandsfreeUtterance(payload) {
+  if (!handsfreeOn || handsfreeBusy) return;
+  handsfreeBusy = true;
+  setHandsfreeUi('thinking');
+  try {
+    let text = handsfreeText(await aria.stt.transcribe(payload));
+    if (els.handsfreeWake && els.handsfreeWake.checked) {
+      const w = (cfg.wakeWord || 'aria').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(w, 'i');
+      if (!re.test(text)) { handsfreeBusy = false; setHandsfreeUi('listening'); return; }
+      text = text.replace(re, '').replace(/^[\s,:.!-]+/, '').trim();
+    }
+    if (text.replace(/[^\p{L}\p{N}]/gu, '').length >= 2) await sendToBrain(text);
+  } catch { /* ignore a bad utterance and keep listening */ }
+  handsfreeBusy = false;
+  setHandsfreeUi(handsfreeOn ? 'listening' : 'off');
+}
+
+async function setHandsfree(on) {
+  if (!recorder || !recorder.continuousSupported) {
+    if (els.handsfreeBtn) {
+      els.handsfreeBtn.disabled = true;
+      els.handsfreeBtn.title = 'Hands-free needs on-device speech recognition (local Whisper).';
+    }
+    return;
+  }
+  if (on) {
+    recorder.setContinuousGate(() => handsfreeOn && !handsfreeBusy && !ariaSpeaking());
+    const ok = await recorder.startContinuous(onHandsfreeUtterance);
+    if (ok === false) {
+      handsfreeOn = false; setHandsfreeUi('off');
+      els.voiceHint.textContent = 'Microphone blocked — allow mic access for hands-free.';
+    } else {
+      handsfreeOn = true; setHandsfreeUi('listening');
+    }
+  } else {
+    recorder.stopContinuous();
+    handsfreeOn = false; setHandsfreeUi('off');
+  }
+  try { localStorage.setItem(HF_KEY, handsfreeOn ? '1' : '0'); } catch {}
+}
+
+// Wired after initTalk so `recorder` exists. Defaults ON (automatic listening);
+// honors a saved preference if the user turned it off.
+function initHandsfree() {
+  if (!els.handsfreeBtn) return;
+  els.handsfreeBtn.addEventListener('click', () => setHandsfree(!handsfreeOn));
+  let pref = '1';
+  try { const v = localStorage.getItem(HF_KEY); if (v != null) pref = v; } catch {}
+  if (pref === '1') setHandsfree(true);
+  else setHandsfreeUi('off');
+}
+
 // ---- accounting ----
 const acctMoney = (n) =>
   n == null ? '—' : (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -2071,21 +2152,41 @@ function initVoice() {
 }
 
 // ---- boot ----
+// Reflect brain connection state in the header. The poller calls this so ARIA
+// links up on her own the moment Ollama is running — no app restart.
+function applyBrainStatus(b, announce = false) {
+  const wasReady = brainReady;
+  brainReady = !!(b && b.ready);
+  els.brainDot.classList.toggle('on', brainReady);
+  els.brainDot.classList.toggle('off', !brainReady);
+  els.brainLabel.textContent = brainReady
+    ? `brain online · ${b.local ? 'local' : 'claude'} · ${b.model}`
+    : `brain offline · ${b && b.local === false ? 'add API key' : 'start Ollama'}`;
+  if (announce && brainReady && !wasReady) {
+    appendMsg('assistant', `Brain connected — ${b.model} is live. Ready when you are, Vinny.`);
+    if (handsfreeOn && voice && voice.speak) voice.speak('Brain connected. Ready when you are.');
+  }
+}
+
+async function pollBrainStatus() {
+  try {
+    const c = await aria.config();
+    if (c && c.brain) applyBrainStatus(c.brain, true);
+  } catch { /* keep last-known state */ }
+}
+
 async function boot() {
   try {
     cfg = await aria.config();
   } catch {}
   const b = cfg.brain || { engine: '?', model: cfg.model, ready: cfg.hasBrain };
-  if (b.ready) {
-    els.brainDot.classList.add('on');
-    els.brainLabel.textContent = `brain online · ${b.local ? 'local' : 'claude'} · ${b.model}`;
-  } else {
-    els.brainDot.classList.add('off');
-    els.brainLabel.textContent = `brain offline · ${b.local ? 'start Ollama' : 'add API key'}`;
+  applyBrainStatus(b);
+  if (!b.ready) {
     appendMsg(
       'assistant',
-      `Hi — I'm ARIA. The brain is offline: ${b.reason || 'not configured'} ` +
-        'The data panels (stocks, chart, alerts, tasks, trading) all still work.'
+      `Hi Vinny — I'm ARIA. The brain is offline: ${b.reason || 'not configured'} ` +
+        'Start Ollama (or add a key) and I\'ll connect automatically — no restart. ' +
+        'The data panels all still work meanwhile.'
     );
   }
   // Streaming brain events (delta / tool_result / done / error) — register ONCE.
@@ -2094,7 +2195,7 @@ async function boot() {
   if (aria.realtime && aria.realtime.onTick) aria.realtime.onTick(applyTick);
 
   initVoice();
-  initTalk();
+  initTalk().then(initHandsfree);
   loadWatchlist();
   refreshTrading();
   loadTasks();
@@ -2126,6 +2227,10 @@ async function boot() {
       loadAlerts();
     });
   }
+
+  // Always-live brain: re-check the connection so ARIA links up on her own the
+  // moment Ollama starts (and reflects a dropped connection).
+  setInterval(pollBrainStatus, 4000);
 
   // Live refresh: trades/P/L fast, watchlist + chart on a slower intraday cadence.
   setInterval(refreshTrading, 15000);

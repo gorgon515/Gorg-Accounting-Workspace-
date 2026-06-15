@@ -54,6 +54,13 @@
   // handlers): the renderer wires this via addEventListener.
   window.ariaSpeak = speakText;
 
+  // True while TTS is actively speaking — the hands-free feedback guard polls
+  // this to pause mic capture so ARIA never transcribes her own voice.
+  window.ariaIsSpeaking = function () {
+    return !!(window.speechSynthesis &&
+      (window.speechSynthesis.speaking || window.speechSynthesis.pending));
+  };
+
   function createVoice({ wakeWord = 'aria', onCommand, onState } = {}) {
     if (!SR) {
       return { supported: false, start() {}, stop() {}, speak() {}, toggle() { return false; } };

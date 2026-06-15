@@ -208,19 +208,28 @@ const NON_CHAT = /embed|whisper|bge|nomic|minilm|rerank/i;
 // Prefer strong tool-calling families when auto-picking an installed model.
 const PREFER = ['qwen3', 'qwen2.5', 'qwen2', 'llama3.3', 'llama3.2', 'llama3.1', 'llama3', 'mistral', 'gemma'];
 
+// Parameter size from an Ollama tag, in billions (e.g. "qwen2.5:32b" -> 32,
+// "qwen3:30b-a3b" -> 30, "...:1.5b" -> 1.5). Bigger model = stronger, so among
+// installed models of the preferred family we pick the LARGEST — "the best
+// qwen possible" the user has pulled.
+function paramSize(name) {
+  const m = /(\d+(?:\.\d+)?)\s*b\b/i.exec(name);
+  return m ? parseFloat(m[1]) : 0;
+}
+
 function pickModel(names) {
-  const want = config.ollamaModel;
-  // 1. exact or same-family match with the configured model
-  const exact = names.find((n) => n === want) || names.find((n) => n.startsWith(want.split(':')[0]));
-  if (exact) return exact;
-  // 2. best available by family preference
   const chat = names.filter((n) => !NON_CHAT.test(n));
+  if (!chat.length) return null;
+  const want = config.ollamaModel;
+  // 1. exact configured model, only if it's actually installed.
+  if (want && chat.includes(want)) return want;
+  // 2. strongest available family, and within it the LARGEST variant.
   for (const fam of PREFER) {
-    const hit = chat.find((n) => n.toLowerCase().startsWith(fam));
-    if (hit) return hit;
+    const inFam = chat.filter((n) => n.toLowerCase().startsWith(fam));
+    if (inFam.length) return inFam.slice().sort((a, b) => paramSize(b) - paramSize(a))[0];
   }
-  // 3. anything chat-capable
-  return chat[0] || null;
+  // 3. otherwise just the largest chat-capable model.
+  return chat.slice().sort((a, b) => paramSize(b) - paramSize(a))[0];
 }
 
 async function localReady() {

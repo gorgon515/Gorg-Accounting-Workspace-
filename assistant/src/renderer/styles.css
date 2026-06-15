@@ -116,6 +116,26 @@ button.ghost { background: transparent; padding: 4px 9px; }
 button.mic { font-family: var(--mono); font-size: 11px; }
 button.mic.live { border-color: var(--green); color: var(--green); }
 
+/* Hands-free (always-listening) controls + live status */
+button.mic#handsfree-btn.on { border-color: var(--gold); color: var(--gold); }
+.hf-wake { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono);
+  font-size: 10px; color: var(--warm-gray); cursor: pointer; user-select: none; }
+.hf-wake input { accent-color: var(--gold); }
+.hf-status { display: flex; align-items: center; gap: 7px; margin: 8px 0 0;
+  font-family: var(--mono); font-size: 10px; color: var(--warm-gray); }
+.hf-status.hidden { display: none; }
+.hf-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warm-gray); flex: 0 0 auto; }
+.hf-status.listening .hf-dot { background: var(--green); animation: hf-pulse 1.4s ease-out infinite; }
+.hf-status.thinking .hf-dot { background: var(--gold); animation: hf-pulse 1s ease-out infinite; }
+.hf-status.speaking .hf-dot { background: var(--gold); box-shadow: 0 0 8px 1px rgba(184,151,106,0.6); }
+.hf-status.listening #hf-state { color: var(--green); }
+.hf-status.thinking #hf-state, .hf-status.speaking #hf-state { color: var(--gold); }
+@keyframes hf-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(111,169,140,0.5); }
+  70% { box-shadow: 0 0 0 7px rgba(111,169,140,0); }
+  100% { box-shadow: 0 0 0 0 rgba(111,169,140,0); }
+}
+
 input[type="text"] {
   font-family: var(--sans);
   background: var(--obsidian);
