@@ -19,8 +19,13 @@ const config = {
   brainEngine: (process.env.BRAIN_ENGINE || (process.env.ANTHROPIC_API_KEY ? 'claude' : 'local')).toLowerCase(),
   ollamaUrl: process.env.OLLAMA_URL || 'http://127.0.0.1:11434',
   // ARIA auto-detects and uses the LARGEST Qwen you've pulled; this is only the
-  // fallback and the model the setup hint suggests pulling.
-  ollamaModel: process.env.OLLAMA_MODEL || 'qwen2.5:14b',
+  // fallback and the model the setup hint suggests pulling. Qwen3 is the newest
+  // family and handles the big tool list best.
+  ollamaModel: process.env.OLLAMA_MODEL || 'qwen3:8b',
+  // Ollama's default context is only 2048 tokens — far too small for ARIA's
+  // system prompt + ~40 tools, which makes models flail. Give them real room.
+  ollamaNumCtx: Number(process.env.OLLAMA_NUM_CTX || 8192),
+  ollamaTemperature: Number(process.env.OLLAMA_TEMPERATURE || 0.4),
   wakeWord: (process.env.ARIA_WAKE_WORD || 'aria').toLowerCase(),
   // iMessage bridge (macOS only). Reads ~/Library/Messages/chat.db and replies
   // via AppleScript. Only responds to allowlisted handles (safe default: none).

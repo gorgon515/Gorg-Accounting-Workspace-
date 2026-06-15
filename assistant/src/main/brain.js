@@ -146,6 +146,10 @@ async function ollamaChat(messages, tools) {
       messages,
       tools,
       stream: false,
+      // Ollama defaults to a 2048-token context, which truncates ARIA's large
+      // system prompt + ~40 tools and makes small models flail. Give the model
+      // real room to see its instructions and tools, and keep tool-calling steady.
+      options: { num_ctx: config.ollamaNumCtx, temperature: config.ollamaTemperature },
     }),
   });
   if (!res.ok) {
