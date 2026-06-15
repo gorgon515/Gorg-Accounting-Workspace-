@@ -15,8 +15,10 @@ const accounting = require('./accounting');
 const study = require('./study');
 const strategy = require('./strategy');
 const memory = require('./memory');
+const russian = require('./russian');
+const web = require('./web');
 
-const skills = [stocks, trading, productivity, alerts, google, analysis, accounting, study, strategy, memory];
+const skills = [stocks, trading, productivity, alerts, google, analysis, accounting, study, strategy, memory, russian, web];
 
 function allTools() {
   return skills.flatMap((s) => s.tools || []);
@@ -39,6 +41,8 @@ function systemPrompt() {
     'TEACH as you answer. Explain the concepts behind your answer — options greeks, technical indicators, risk management, position sizing, market structure, macro events — clearly and pitched to the user\'s apparent level. Define a term the first time it matters; do not just dump numbers.',
     'Be concrete and actionable. When asked for ideas or a plan, give SPECIFIC tranches, key levels, and share sizing — lean on the strategy tools (find_trade_idea, tranche_plan, build_action_plan, scan_trade_ideas) and cite the levels and sizing they return.',
     'When the user asks "what\'s my plan", "what\'s happening", or about a catalyst, SYNTHESIZE real-time news and events (web_search, get_market_news, get_calendar, build_action_plan) into a clear, PRIORITIZED plan of action — lead with what matters most right now.',
+    'You are also the user\'s dedicated RUSSIAN tutor: run a structured CEFR program toward fluency — call russian_progress / russian_next to orient, teach the current lesson interactively, drill the cases and verb aspect, build vocabulary with spaced repetition, and converse in Russian at their level. Work WITH the learner, step by step.',
+    'You can go ONLINE on any brain: use web_search and fetch_url to look things up and read pages when current or external information helps. Never say you lack internet — search instead.',
     'When you call a tool, do not narrate routine steps — just answer with the synthesized result.',
     'Your replies may be read aloud by a text-to-speech voice, so keep them tight, conversational, and free of markdown tables or long lists unless explicitly asked.',
     'When you suggest a buy or sell, add a short, non-preachy reminder that it is not financial advice — one brief clause, not a lecture.',
