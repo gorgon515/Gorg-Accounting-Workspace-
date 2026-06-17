@@ -177,6 +177,28 @@ function register() {
   ipcMain.handle('sidecar:cosEveningReview', (_e, ctx) => sidecar.cosEveningReview(ctx));
   ipcMain.handle('sidecar:emailBriefing', (_e, emails) => sidecar.emailBriefing(emails));
   ipcMain.handle('sidecar:calendarPlan', (_e, p) => sidecar.calendarPlan(p));
+  // Phase 6 — accounting platform
+  ipcMain.handle('sidecar:acctSeed', (_e, template) => sidecar.acctSeed(template));
+  ipcMain.handle('sidecar:acctChart', () => sidecar.acctChart());
+  ipcMain.handle('sidecar:acctJournal', (_e, p) => sidecar.acctJournal(p));
+  ipcMain.handle('sidecar:acctEntries', (_e, q) => sidecar.acctEntries(q));
+  ipcMain.handle('sidecar:acctTrialBalance', (_e, asOf) => sidecar.acctTrialBalance(asOf));
+  ipcMain.handle('sidecar:acctBalanceSheet', (_e, asOf) => sidecar.acctBalanceSheet(asOf));
+  ipcMain.handle('sidecar:acctIncome', (_e, p) => sidecar.acctIncome(p.start, p.end));
+  ipcMain.handle('sidecar:acctCashFlow', (_e, p) => sidecar.acctCashFlow(p.start, p.end));
+  ipcMain.handle('sidecar:acctApAging', () => sidecar.acctApAging());
+  ipcMain.handle('sidecar:acctArAging', () => sidecar.acctArAging());
+  ipcMain.handle('sidecar:acctAddVendor', (_e, p) => sidecar.acctAddVendor(p));
+  ipcMain.handle('sidecar:acctAddBill', (_e, p) => sidecar.acctAddBill(p));
+  ipcMain.handle('sidecar:acctAddCustomer', (_e, p) => sidecar.acctAddCustomer(p));
+  ipcMain.handle('sidecar:acctAddInvoice', (_e, p) => sidecar.acctAddInvoice(p));
+  ipcMain.handle('sidecar:acctAssets', () => sidecar.acctAssets());
+  ipcMain.handle('sidecar:acctAddAsset', (_e, p) => sidecar.acctAddAsset(p));
+  ipcMain.handle('sidecar:acctAssetSchedule', (_e, id) => sidecar.acctAssetSchedule(id));
+  ipcMain.handle('sidecar:acctClients', () => sidecar.acctClients());
+  ipcMain.handle('sidecar:acctImportJournal', (_e, csv) => sidecar.acctImportJournal(csv));
+  ipcMain.handle('sidecar:acctAudit', () => sidecar.acctAudit());
+  ipcMain.handle('sidecar:acctDashboard', (_e, asOf) => sidecar.acctDashboard(asOf));
 
   // Memory (Memory Center)
   ipcMain.handle('memory:list', (_e, query) => memory.recall(query ? { query } : {}));

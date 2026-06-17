@@ -184,6 +184,29 @@ const api = {
   cosPlan: (ctx) => call('POST', '/cos/plan', ctx || {}),
   cosBriefingAuto: () => call('GET', '/cos/briefing/auto'),
   cosPlanAuto: () => call('GET', '/cos/plan/auto'),
+  // Phase 6 — accounting platform
+  acctSeed: (template) => call('POST', `/platform/coa/seed?template=${encodeURIComponent(template || 'general_small_business')}`),
+  acctChart: () => call('GET', '/platform/coa'),
+  acctAddAccount: (p) => call('POST', '/platform/coa/account', p),
+  acctJournal: (p) => call('POST', '/platform/journal', p),
+  acctEntries: (q) => call('GET', '/platform/journal' + (q || '')),
+  acctTrialBalance: (asOf) => call('GET', '/platform/trial-balance' + (asOf ? `?as_of=${asOf}` : '')),
+  acctBalanceSheet: (asOf) => call('GET', '/platform/statements/balance-sheet' + (asOf ? `?as_of=${asOf}` : '')),
+  acctIncome: (start, end) => call('GET', `/platform/statements/income?start=${start}&end=${end}`),
+  acctCashFlow: (start, end) => call('GET', `/platform/statements/cash-flow?start=${start}&end=${end}`),
+  acctApAging: () => call('GET', '/platform/ap/aging'),
+  acctArAging: () => call('GET', '/platform/ar/aging'),
+  acctAddVendor: (p) => call('POST', '/platform/ap/vendor', p),
+  acctAddBill: (p) => call('POST', '/platform/ap/bill', p),
+  acctAddCustomer: (p) => call('POST', '/platform/ar/customer', p),
+  acctAddInvoice: (p) => call('POST', '/platform/ar/invoice', p),
+  acctAssets: () => call('GET', '/platform/assets'),
+  acctAddAsset: (p) => call('POST', '/platform/assets', p),
+  acctAssetSchedule: (id) => call('GET', `/platform/assets/${id}/schedule`),
+  acctClients: () => call('GET', '/platform/clients'),
+  acctImportJournal: (csv) => call('POST', '/platform/import/journal', { csv }),
+  acctAudit: () => call('GET', '/platform/audit'),
+  acctDashboard: (asOf) => call('GET', '/platform/dashboard' + (asOf ? `?as_of=${asOf}` : '')),
 };
 
 const tools = [
@@ -374,6 +397,43 @@ const tools = [
     description: 'Get the goals dashboard with progress, deadline-aware forecast (ahead/on-track/behind), and recommendations.',
     input_schema: { type: 'object', properties: {} },
   },
+  {
+    name: 'post_journal_entry',
+    description:
+      'Post a balanced double-entry journal entry to the accounting platform GL. Lines reference accounts by number (e.g. "1000") with a debit OR credit; debits must equal credits. Use for adjusting/accrual/manual entries.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        date: { type: 'string', description: 'YYYY-MM-DD' },
+        memo: { type: 'string' },
+        lines: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: { account: { type: 'string' }, debit: { type: 'number' }, credit: { type: 'number' }, memo: { type: 'string' } },
+          },
+        },
+      },
+      required: ['date', 'lines'],
+    },
+  },
+  {
+    name: 'financial_statement',
+    description: 'Generate a financial statement from the GL: kind = balance_sheet | income | cash_flow | trial_balance. Provide start/end for income & cash flow.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['balance_sheet', 'income', 'cash_flow', 'trial_balance'] },
+        as_of: { type: 'string' }, start: { type: 'string' }, end: { type: 'string' },
+      },
+      required: ['kind'],
+    },
+  },
+  {
+    name: 'accounting_dashboard',
+    description: 'Live accounting dashboard: cash position, AR/AP aging, MTD/YTD profitability, balance-sheet summary, recent entries, alerts.',
+    input_schema: { type: 'object', properties: {} },
+  },
 ];
 
 const handlers = {
@@ -394,12 +454,21 @@ const handlers = {
   prioritized_tasks: () => api.recommendTasks(),
   track_goal: (i) => api.createGoal(i || {}),
   goals_status: () => api.goalsDashboard(),
+  post_journal_entry: (i) => api.acctJournal(i || {}),
+  financial_statement: (i) => {
+    const k = (i && i.kind) || 'trial_balance';
+    if (k === 'balance_sheet') return api.acctBalanceSheet(i.as_of);
+    if (k === 'income') return api.acctIncome(i.start, i.end);
+    if (k === 'cash_flow') return api.acctCashFlow(i.start, i.end);
+    return api.acctTrialBalance(i.as_of);
+  },
+  accounting_dashboard: () => api.acctDashboard(),
 };
 
 module.exports = {
   name: 'sidecar',
   systemPromptFragment:
-    'You have a local Intelligence Sidecar (Python/FastAPI) for heavy compute and research. For markets: quant_analyze, quant_factors, quant_risk, quant_portfolio, quant_signal (bull/bear/risks/catalysts/confidence), and market_briefing. For accounting: explain_asc, accounting_memo, implementation_checklist, and accounting_briefing (the daily FASB/SEC/PCAOB/IRS intelligence digest). For automation: generate_workflow (importable N8N JSON). It runs locally; if it is offline or a data source is unreachable, say so briefly and continue. Always separate facts/calculations from interpretations/forecasts, and never present a forecast as certainty.',
+    'You have a local Intelligence Sidecar (Python/FastAPI) for heavy compute and research. For markets: quant_analyze, quant_factors, quant_risk, quant_portfolio, quant_signal (bull/bear/risks/catalysts/confidence), and market_briefing. For accounting research: explain_asc, accounting_memo, implementation_checklist, and accounting_briefing (the daily FASB/SEC/PCAOB/IRS intelligence digest). You also run a REAL double-entry accounting platform: post_journal_entry (debits must equal credits), financial_statement (balance_sheet/income/cash_flow/trial_balance), and accounting_dashboard (cash, AR/AP aging, profitability). For automation: generate_workflow. It runs locally; if it is offline or a data source is unreachable, say so briefly and continue. Always separate facts/calculations from interpretations/forecasts, and never present a forecast as certainty.',
   tools,
   handlers,
   api,

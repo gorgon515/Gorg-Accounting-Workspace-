@@ -79,6 +79,21 @@ export const helios = {
     cosEveningReview: (ctx: any): Promise<any> => call((b) => b.sidecar.cosEveningReview(ctx)),
     emailBriefing: (emails: any): Promise<any> => call((b) => b.sidecar.emailBriefing(emails)),
     calendarPlan: (p: any): Promise<any> => call((b) => b.sidecar.calendarPlan(p)),
+    // Phase 6 — accounting platform
+    acctSeed: (t?: string): Promise<any> => call((b) => b.sidecar.acctSeed(t)),
+    acctChart: (): Promise<any> => call((b) => b.sidecar.acctChart()),
+    acctJournal: (p: any): Promise<any> => call((b) => b.sidecar.acctJournal(p)),
+    acctEntries: (q?: string): Promise<any> => call((b) => b.sidecar.acctEntries(q)),
+    acctTrialBalance: (asOf?: string): Promise<any> => call((b) => b.sidecar.acctTrialBalance(asOf)),
+    acctBalanceSheet: (asOf?: string): Promise<any> => call((b) => b.sidecar.acctBalanceSheet(asOf)),
+    acctIncome: (start: string, end: string): Promise<any> => call((b) => b.sidecar.acctIncome(start, end)),
+    acctApAging: (): Promise<any> => call((b) => b.sidecar.acctApAging()),
+    acctArAging: (): Promise<any> => call((b) => b.sidecar.acctArAging()),
+    acctAddCustomer: (p: any): Promise<any> => call((b) => b.sidecar.acctAddCustomer(p)),
+    acctAddInvoice: (p: any): Promise<any> => call((b) => b.sidecar.acctAddInvoice(p)),
+    acctAssets: (): Promise<any> => call((b) => b.sidecar.acctAssets()),
+    acctAudit: (): Promise<any> => call((b) => b.sidecar.acctAudit()),
+    acctDashboard: (asOf?: string): Promise<any> => call((b) => b.sidecar.acctDashboard(asOf)),
   },
 
   language: {

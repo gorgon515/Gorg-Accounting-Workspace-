@@ -149,9 +149,38 @@ sandbox can't reach them, so normalization + OAuth-URL/token construction are
 verified against real-format fixtures, and all chief-of-staff logic (tasks, goals,
 scheduler, email/calendar intelligence, briefing/review/planner) is fully tested.
 
-Tests: **131 passing** (`pytest -q`) across the Phase 1–4 engines plus Phase-5
-tasks/goals, scheduler (next-run + cron + recovery), integrations normalization,
-email & calendar intelligence, chief-of-staff briefing/review/planner, and routers.
+## Phase 6 — accounting platform (real double-entry)
+
+```
+accounting_platform/
+  db.py            shared SQLite schema + immutable audit log + period controls
+  coa.py           Chart of Accounts: normal-balance rules + firm templates
+  gl.py            General Ledger: balanced journal entries, posting w/ period
+                   control, account balances, trial balance, reversing entries
+  statements.py    Balance Sheet (A = L + E + Net Income), Income Statement,
+                   direct-method Cash Flow, comparative
+  ap.py / ar.py    AP/AR: vendors/customers, bills/invoices, payments, aging,
+                   1099 — every bill/invoice/payment posts a real journal entry
+  fixed_assets.py  straight-line / double-declining / units-of-production +
+                   depreciation schedules + GL-posting
+  bank_rec.py      CSV + OFX/QFX import, auto-matching to GL cash lines, recon report
+  clients.py       clients / engagements / deadlines
+  documents.py     document center: tags, versioning, linking, search
+  importers.py     CSV journal/vendor/customer/bank import (grouped → balanced entries)
+  dashboard.py     live overview: cash, AR/AP aging, profitability, alerts
+```
+
+Everything ties to one GL: AP/AR/fixed-assets post journal entries, so the trial
+balance balances and the balance sheet satisfies **Assets = Liabilities + Equity +
+Net Income** (verified in tests). API under `/platform/*` (COA, journal,
+trial-balance, statements, AP/AR, assets, bank, clients, documents, import, audit,
+dashboard); invalid/unbalanced entries → HTTP 400. Brain tools: `post_journal_entry`,
+`financial_statement`, `accounting_dashboard`.
+
+Tests: **159 passing** (`pytest -q`) across the Phase 1–5 engines plus Phase-6
+GL/statements (balance-sheet identity, cash-flow reconciliation, period controls,
+reversals), AP/AR + aging, fixed-asset depreciation, bank reconciliation, audit
+trail, importers, dashboard, and the platform router.
 
 ## Adding a market-data provider
 

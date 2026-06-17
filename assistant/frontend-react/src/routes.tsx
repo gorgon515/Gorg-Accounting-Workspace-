@@ -13,6 +13,7 @@ import { Automations } from './views/Automations';
 import { Settings } from './views/Settings';
 import { AgentActivity } from './views/AgentActivity';
 import { ChiefOfStaff } from './views/ChiefOfStaff';
+import { Ledger } from './views/Ledger';
 
 export type RouteGroup = 'Core' | 'Finance' | 'Learning' | 'System';
 
@@ -32,6 +33,7 @@ export const ROUTES: RouteDef[] = [
   { id: 'markets', label: 'Markets', icon: '▤', group: 'Finance', component: Markets },
   { id: 'portfolio', label: 'Portfolio', icon: '◴', group: 'Finance', component: Portfolio },
   { id: 'accounting', label: 'Accounting', icon: '§', group: 'Finance', component: Accounting },
+  { id: 'ledger', label: 'Ledger / Books', icon: '⊞', group: 'Finance', component: Ledger },
   { id: 'cpa', label: 'CPA Center', icon: '✓', group: 'Learning', component: CPACenter },
   { id: 'language', label: 'Language', icon: '⌘', group: 'Learning', component: Language },
   { id: 'calendar', label: 'Calendar', icon: '◷', group: 'Core', component: Calendar },

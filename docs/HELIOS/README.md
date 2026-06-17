@@ -51,6 +51,7 @@ prove the architecture extends as designed:
 | **React HUD Command Center** (Phase 3) | `assistant/frontend-react/` | ✅ builds — React/TS/Tailwind/Framer; design system, 3-column layout, 13 views, typed IPC client, event bus; opt-in via `HELIOS_UI=react` (classic stays default) |
 | **Intelligence engines** (Phase 4) | `backend/accounting/`, `backend/quant/`, `backend/n8n/` | ✅ working — accounting collectors/storage/briefing/graph/research, quant fundamentals/signals/market-briefing, N8N client + workflow generator; wired to the HUD; 87 backend tests |
 | **Chief of Staff / operational layer** (Phase 5) | `backend/tasks`, `goals`, `scheduler`, `email_intel`, `calendar_intel`, `cos`, `integrations` | ✅ working — task & goal intelligence, timezone-aware scheduler, email/calendar intelligence, daily briefing + evening review + memory-driven planner, Google/Outlook adapters; Chief of Staff HUD view; 131 backend tests |
+| **Accounting platform** (Phase 6) | `backend/accounting_platform/` | ✅ working — real double-entry GL, chart of accounts + templates, journal engine, AP/AR (posting to GL), fixed-asset depreciation, bank reconciliation, financial statements (BS/IS/CF), clients/documents, immutable audit trail, dashboard; Ledger HUD view; 159 backend tests |
 
 All are wired into the registry, exposed over IPC, surfaced in the UI, and
 covered by tests (router 14/14; full language lifecycle; backend 35; registry 11).
@@ -150,6 +151,35 @@ The proactive operating layer that runs the day — **131 backend tests**:
   `chief_of_staff_briefing`, `plan_my_day`, `add_priority_task`,
   `prioritized_tasks`, `track_goal`, `goals_status`.
 
+### Phase 6 progress (accounting platform)
+
+A real double-entry accounting platform (`backend/accounting_platform/`) — **159
+backend tests**, no network needed:
+
+- **General Ledger** — balanced journal entries (debits = credits enforced),
+  posting with **period controls**, account balances by normal-balance sign,
+  trial balance, account ledgers, and reversing entries; **immutable audit trail**
+  on every action (old → new, user, timestamp).
+- **Chart of Accounts** — asset/liability/equity/revenue/expense with subaccounts,
+  inactive flags, and firm **templates** (small business / professional / consulting
+  / tax firm).
+- **AP & AR** — vendors/customers, bills/invoices, payments, **aging schedules**,
+  1099 tracking, cash-requirements forecast — each posts a real JE so AP/AR tie to
+  the GL and statements.
+- **Fixed Assets** — straight-line / double-declining / units-of-production
+  depreciation, schedules, and GL-posting.
+- **Bank Reconciliation** — CSV + OFX/QFX import, auto-matching to posted cash
+  lines, reconciliation report with outstanding/unmatched items.
+- **Financial Statements** — Balance Sheet that satisfies **A = L + E + Net
+  Income**, Income Statement, **direct-method Cash Flow** that reconciles to the
+  cash change, comparative statements.
+- **Clients / Document Center** — engagements & deadlines; tagged, versioned,
+  linkable documents (OCR-ready).
+- **HUD**: a new **Ledger / Books** view (Dashboard · Statements · Journal · AR/AP ·
+  Audit); brain tools `post_journal_entry`, `financial_statement`,
+  `accounting_dashboard`. The Phase-1/4 accounting *research* (ASC/memo/briefing)
+  remains alongside the new transactional platform.
+
 ## The documents (deliverables 1–20)
 
 | # | Document | Deliverables covered |
@@ -177,7 +207,7 @@ Legend: ✅ implemented in ARIA today · 🟡 partial · ⬜ designed (this blue
 | Memory: short/long/project/etc. | ChromaDB + Postgres | 🟡 | Durable JSON memory today; vector + relational designed |
 | N8N automation center | embedded N8N | 🟡 | Real REST client + AI workflow generator (importable JSON); embedded editor designed |
 | Language Immersion | 7 langs, full pathway | ✅ | `language.js` — SRS, missions, CEFR, roleplay |
-| Accounting platform | GL/AP/AR/statements… | 🟡 | Ledger + invoices + P&L today; full GL designed |
+| Accounting platform | GL/AP/AR/statements… | ✅ | Real double-entry GL, COA templates, AP/AR (posted to GL), fixed assets, bank rec, BS/IS/CF, audit trail, dashboard |
 | Accounting Intelligence Center | FASB/SEC/IRS monitoring | ✅ | Real collectors + SQLite store + daily briefing + knowledge graph + research engine; live feeds need network |
 | CPA Study Center | qbank + simulations | 🟡 | Progress tracker + flashcards + CPA Coach agent; qbank designed |
 | Market intelligence | fundamentals→options | 🟡 | Quotes/news/technicals + fundamentals + signals + market briefing; options/insider feeds designed |
