@@ -103,3 +103,65 @@ class WorkflowSpecRequest(BaseModel):
     subject: Optional[str] = None
     transform_js: Optional[str] = None
     kind: Optional[str] = None  # 'accounting_briefing' for the flagship example
+
+
+# ---- Phase 5 — chief of staff / operational layer ----
+class TaskCreate(BaseModel):
+    title: str
+    notes: str = ""
+    project: Optional[str] = None
+    priority: int = 3
+    due: Optional[str] = None
+    recurrence: str = "none"
+    depends_on: Optional[list[str]] = None
+    category: Optional[str] = None
+
+
+class TaskUpdate(BaseModel):
+    id: str
+    fields: dict[str, Any] = Field(default_factory=dict)
+
+
+class GoalCreate(BaseModel):
+    title: str
+    category: str = "personal"
+    target: float = 100
+    unit: str = "%"
+    deadline: Optional[str] = None
+    milestones: Optional[list[dict[str, Any]]] = None
+
+
+class ProgressUpdate(BaseModel):
+    id: str
+    progress: float
+
+
+class JobCreate(BaseModel):
+    name: str
+    handler: str
+    kind: str
+    spec: str
+    tz: Optional[str] = None
+    payload: Optional[dict[str, Any]] = None
+
+
+class EmailBatch(BaseModel):
+    emails: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class CalendarPlanRequest(BaseModel):
+    events: list[dict[str, Any]] = Field(default_factory=list)
+    tasks: list[dict[str, Any]] = Field(default_factory=list)
+    work_start: str = "09:00"
+    work_end: str = "18:00"
+
+
+class CosContext(BaseModel):
+    events: list[dict[str, Any]] = Field(default_factory=list)
+    emails: list[dict[str, Any]] = Field(default_factory=list)
+    tasks: Optional[list[dict[str, Any]]] = None
+    goals: Optional[list[dict[str, Any]]] = None
+    market: Optional[dict[str, Any]] = None
+    accounting: Optional[dict[str, Any]] = None
+    goals_progress: Optional[list[dict[str, Any]]] = None
+    portfolio: Optional[dict[str, Any]] = None

@@ -121,9 +121,37 @@ Configure live sources/keys via env: `HELIOS_FEEDS_FASB/SEC/IRS/PCAOB`,
 `HELIOS_HTTP_UA`, `HELIOS_MARKET_PROVIDER` (+ `FMP_API_KEY` / `ALPHA_VANTAGE_KEY`),
 `N8N_URL` / `N8N_API_KEY`, `HELIOS_INTEL_DB`.
 
-Tests: **87 passing** (`pytest -q`) across technicals, factors, risk, accounting
-research, feeds/schemas/collectors/storage, briefing, knowledge graph, quant
-fundamentals/signals, market briefing, providers, N8N, and all routers.
+## Phase 5 — personal chief of staff (operational layer)
+
+```
+tasks/engine.py        Task Intelligence: SQLite store, priority/deadline scoring,
+                       recurrence, dependencies (blocking), auto-categorization, recommendations
+goals/engine.py        Goal system: milestones, progress, deadline-aware forecasting, recommendations
+scheduler/engine.py    persistent, timezone-aware jobs (interval/daily/weekly/cron/once),
+                       run_due()+recovery+audit; background loop
+email_intel/engine.py  categorize, extract tasks/deadlines, meeting/invoice detection,
+                       priority scoring, reply drafting, inbox briefing
+calendar_intel/engine.py conflicts, free/focus slots, time-blocking, travel buffers, meeting prep, daily plan
+cos/                   Chief of Staff: daily_briefing, evening_review, memory-driven planner
+integrations/          google.py + outlook.py (real OAuth + REST, network-guarded) and
+                       schemas.py (Gmail/Graph → normalized Email/Event; fixture-tested)
+```
+
+Endpoints (`/tasks`, `/goals`, `/scheduler/*`, `/email/*`, `/calendar/plan`,
+`/cos/daily-briefing`, `/cos/evening-review`, `/cos/plan`, `/cos/briefing/auto`,
+`/cos/plan/auto`). The scheduler seeds default OS jobs (morning briefing, evening
+review, hourly accounting refresh, memory maintenance) and `run_due` executes them
+via a handler registry with audit logging.
+
+**Network note (same as Phase 4).** Google/Outlook OAuth + REST are real and run
+on a configured, networked machine (GOOGLE_CLIENT_ID/SECRET, OUTLOOK_*); the
+sandbox can't reach them, so normalization + OAuth-URL/token construction are
+verified against real-format fixtures, and all chief-of-staff logic (tasks, goals,
+scheduler, email/calendar intelligence, briefing/review/planner) is fully tested.
+
+Tests: **131 passing** (`pytest -q`) across the Phase 1–4 engines plus Phase-5
+tasks/goals, scheduler (next-run + cron + recovery), integrations normalization,
+email & calendar intelligence, chief-of-staff briefing/review/planner, and routers.
 
 ## Adding a market-data provider
 

@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 
 from . import config
 from .routers import (
-    accounting, accounting_intel, health, markets, n8n_router, quant, quant_research,
+    accounting, accounting_intel, health, markets, n8n_router, personal, quant, quant_research,
 )
 from .services.market_data import DataUnavailable
 
@@ -51,6 +51,7 @@ app.include_router(markets.router)
 app.include_router(accounting.router)
 app.include_router(accounting_intel.router)
 app.include_router(n8n_router.router)
+app.include_router(personal.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint

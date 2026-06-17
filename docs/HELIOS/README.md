@@ -50,6 +50,7 @@ prove the architecture extends as designed:
 | **Intelligence Sidecar** (Phase 2) | `backend/` (FastAPI) + `assistant/src/main/services/sidecar.js` | ✅ working — Quant Research Engine + Accounting Intelligence Engine; autostarted/supervised by Electron; 35 backend + 11 Node tests |
 | **React HUD Command Center** (Phase 3) | `assistant/frontend-react/` | ✅ builds — React/TS/Tailwind/Framer; design system, 3-column layout, 13 views, typed IPC client, event bus; opt-in via `HELIOS_UI=react` (classic stays default) |
 | **Intelligence engines** (Phase 4) | `backend/accounting/`, `backend/quant/`, `backend/n8n/` | ✅ working — accounting collectors/storage/briefing/graph/research, quant fundamentals/signals/market-briefing, N8N client + workflow generator; wired to the HUD; 87 backend tests |
+| **Chief of Staff / operational layer** (Phase 5) | `backend/tasks`, `goals`, `scheduler`, `email_intel`, `calendar_intel`, `cos`, `integrations` | ✅ working — task & goal intelligence, timezone-aware scheduler, email/calendar intelligence, daily briefing + evening review + memory-driven planner, Google/Outlook adapters; Chief of Staff HUD view; 131 backend tests |
 
 All are wired into the registry, exposed over IPC, surfaced in the UI, and
 covered by tests (router 14/14; full language lifecycle; backend 35; registry 11).
@@ -120,6 +121,34 @@ tests** (see [`backend/README.md`](../../backend/README.md)):
   exposed as brain tools (`accounting_briefing`, `quant_signal`, `market_briefing`,
   `implementation_checklist`, `generate_workflow`). Network-restricted sandboxes
   degrade gracefully; live sources populate on a networked machine.
+
+### Phase 5 progress (chief of staff / operational layer)
+
+The proactive operating layer that runs the day — **131 backend tests**:
+
+- **Task Intelligence** — SQLite tasks with priority/deadline scoring,
+  recurrence, dependencies (blocking), auto-categorization, and recommendations.
+- **Goal system** — milestones, progress, and **deadline-aware forecasting**
+  (ahead / on-track / behind with the required daily pace) + recommendations.
+- **Scheduler Engine** — persistent, timezone-aware jobs (interval / daily /
+  weekly / cron / once), `run_due` execution with recovery and audit logging, and
+  a background loop; seeds the OS jobs (morning briefing, evening review, hourly
+  accounting refresh, memory maintenance).
+- **Email Intelligence** — categorize, extract tasks/deadlines, detect meetings/
+  invoices, prioritize, draft replies, inbox briefing.
+- **Calendar Intelligence** — conflict detection, free/focus blocks, task
+  time-blocking, travel buffers, meeting prep, daily plan.
+- **Chief of Staff** — daily briefing (priorities, deadlines, risks,
+  opportunities, energy allocation, recommended actions, confidence), evening
+  review, and a **memory-driven planner** ("CPA in 45 days" → required pace →
+  scheduled focus blocks + priority bumps).
+- **Google + Outlook integrations** — real OAuth + REST clients (network-guarded);
+  Gmail/Graph responses normalize to one shape so the intelligence engines are
+  provider-agnostic (normalization + OAuth construction fixture-tested).
+- **HUD**: a new **Chief of Staff** view (Briefing · Plan · Tasks · Goals ·
+  Evening) plus Email Intelligence wired into the inbox; brain tools
+  `chief_of_staff_briefing`, `plan_my_day`, `add_priority_task`,
+  `prioritized_tasks`, `track_goal`, `goals_status`.
 
 ## The documents (deliverables 1–20)
 

@@ -161,6 +161,29 @@ const api = {
   n8nStatus: () => call('GET', '/n8n/status'),
   n8nWorkflows: () => call('GET', '/n8n/workflows'),
   n8nGenerate: (p) => call('POST', '/n8n/generate', p),
+  // Phase 5 — personal chief of staff
+  createTask: (p) => call('POST', '/tasks', p),
+  listTasks: (status) => call('GET', '/tasks' + (status ? `?status=${encodeURIComponent(status)}` : '')),
+  updateTask: (p) => call('POST', '/tasks/update', p),
+  completeTask: (tid) => call('POST', `/tasks/${encodeURIComponent(tid)}/complete`),
+  deleteTask: (tid) => call('DELETE', `/tasks/${encodeURIComponent(tid)}`),
+  recommendTasks: () => call('GET', '/tasks/recommend'),
+  createGoal: (p) => call('POST', '/goals', p),
+  goalsDashboard: () => call('GET', '/goals'),
+  goalProgress: (p) => call('POST', '/goals/progress', p),
+  deleteGoal: (gid) => call('DELETE', `/goals/${encodeURIComponent(gid)}`),
+  schedulerJobs: () => call('GET', '/scheduler/jobs'),
+  schedulerSeed: () => call('POST', '/scheduler/seed'),
+  schedulerTick: () => call('POST', '/scheduler/tick'),
+  schedulerHistory: () => call('GET', '/scheduler/history'),
+  emailTriage: (emails) => call('POST', '/email/triage', { emails }),
+  emailBriefing: (emails) => call('POST', '/email/briefing', { emails }),
+  calendarPlan: (p) => call('POST', '/calendar/plan', p),
+  cosDailyBriefing: (ctx) => call('POST', '/cos/daily-briefing', ctx || {}),
+  cosEveningReview: (ctx) => call('POST', '/cos/evening-review', ctx || {}),
+  cosPlan: (ctx) => call('POST', '/cos/plan', ctx || {}),
+  cosBriefingAuto: () => call('GET', '/cos/briefing/auto'),
+  cosPlanAuto: () => call('GET', '/cos/plan/auto'),
 };
 
 const tools = [
@@ -298,6 +321,59 @@ const tools = [
       },
     },
   },
+  {
+    name: 'chief_of_staff_briefing',
+    description:
+      "The Chief of Staff's daily briefing assembled from your tasks and goals (the app adds your calendar/email): executive summary, today's priorities, deadlines, risks, opportunities, energy allocation, and recommended actions.",
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'plan_my_day',
+    description:
+      'Memory-driven autonomous day plan: derives the daily pace needed for your deadline-bearing goals (e.g. "CPA in 45 days"), schedules focus blocks, and recommends task-priority adjustments.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'add_priority_task',
+    description:
+      'Add a task to the Task Intelligence System (priority/deadline scoring, dependencies, recurrence, auto-categorization). Use for things to track and prioritize, not throwaway notes.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        priority: { type: 'number', description: '1–5' },
+        due: { type: 'string', description: 'YYYY-MM-DD' },
+        recurrence: { type: 'string', enum: ['none', 'daily', 'weekly', 'monthly'] },
+        project: { type: 'string' },
+      },
+      required: ['title'],
+    },
+  },
+  {
+    name: 'prioritized_tasks',
+    description: 'Get the ranked, actionable (unblocked) tasks to work on now — overdue first, then by priority/deadline score.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'track_goal',
+    description: 'Create a personal goal with an optional deadline (e.g. CPA, language, fitness, financial). Enables deadline-aware forecasting and day planning.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        category: { type: 'string' },
+        target: { type: 'number' },
+        unit: { type: 'string' },
+        deadline: { type: 'string', description: 'YYYY-MM-DD' },
+      },
+      required: ['title'],
+    },
+  },
+  {
+    name: 'goals_status',
+    description: 'Get the goals dashboard with progress, deadline-aware forecast (ahead/on-track/behind), and recommendations.',
+    input_schema: { type: 'object', properties: {} },
+  },
 ];
 
 const handlers = {
@@ -312,6 +388,12 @@ const handlers = {
   quant_signal: (i) => api.signal(i || {}),
   market_briefing: (i) => api.marketBriefing(i || {}),
   generate_workflow: (i) => api.n8nGenerate(i || {}),
+  chief_of_staff_briefing: () => api.cosBriefingAuto(),
+  plan_my_day: () => api.cosPlanAuto(),
+  add_priority_task: (i) => api.createTask(i || {}),
+  prioritized_tasks: () => api.recommendTasks(),
+  track_goal: (i) => api.createGoal(i || {}),
+  goals_status: () => api.goalsDashboard(),
 };
 
 module.exports = {

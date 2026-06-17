@@ -12,6 +12,7 @@ import { Memory } from './views/Memory';
 import { Automations } from './views/Automations';
 import { Settings } from './views/Settings';
 import { AgentActivity } from './views/AgentActivity';
+import { ChiefOfStaff } from './views/ChiefOfStaff';
 
 export type RouteGroup = 'Core' | 'Finance' | 'Learning' | 'System';
 
@@ -26,6 +27,7 @@ export interface RouteDef {
 // Order matches the HELIOS left-sidebar navigation spec.
 export const ROUTES: RouteDef[] = [
   { id: 'assistant', label: 'Assistant', icon: '◈', group: 'Core', component: Assistant },
+  { id: 'cos', label: 'Chief of Staff', icon: '★', group: 'Core', component: ChiefOfStaff },
   { id: 'dashboard', label: 'Dashboard', icon: '⬡', group: 'Core', component: Dashboard },
   { id: 'markets', label: 'Markets', icon: '▤', group: 'Finance', component: Markets },
   { id: 'portfolio', label: 'Portfolio', icon: '◴', group: 'Finance', component: Portfolio },

@@ -8,11 +8,28 @@ export function Email() {
   const inbox = useAsync(() => helios.google.inbox(), []);
   const connected = status.data?.connected;
   const items = inbox.data?.items ?? [];
+  // Run the Email Intelligence engine over whatever the inbox returned.
+  const brief = useAsync(() => (items.length ? helios.sidecar.emailBriefing(items) : Promise.resolve(null)), [inbox.data]);
 
   return (
-    <Page title="Email" subtitle="Gmail · summaries · task extraction"
+    <Page title="Email Intelligence" subtitle="Gmail · categorize · extract tasks/deadlines · prioritize"
       actions={<StatusBadge status={connected ? 'ready' : 'idle'} label={connected ? `${inbox.data?.unread ?? items.length} unread` : 'not connected'} />}>
-      <Panel title="Unread" subtitle="read-only; drafting is proposed for approval" scroll className="max-h-[520px]">
+      {brief.data && (
+        <Panel title="Inbox briefing" subtitle="Email Intelligence engine" className="mb-3">
+          <p className="text-[12px] text-ivory/90 mb-2">{brief.data.summary}</p>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {Object.entries(brief.data.by_category ?? {}).map(([c, n]: any) => (
+              <span key={c} className="mono text-[10px] px-1.5 py-0.5 rounded border border-hairline text-warmgray">{c}: {n}</span>
+            ))}
+          </div>
+          {(brief.data.suggested_actions ?? []).length > 0 && (
+            <ul className="text-[12px] flex flex-col gap-0.5">
+              {brief.data.suggested_actions.map((a: string, i: number) => <li key={i}>• {a}</li>)}
+            </ul>
+          )}
+        </Panel>
+      )}
+      <Panel title="Unread" subtitle="read-only; drafting is proposed for approval" scroll className="max-h-[440px]">
         {inbox.loading ? <Loading /> : !items.length ? (
           <EmptyState message={connected ? 'Inbox zero — nothing unread.' : 'Connect Google in the desktop app to read mail.'} />
         ) : (

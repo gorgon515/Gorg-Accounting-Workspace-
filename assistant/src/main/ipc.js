@@ -158,6 +158,25 @@ function register() {
   ipcMain.handle('sidecar:n8nStatus', () => sidecar.n8nStatus());
   ipcMain.handle('sidecar:n8nWorkflows', () => sidecar.n8nWorkflows());
   ipcMain.handle('sidecar:n8nGenerate', (_e, p) => sidecar.n8nGenerate(p || {}));
+  // Phase 5 — personal chief of staff
+  ipcMain.handle('sidecar:createTask', (_e, p) => sidecar.createTask(p));
+  ipcMain.handle('sidecar:listTasks', (_e, status) => sidecar.listTasks(status));
+  ipcMain.handle('sidecar:completeTask', (_e, tid) => sidecar.completeTask(tid));
+  ipcMain.handle('sidecar:deleteTask', (_e, tid) => sidecar.deleteTask(tid));
+  ipcMain.handle('sidecar:recommendTasks', () => sidecar.recommendTasks());
+  ipcMain.handle('sidecar:createGoal', (_e, p) => sidecar.createGoal(p));
+  ipcMain.handle('sidecar:goalsDashboard', () => sidecar.goalsDashboard());
+  ipcMain.handle('sidecar:goalProgress', (_e, p) => sidecar.goalProgress(p));
+  ipcMain.handle('sidecar:deleteGoal', (_e, gid) => sidecar.deleteGoal(gid));
+  ipcMain.handle('sidecar:schedulerJobs', () => sidecar.schedulerJobs());
+  ipcMain.handle('sidecar:schedulerSeed', () => sidecar.schedulerSeed());
+  ipcMain.handle('sidecar:schedulerTick', () => sidecar.schedulerTick());
+  ipcMain.handle('sidecar:cosBriefingAuto', () => sidecar.cosBriefingAuto());
+  ipcMain.handle('sidecar:cosPlanAuto', () => sidecar.cosPlanAuto());
+  ipcMain.handle('sidecar:cosDailyBriefing', (_e, ctx) => sidecar.cosDailyBriefing(ctx));
+  ipcMain.handle('sidecar:cosEveningReview', (_e, ctx) => sidecar.cosEveningReview(ctx));
+  ipcMain.handle('sidecar:emailBriefing', (_e, emails) => sidecar.emailBriefing(emails));
+  ipcMain.handle('sidecar:calendarPlan', (_e, p) => sidecar.calendarPlan(p));
 
   // Memory (Memory Center)
   ipcMain.handle('memory:list', (_e, query) => memory.recall(query ? { query } : {}));
