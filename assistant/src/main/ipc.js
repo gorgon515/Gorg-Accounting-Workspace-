@@ -25,6 +25,7 @@ function register() {
   const language = skills.getSkill('language').api;
   const agents = skills.getSkill('agents').api;
   const sidecar = skills.getSkill('sidecar').api;
+  const memory = skills.getSkill('memory').api;
 
   ipcMain.handle('aria:config', async () => {
     const b = await brain.status();
@@ -144,6 +145,11 @@ function register() {
   ipcMain.handle('sidecar:ascTopics', () => sidecar.ascTopics());
   ipcMain.handle('sidecar:explainAsc', (_e, topic) => sidecar.explainAsc(topic));
   ipcMain.handle('sidecar:memo', (_e, p) => sidecar.memo(p || {}));
+
+  // Memory (Memory Center)
+  ipcMain.handle('memory:list', (_e, query) => memory.recall(query ? { query } : {}));
+  ipcMain.handle('memory:remember', (_e, m) => memory.remember(m || {}));
+  ipcMain.handle('memory:forget', (_e, p) => memory.forget(p || {}));
 
   // iMessage bridge status (macOS)
   ipcMain.handle('imessage:status', () => imessage.available());

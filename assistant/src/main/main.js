@@ -2,6 +2,7 @@
 
 const { app, BrowserWindow, Tray, Menu, nativeImage, shell, Notification, session } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const store = require('./store');
 const ipc = require('./ipc');
 const skills = require('./services/skills');
@@ -59,7 +60,19 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  // UI selection: the React HUD (frontend-react/dist) when HELIOS_UI=react and a
+  // build exists; otherwise the classic renderer. Both share this preload, so
+  // window.aria (the IPC bridge) is identical for either UI. Default = classic
+  // so the app never regresses before the React HUD is validated.
+  const reactIndex = path.join(__dirname, '..', '..', 'frontend-react', 'dist', 'index.html');
+  if (config.uiMode === 'react' && fs.existsSync(reactIndex)) {
+    mainWindow.loadFile(reactIndex);
+  } else {
+    if (config.uiMode === 'react') {
+      console.warn('[ui] HELIOS_UI=react but frontend-react/dist not built; using classic renderer. Run: cd frontend-react && npm install && npm run build');
+    }
+    mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  }
   mainWindow.once('ready-to-show', () => mainWindow.show());
 
   // Headless smoke test: ARIA_SCREENSHOT=<path> launches, captures the

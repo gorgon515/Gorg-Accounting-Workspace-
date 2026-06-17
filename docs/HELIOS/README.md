@@ -48,6 +48,7 @@ prove the architecture extends as designed:
 | **Multi-agent orchestration layer** | `assistant/src/main/services/agents.js` | ✅ working — 15-agent roster with personas/permissions/activity logging, local router, `which_agent` tool, Agent Activity panel |
 | **Language Immersion Center** | `assistant/src/main/services/language.js` + IPC/preload/UI | ✅ working — 7 languages, shared SRS, daily missions, CEFR pathway, roleplay seeds |
 | **Intelligence Sidecar** (Phase 2) | `backend/` (FastAPI) + `assistant/src/main/services/sidecar.js` | ✅ working — Quant Research Engine + Accounting Intelligence Engine; autostarted/supervised by Electron; 35 backend + 11 Node tests |
+| **React HUD Command Center** (Phase 3) | `assistant/frontend-react/` | ✅ builds — React/TS/Tailwind/Framer; design system, 3-column layout, 13 views, typed IPC client, event bus; opt-in via `HELIOS_UI=react` (classic stays default) |
 
 All are wired into the registry, exposed over IPC, surfaced in the UI, and
 covered by tests (router 14/14; full language lifecycle; backend 35; registry 11).
@@ -69,6 +70,26 @@ tested code — see [`backend/README.md`](../../backend/README.md):
 - **Agent system upgrade** — 15 specialists (added FASB, SEC, CPA Coach,
   Portfolio, Quant Research) each with persona, system instructions, tool/memory
   permissions, and per-tool-call activity logging.
+
+### Phase 3 progress (React HUD)
+
+The **Command Center** front end (deliverables: React migration, design system,
+routing, dashboard + all centers, event bus) was built additively in
+`assistant/frontend-react/` — see its [README](../../assistant/frontend-react/README.md):
+
+- **React + TypeScript + Tailwind + Framer Motion**, dark-mode-first HUD; build
+  verified (`tsc` clean, `vite build` passes, 428 modules).
+- **Design system**: Button/Card/Panel/Drawer/Modal/StatusBadge/AgentCard/
+  MetricCard/ActivityFeed/Table/Chart/Timeline/VoiceVisualizer/NotificationPanel.
+- **Three-column layout** (nav · workspace · live-intelligence rail) + a typed,
+  safe IPC client and a real-time **event bus** (polling + the Electron alert
+  push channel) — no reloads.
+- **13 views**: Dashboard, Assistant (agent + tool visibility), Markets,
+  Portfolio, Accounting (ASC research + memo generator), CPA, Language, Calendar,
+  Email, Memory, Agent Activity, Automations, Settings — each wired to real IPC
+  with graceful offline states.
+- **No regression**: kept opt-in via `HELIOS_UI=react`; the classic renderer
+  stays default; the 11 Node tests still pass. Added a small additive Memory IPC.
 
 ## The documents (deliverables 1–20)
 
@@ -108,7 +129,7 @@ Legend: ✅ implemented in ARIA today · 🟡 partial · ⬜ designed (this blue
 | Calendar | Google/Outlook | 🟡 | Google read today; scheduling/Outlook designed |
 | Knowledge graph | visual graph | ⬜ | Designed |
 | Security: encryption/vault/RBAC/audit | AES-256, audit logs | 🟡 | OS-keychain secrets + CSP today; vault/RBAC/audit designed |
-| Front end | React/TS/Tailwind/Framer | ⬜ | Vanilla HTML/CSS/JS today; React/TS migration designed |
+| Front end | React/TS/Tailwind/Framer | 🟡 | React HUD built (`frontend-react/`, opt-in); classic renderer still default until visually validated |
 | Backend | Python/FastAPI | 🟡 | FastAPI Intelligence Sidecar live (quant + accounting); more domains designed |
 
 ## Reading order

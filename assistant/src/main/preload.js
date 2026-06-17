@@ -106,6 +106,11 @@ contextBridge.exposeInMainWorld('aria', {
     route: (text) => ipcRenderer.invoke('agents:route', text),
     activity: () => ipcRenderer.invoke('agents:activity'),
   },
+  memory: {
+    list: (query) => ipcRenderer.invoke('memory:list', query),
+    remember: (m) => ipcRenderer.invoke('memory:remember', m),
+    forget: (p) => ipcRenderer.invoke('memory:forget', p),
+  },
   sidecar: {
     status: () => ipcRenderer.invoke('sidecar:status'),
     analyze: (p) => ipcRenderer.invoke('sidecar:analyze', p),

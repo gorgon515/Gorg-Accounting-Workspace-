@@ -335,7 +335,14 @@ the relay slots in behind the existing voice interface — `voice.js` is the sea
    generator) are exposed to the brain as tools (`quant_analyze`, `quant_factors`,
    `quant_risk`, `quant_portfolio`, `explain_asc`, `accounting_memo`). Autostarted
    on first use; degrades gracefully if Python is absent. See `../backend/README.md`.
-8. **Hardening** — React/TS HUD migration, wake-word engine, auto-update, more tests.
+8. **React HUD Command Center** ✅ (builds) — a premium React/TS/Tailwind/Framer
+   front end in [`frontend-react/`](frontend-react): design system, three-column
+   command center, 13 views (Dashboard, Assistant, Markets, Portfolio, Accounting,
+   CPA, Language, Calendar, Email, Memory, Agents, Automations, Settings), a typed
+   IPC client, and a real-time event bus. Built additively and **opt-in** — run
+   with `HELIOS_UI=react npm start` (after `cd frontend-react && npm install &&
+   npm run build`); the classic renderer stays the default until validated.
+9. **Hardening** — wake-word engine, auto-update, live N8N + accounting crawlers.
 
 ### Tests
 
