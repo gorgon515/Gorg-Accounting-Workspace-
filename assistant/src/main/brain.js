@@ -171,10 +171,23 @@ async function runTool(name, input) {
   if (!handler) return { result: `Error: Unknown tool: ${name}`, ok: false, error: 'unknown tool' };
   try {
     const data = await handler(input);
+    logAgentActivity(name, true);
     return { result: JSON.stringify(data), ok: true };
   } catch (err) {
+    logAgentActivity(name, false);
     return { result: `Error: ${err.message}`, ok: false, error: err.message };
   }
+}
+
+// Attribute each tool call to its owning agent for the Agent Activity feed.
+// Best-effort: logging must never break tool execution.
+function logAgentActivity(toolName, ok) {
+  try {
+    const agents = skills.getSkill('agents');
+    const skill = skills.skillForTool(toolName);
+    const owner = agents.api.agentForTool(toolName, skill && skill.name);
+    agents.api.logActivity({ agent: owner && owner.key, tool: toolName, ok });
+  } catch { /* ignore logging failures */ }
 }
 
 async function status() {

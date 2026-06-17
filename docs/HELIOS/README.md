@@ -45,11 +45,30 @@ prove the architecture extends as designed:
 
 | Increment | Files | Status |
 |---|---|---|
-| **Multi-agent orchestration layer** | `assistant/src/main/services/agents.js` | ✅ working — 11-agent roster, local router, system-prompt team framing, `which_agent` tool, Agent Activity panel |
+| **Multi-agent orchestration layer** | `assistant/src/main/services/agents.js` | ✅ working — 15-agent roster with personas/permissions/activity logging, local router, `which_agent` tool, Agent Activity panel |
 | **Language Immersion Center** | `assistant/src/main/services/language.js` + IPC/preload/UI | ✅ working — 7 languages, shared SRS, daily missions, CEFR pathway, roleplay seeds |
+| **Intelligence Sidecar** (Phase 2) | `backend/` (FastAPI) + `assistant/src/main/services/sidecar.js` | ✅ working — Quant Research Engine + Accounting Intelligence Engine; autostarted/supervised by Electron; 35 backend + 11 Node tests |
 
-Both are wired into the registry, exposed over IPC, surfaced in the UI, and
-covered by logic tests (router 11/11; full language lifecycle).
+All are wired into the registry, exposed over IPC, surfaced in the UI, and
+covered by tests (router 14/14; full language lifecycle; backend 35; registry 11).
+
+### Phase 2 progress (this pass)
+
+The Python/FastAPI **Intelligence Sidecar** (deliverables 3/6/7) landed as real,
+tested code — see [`backend/README.md`](../../backend/README.md):
+
+- **Quant Research Engine** — technicals (SMA/EMA/RSI/MACD/Bollinger/momentum/
+  volatility/drawdown), transparent value/quality/growth/momentum **factor
+  scoring**, risk (Sharpe/Sortino/beta/correlation/VaR), and **portfolio**
+  analytics (concentration, sector exposure).
+- **Accounting Intelligence Engine** — a citable ASC knowledge base (606/842/326/
+  350/718) and a **technical-memo generator** (Issue/Facts/Guidance/Analysis/
+  Conclusion/Disclosure/CPA-impact).
+- **Market-data connector layer** — provider abstraction + TTL cache +
+  normalization (Yahoo today; Alpha Vantage/Polygon/FMP slot in behind it).
+- **Agent system upgrade** — 15 specialists (added FASB, SEC, CPA Coach,
+  Portfolio, Quant Research) each with persona, system instructions, tool/memory
+  permissions, and per-tool-call activity logging.
 
 ## The documents (deliverables 1–20)
 
@@ -74,15 +93,15 @@ Legend: ✅ implemented in ARIA today · 🟡 partial · ⬜ designed (this blue
 | Voice STT | Whisper / Faster-Whisper | ✅ | On-device `transformers.js` Whisper |
 | Voice TTS | Piper / Coqui | 🟡 | Browser TTS today; Piper sidecar designed |
 | Wake word / push-to-talk | both | 🟡 | Push-to-talk works; robust wake word designed |
-| Multi-agent system | 11 agents + orchestration | ✅ | `agents.js` roster + router + team prompt |
+| Multi-agent system | 11+ agents + orchestration | ✅ | 15 agents w/ personas, permissions, activity logging, router |
 | Memory: short/long/project/etc. | ChromaDB + Postgres | 🟡 | Durable JSON memory today; vector + relational designed |
 | N8N automation center | embedded N8N | ⬜ | Designed (Automation Agent stubs the seam) |
 | Language Immersion | 7 langs, full pathway | ✅ | `language.js` — SRS, missions, CEFR, roleplay |
 | Accounting platform | GL/AP/AR/statements… | 🟡 | Ledger + invoices + P&L today; full GL designed |
-| Accounting Intelligence Center | FASB/SEC/IRS monitoring | ⬜ | Designed (Tax/Accounting agents) |
-| CPA Study Center | qbank + simulations | 🟡 | Progress tracker + flashcards today; qbank designed |
-| Market intelligence | fundamentals→options | 🟡 | Quotes/news/technicals today; full factor stack designed |
-| Quant research | backtests/Monte Carlo | ⬜ | Designed (Python sidecar) |
+| Accounting Intelligence Center | FASB/SEC/IRS monitoring | 🟡 | ASC knowledge base + memo generator live (sidecar); live crawlers next |
+| CPA Study Center | qbank + simulations | 🟡 | Progress tracker + flashcards + CPA Coach agent; qbank designed |
+| Market intelligence | fundamentals→options | 🟡 | Quotes/news/technicals + factor scoring; full feed stack designed |
+| Quant research | backtests/Monte Carlo | 🟡 | Sidecar: technicals, factors, risk, portfolio; backtests/Monte Carlo next |
 | Trade recommendations | gated, with R/R | ✅ | Strategy engine + approval gate; never auto-executes |
 | Brokerage integration | IBKR/Alpaca/… | 🟡 | Alpaca paper/live connected; others designed |
 | Email | Gmail/Outlook | 🟡 | Gmail read today; drafting/Outlook designed |
@@ -90,7 +109,7 @@ Legend: ✅ implemented in ARIA today · 🟡 partial · ⬜ designed (this blue
 | Knowledge graph | visual graph | ⬜ | Designed |
 | Security: encryption/vault/RBAC/audit | AES-256, audit logs | 🟡 | OS-keychain secrets + CSP today; vault/RBAC/audit designed |
 | Front end | React/TS/Tailwind/Framer | ⬜ | Vanilla HTML/CSS/JS today; React/TS migration designed |
-| Backend | Python/FastAPI | ⬜ | Electron-main Node services today; FastAPI sidecar designed |
+| Backend | Python/FastAPI | 🟡 | FastAPI Intelligence Sidecar live (quant + accounting); more domains designed |
 
 ## Reading order
 

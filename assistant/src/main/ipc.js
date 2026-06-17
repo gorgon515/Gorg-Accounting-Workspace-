@@ -24,6 +24,7 @@ function register() {
   const strategy = skills.getSkill('strategy').api;
   const language = skills.getSkill('language').api;
   const agents = skills.getSkill('agents').api;
+  const sidecar = skills.getSkill('sidecar').api;
 
   ipcMain.handle('aria:config', async () => {
     const b = await brain.status();
@@ -132,6 +133,17 @@ function register() {
   // Agent orchestration (Agent Activity panel)
   ipcMain.handle('agents:roster', () => agents.roster(skills.skills));
   ipcMain.handle('agents:route', (_e, text) => agents.route(text));
+  ipcMain.handle('agents:activity', () => agents.recentActivity());
+
+  // Intelligence Sidecar (Quant Research + Accounting Intelligence)
+  ipcMain.handle('sidecar:status', () => sidecar.status());
+  ipcMain.handle('sidecar:analyze', (_e, p) => sidecar.analyze(p || {}));
+  ipcMain.handle('sidecar:factors', (_e, p) => sidecar.factors(p || {}));
+  ipcMain.handle('sidecar:risk', (_e, p) => sidecar.risk(p || {}));
+  ipcMain.handle('sidecar:portfolio', (_e, p) => sidecar.portfolio(p || {}));
+  ipcMain.handle('sidecar:ascTopics', () => sidecar.ascTopics());
+  ipcMain.handle('sidecar:explainAsc', (_e, topic) => sidecar.explainAsc(topic));
+  ipcMain.handle('sidecar:memo', (_e, p) => sidecar.memo(p || {}));
 
   // iMessage bridge status (macOS)
   ipcMain.handle('imessage:status', () => imessage.available());

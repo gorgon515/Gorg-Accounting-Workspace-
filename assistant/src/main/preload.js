@@ -104,6 +104,17 @@ contextBridge.exposeInMainWorld('aria', {
   agents: {
     roster: () => ipcRenderer.invoke('agents:roster'),
     route: (text) => ipcRenderer.invoke('agents:route', text),
+    activity: () => ipcRenderer.invoke('agents:activity'),
+  },
+  sidecar: {
+    status: () => ipcRenderer.invoke('sidecar:status'),
+    analyze: (p) => ipcRenderer.invoke('sidecar:analyze', p),
+    factors: (p) => ipcRenderer.invoke('sidecar:factors', p),
+    risk: (p) => ipcRenderer.invoke('sidecar:risk', p),
+    portfolio: (p) => ipcRenderer.invoke('sidecar:portfolio', p),
+    ascTopics: () => ipcRenderer.invoke('sidecar:ascTopics'),
+    explainAsc: (topic) => ipcRenderer.invoke('sidecar:explainAsc', topic),
+    memo: (p) => ipcRenderer.invoke('sidecar:memo', p),
   },
   imessage: {
     status: () => ipcRenderer.invoke('imessage:status'),

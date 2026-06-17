@@ -260,7 +260,8 @@ src/
     config.js / store.js    env config + JSON persistence
     services/
       skills.js             skill registry (add pillars here)
-      agents.js             multi-agent orchestration (roster + router)
+      agents.js             multi-agent orchestration (roster + router + logging)
+      sidecar.js            bridge to the Python/FastAPI Intelligence Sidecar
       language.js           Language Immersion Center (7 languages)
       stocks.js             ← the Stocks skill (tools + handlers + data API)
   renderer/                 dashboard UI (Chromium, no Node)
@@ -320,9 +321,27 @@ the relay slots in behind the existing voice interface — `voice.js` is the sea
    pathway**, **roleplay** scenario seeds, and progress analytics with an honest
    CEFR estimate. Conversation, grammar correction, and tutoring are brain-driven.
 6. **Multi-agent orchestration** ✅ — `services/agents.js` organizes the skills
-   into the 11 named HELIOS agents (Chief of Staff, Accounting, Tax, Research,
-   Quant, Trading, Language Coach, Email, Calendar, Automation, Knowledge) with a
-   fast local router, a `which_agent` tool, and an **Agents** activity panel.
-7. **Hardening** — wake-word engine, auto-update, broader test coverage.
+   into **15 named HELIOS agents** (Chief of Staff, Accounting, Tax, **FASB**,
+   **SEC**, **CPA Coach**, Research, **Quant Research**, **Portfolio**, Trading,
+   Language Coach, Email, Calendar, Automation, Knowledge). Each has a persona,
+   system instructions, and tool/memory **permissions** (no agent can execute
+   money/send actions — only propose). A fast local **router** classifies
+   requests, a `which_agent` tool introspects the team, every tool call is logged
+   to an **Agent Activity** feed, and the **Agents** panel shows live status.
+7. **Intelligence Sidecar** ✅ — a local **Python/FastAPI** compute tier
+   (`../backend`, supervised by `services/sidecar.js`). The **Quant Research
+   Engine** (technicals, factor scoring, risk, portfolio analytics) and the
+   **Accounting Intelligence Engine** (ASC knowledge base + technical-memo
+   generator) are exposed to the brain as tools (`quant_analyze`, `quant_factors`,
+   `quant_risk`, `quant_portfolio`, `explain_asc`, `accounting_memo`). Autostarted
+   on first use; degrades gracefully if Python is absent. See `../backend/README.md`.
+8. **Hardening** — React/TS HUD migration, wake-word engine, auto-update, more tests.
+
+### Tests
+
+```bash
+npm test          # assistant: agent routing + registry integrity (Node test runner)
+# backend: cd ../backend && .venv/bin/python -m pytest -q   (35 tests)
+```
 
 Not financial advice. Market data may be delayed.

@@ -17,8 +17,9 @@ const strategy = require('./strategy');
 const memory = require('./memory');
 const language = require('./language');
 const agents = require('./agents');
+const sidecar = require('./sidecar');
 
-const skills = [stocks, trading, productivity, alerts, google, analysis, accounting, study, strategy, memory, language, agents];
+const skills = [stocks, trading, productivity, alerts, google, analysis, accounting, study, strategy, memory, language, sidecar, agents];
 
 function allTools() {
   return skills.flatMap((s) => s.tools || []);
@@ -27,6 +28,15 @@ function allTools() {
 function handlerFor(toolName) {
   for (const s of skills) {
     if (s.handlers && toolName in s.handlers) return s.handlers[toolName];
+  }
+  return null;
+}
+
+// The skill module that owns a tool (first match) — used to attribute tool calls
+// to an agent for the activity log.
+function skillForTool(toolName) {
+  for (const s of skills) {
+    if (s.handlers && toolName in s.handlers) return s;
   }
   return null;
 }
@@ -54,4 +64,4 @@ function getSkill(name) {
   return skills.find((s) => s.name === name) || null;
 }
 
-module.exports = { skills, allTools, handlerFor, systemPrompt, getSkill };
+module.exports = { skills, allTools, handlerFor, skillForTool, systemPrompt, getSkill };
