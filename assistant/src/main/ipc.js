@@ -145,6 +145,19 @@ function register() {
   ipcMain.handle('sidecar:ascTopics', () => sidecar.ascTopics());
   ipcMain.handle('sidecar:explainAsc', (_e, topic) => sidecar.explainAsc(topic));
   ipcMain.handle('sidecar:memo', (_e, p) => sidecar.memo(p || {}));
+  // Phase 4 — intelligence engines
+  ipcMain.handle('sidecar:acctBriefing', (_e, refresh) => sidecar.accountingBriefing(refresh));
+  ipcMain.handle('sidecar:acctIntel', (_e, source) => sidecar.accountingIntel(source));
+  ipcMain.handle('sidecar:acctIntelRefresh', () => sidecar.accountingIntelRefresh());
+  ipcMain.handle('sidecar:acctGraph', (_e, asc) => sidecar.accountingGraph(asc));
+  ipcMain.handle('sidecar:checklist', (_e, topic) => sidecar.checklist(topic));
+  ipcMain.handle('sidecar:memoFull', (_e, p) => sidecar.memoFull(p || {}));
+  ipcMain.handle('sidecar:fundamentals', (_e, p) => sidecar.fundamentals(p || {}));
+  ipcMain.handle('sidecar:signal', (_e, p) => sidecar.signal(p || {}));
+  ipcMain.handle('sidecar:marketBriefing', (_e, p) => sidecar.marketBriefing(p || {}));
+  ipcMain.handle('sidecar:n8nStatus', () => sidecar.n8nStatus());
+  ipcMain.handle('sidecar:n8nWorkflows', () => sidecar.n8nWorkflows());
+  ipcMain.handle('sidecar:n8nGenerate', (_e, p) => sidecar.n8nGenerate(p || {}));
 
   // Memory (Memory Center)
   ipcMain.handle('memory:list', (_e, query) => memory.recall(query ? { query } : {}));

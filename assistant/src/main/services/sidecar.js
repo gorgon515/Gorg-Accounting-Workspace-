@@ -148,6 +148,19 @@ const api = {
   ascTopics: () => call('GET', '/accounting/topics'),
   explainAsc: (topic) => call('GET', `/accounting/asc/${encodeURIComponent(topic)}`),
   memo: (p) => call('POST', '/accounting/memo', p),
+  // Phase 4 — intelligence engines
+  accountingBriefing: (refresh) => call('GET', `/accounting/briefing${refresh ? '?refresh=true' : ''}`),
+  accountingIntel: (q) => call('GET', '/accounting/intel' + (q ? `?source=${encodeURIComponent(q)}` : '')),
+  accountingIntelRefresh: () => call('POST', '/accounting/intel/refresh'),
+  accountingGraph: (asc) => call('GET', '/accounting/graph' + (asc ? `?asc=${encodeURIComponent(asc)}` : '')),
+  checklist: (topic) => call('POST', '/accounting/checklist', { topic }),
+  memoFull: (p) => call('POST', '/accounting/memo/full', p),
+  fundamentals: (p) => call('POST', '/quant/fundamentals', p),
+  signal: (p) => call('POST', '/quant/signal', p),
+  marketBriefing: (p) => call('POST', '/market/briefing', p),
+  n8nStatus: () => call('GET', '/n8n/status'),
+  n8nWorkflows: () => call('GET', '/n8n/workflows'),
+  n8nGenerate: (p) => call('POST', '/n8n/generate', p),
 };
 
 const tools = [
@@ -230,6 +243,61 @@ const tools = [
       required: ['issue', 'facts', 'topic'],
     },
   },
+  {
+    name: 'accounting_briefing',
+    description:
+      'Generate the daily accounting-intelligence briefing from monitored FASB/SEC/PCAOB/IRS sources: executive summary, key changes, upcoming effective dates, affected industries, CPA impact, emerging risks, action items, and a confidence level. Pass refresh=true to pull the latest before generating.',
+    input_schema: { type: 'object', properties: { refresh: { type: 'boolean' } } },
+  },
+  {
+    name: 'implementation_checklist',
+    description: 'Produce a practical adoption/implementation checklist for an ASC topic (e.g. "606", "842"), grounded in its framework, with policy choices and disclosure steps.',
+    input_schema: { type: 'object', properties: { topic: { type: 'string' } }, required: ['topic'] },
+  },
+  {
+    name: 'quant_signal',
+    description:
+      'Generate a research signal for a stock: bull case, bear case, risk factors, catalysts, valuation/technical views, portfolio fit, and a confidence score — separating facts, calculations, interpretations, and forecasts. Not a trade recommendation. Pass a symbol (fetched) or an explicit price series.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        symbol: { type: 'string' },
+        prices: { type: 'array', items: { type: 'number' } },
+        benchmark_symbol: { type: 'string' },
+        fundamentals: { type: 'object' },
+        sector: { type: 'string' },
+      },
+      required: ['symbol'],
+    },
+  },
+  {
+    name: 'market_briefing',
+    description:
+      'Generate a daily market briefing (overview, sector rotation, top movers, opportunities, portfolio risks) from a set of symbols or quotes.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        symbols: { type: 'array', items: { type: 'string' } },
+        quotes: { type: 'array', items: { type: 'object' } },
+        portfolio: { type: 'array', items: { type: 'object' } },
+      },
+    },
+  },
+  {
+    name: 'generate_workflow',
+    description:
+      'Generate an importable N8N workflow JSON from a high-level spec. Use kind="accounting_briefing" for the daily-briefing automation, or supply name/schedule/collect_url/email_to for a custom collect→process→distribute workflow.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string' },
+        name: { type: 'string' },
+        schedule: { type: 'string', description: 'cron, e.g. "0 7 * * *"' },
+        collect_url: { type: 'string' },
+        email_to: { type: 'string' },
+      },
+    },
+  },
 ];
 
 const handlers = {
@@ -239,12 +307,17 @@ const handlers = {
   quant_portfolio: (i) => api.portfolio(i || {}),
   explain_asc: (i) => api.explainAsc(i.topic),
   accounting_memo: (i) => api.memo(i || {}),
+  accounting_briefing: (i) => api.accountingBriefing(i && i.refresh),
+  implementation_checklist: (i) => api.checklist(i.topic),
+  quant_signal: (i) => api.signal(i || {}),
+  market_briefing: (i) => api.marketBriefing(i || {}),
+  generate_workflow: (i) => api.n8nGenerate(i || {}),
 };
 
 module.exports = {
   name: 'sidecar',
   systemPromptFragment:
-    'You have a local Intelligence Sidecar (Python/FastAPI) for heavy compute. Use quant_analyze, quant_factors, quant_risk, and quant_portfolio for institutional-grade market math, and explain_asc / accounting_memo for ASC/GAAP research and technical memos (Issue/Facts/Guidance/Analysis/Conclusion/Disclosure/CPA-impact). It runs locally; if it is offline, say so briefly and continue with what you can do without it.',
+    'You have a local Intelligence Sidecar (Python/FastAPI) for heavy compute and research. For markets: quant_analyze, quant_factors, quant_risk, quant_portfolio, quant_signal (bull/bear/risks/catalysts/confidence), and market_briefing. For accounting: explain_asc, accounting_memo, implementation_checklist, and accounting_briefing (the daily FASB/SEC/PCAOB/IRS intelligence digest). For automation: generate_workflow (importable N8N JSON). It runs locally; if it is offline or a data source is unreachable, say so briefly and continue. Always separate facts/calculations from interpretations/forecasts, and never present a forecast as certainty.',
   tools,
   handlers,
   api,

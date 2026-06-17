@@ -12,6 +12,11 @@ export function Markets() {
   const watch = useAsync(() => helios.stocks.watchlistQuotes(), [], 60000);
   const hist = useAsync(() => (sym ? helios.stocks.history(sym, '6mo') : Promise.resolve(null)), [sym]);
   const analysis = useAsync(() => (sym ? helios.sidecar.analyze({ symbol: sym }) : Promise.resolve(null)), [sym]);
+  const quotes = (watch.data ?? []).filter((q) => !q.error);
+  const brief = useAsync(
+    () => (quotes.length ? helios.sidecar.marketBriefing({ quotes }) : Promise.resolve(null)),
+    [watch.data],
+  );
 
   const cols: Column<Quote>[] = [
     { key: 's', header: 'Symbol', render: (q) => <span className="text-ivory font-medium">{q.symbol}</span> },
@@ -22,8 +27,31 @@ export function Markets() {
 
   const series: number[] = hist.data?.prices ?? hist.data?.points?.map((p: any) => p.close) ?? [];
 
+  const mb = brief.data;
+
   return (
-    <Page title="Market Intelligence" subtitle="watchlist · charts · quant analysis">
+    <Page title="Market Intelligence" subtitle="watchlist · charts · quant analysis · daily briefing">
+      <Panel title="Daily market briefing" subtitle="computed from your watchlist" className="mb-3"
+        actions={mb && <span className="mono text-[10px] text-warmgray">tone: {mb.market_overview?.tone}</span>}>
+        {!mb ? <EmptyState message={watch.error ? 'Market data offline (desktop app).' : 'Loads from your watchlist.'} /> : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12px]">
+            <div>
+              <div className="mono text-[10px] uppercase text-warmgray mb-1">Overview</div>
+              {mb.market_overview?.advancers} up · {mb.market_overview?.decliners} down · avg {mb.market_overview?.avg_change_percent}%
+            </div>
+            <div>
+              <div className="mono text-[10px] uppercase text-warmgray mb-1">Top movers</div>
+              {(mb.top_movers?.gainers ?? []).slice(0, 3).map((g: any) => (
+                <span key={g.symbol} className="mr-2 text-helgreen">{g.symbol} +{g.change_percent}%</span>
+              ))}
+            </div>
+            <div>
+              <div className="mono text-[10px] uppercase text-warmgray mb-1">Research flags</div>
+              {(mb.opportunities ?? []).map((o: any) => <div key={o.symbol}>{o.symbol}</div>) || '—'}
+            </div>
+          </div>
+        )}
+      </Panel>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Panel title="Watchlist" subtitle="click a symbol to analyze" scroll className="max-h-[460px]">
           <Table columns={cols} rows={(watch.data ?? []).filter((q) => !q.error)}

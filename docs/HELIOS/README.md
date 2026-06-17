@@ -49,6 +49,7 @@ prove the architecture extends as designed:
 | **Language Immersion Center** | `assistant/src/main/services/language.js` + IPC/preload/UI | ✅ working — 7 languages, shared SRS, daily missions, CEFR pathway, roleplay seeds |
 | **Intelligence Sidecar** (Phase 2) | `backend/` (FastAPI) + `assistant/src/main/services/sidecar.js` | ✅ working — Quant Research Engine + Accounting Intelligence Engine; autostarted/supervised by Electron; 35 backend + 11 Node tests |
 | **React HUD Command Center** (Phase 3) | `assistant/frontend-react/` | ✅ builds — React/TS/Tailwind/Framer; design system, 3-column layout, 13 views, typed IPC client, event bus; opt-in via `HELIOS_UI=react` (classic stays default) |
+| **Intelligence engines** (Phase 4) | `backend/accounting/`, `backend/quant/`, `backend/n8n/` | ✅ working — accounting collectors/storage/briefing/graph/research, quant fundamentals/signals/market-briefing, N8N client + workflow generator; wired to the HUD; 87 backend tests |
 
 All are wired into the registry, exposed over IPC, surfaced in the UI, and
 covered by tests (router 14/14; full language lifecycle; backend 35; registry 11).
@@ -91,6 +92,35 @@ routing, dashboard + all centers, event bus) was built additively in
 - **No regression**: kept opt-in via `HELIOS_UI=react`; the classic renderer
   stays default; the 11 Node tests still pass. Added a small additive Memory IPC.
 
+### Phase 4 progress (intelligence engines)
+
+The differentiating engines behind the UI — real working code, **87 backend
+tests** (see [`backend/README.md`](../../backend/README.md)):
+
+- **Accounting Intelligence Engine** — real FASB/SEC/PCAOB/IRS feed collectors
+  (SEC-compliant UA, network-guarded, env-overridable), RSS/Atom parsers, a
+  normalized `IntelItem` schema with ASC/ASU/effective-date extraction, a SQLite
+  store (dedup + historical tracking), and a **daily briefing generator**
+  (executive summary, key changes, upcoming effective dates, affected industries,
+  CPA impact, emerging risks, action items, confidence).
+- **FASB knowledge graph** + **research engine** — ASC ↔ ASU ↔ industry ↔ FS area
+  ↔ disclosure ↔ audit ↔ tax graph; implementation checklists and full technical
+  memos (Facts/Issue/Guidance/Analysis/Alternatives/Conclusion/References).
+- **Quant Research Engine** — fundamentals (ratios/growth/quality/peers), advanced
+  technicals (ATR, relative strength, momentum/trend/volume scores), a **signal
+  engine** that separates facts/calculations/interpretations/forecasts, and a
+  **daily market briefing**.
+- **Market-data pipeline** — provider adapters (Yahoo + FMP + Alpha Vantage + SEC
+  filings) with normalization, caching, and refresh-time/staleness tracking.
+- **N8N integration layer** — a real REST client (list/run/create/monitor) and an
+  **AI workflow generator** emitting importable N8N JSON (flagship: the daily
+  accounting-briefing workflow).
+- **Wired to the HUD, no mock data**: Accounting (live briefing + developments
+  feed), Markets (live market briefing), Automations (N8N status + generation),
+  exposed as brain tools (`accounting_briefing`, `quant_signal`, `market_briefing`,
+  `implementation_checklist`, `generate_workflow`). Network-restricted sandboxes
+  degrade gracefully; live sources populate on a networked machine.
+
 ## The documents (deliverables 1–20)
 
 | # | Document | Deliverables covered |
@@ -116,13 +146,13 @@ Legend: ✅ implemented in ARIA today · 🟡 partial · ⬜ designed (this blue
 | Wake word / push-to-talk | both | 🟡 | Push-to-talk works; robust wake word designed |
 | Multi-agent system | 11+ agents + orchestration | ✅ | 15 agents w/ personas, permissions, activity logging, router |
 | Memory: short/long/project/etc. | ChromaDB + Postgres | 🟡 | Durable JSON memory today; vector + relational designed |
-| N8N automation center | embedded N8N | ⬜ | Designed (Automation Agent stubs the seam) |
+| N8N automation center | embedded N8N | 🟡 | Real REST client + AI workflow generator (importable JSON); embedded editor designed |
 | Language Immersion | 7 langs, full pathway | ✅ | `language.js` — SRS, missions, CEFR, roleplay |
 | Accounting platform | GL/AP/AR/statements… | 🟡 | Ledger + invoices + P&L today; full GL designed |
-| Accounting Intelligence Center | FASB/SEC/IRS monitoring | 🟡 | ASC knowledge base + memo generator live (sidecar); live crawlers next |
+| Accounting Intelligence Center | FASB/SEC/IRS monitoring | ✅ | Real collectors + SQLite store + daily briefing + knowledge graph + research engine; live feeds need network |
 | CPA Study Center | qbank + simulations | 🟡 | Progress tracker + flashcards + CPA Coach agent; qbank designed |
-| Market intelligence | fundamentals→options | 🟡 | Quotes/news/technicals + factor scoring; full feed stack designed |
-| Quant research | backtests/Monte Carlo | 🟡 | Sidecar: technicals, factors, risk, portfolio; backtests/Monte Carlo next |
+| Market intelligence | fundamentals→options | 🟡 | Quotes/news/technicals + fundamentals + signals + market briefing; options/insider feeds designed |
+| Quant research | backtests/Monte Carlo | 🟡 | Technicals, factors, fundamentals, risk, portfolio, signals; backtests/Monte Carlo next |
 | Trade recommendations | gated, with R/R | ✅ | Strategy engine + approval gate; never auto-executes |
 | Brokerage integration | IBKR/Alpaca/… | 🟡 | Alpaca paper/live connected; others designed |
 | Email | Gmail/Outlook | 🟡 | Gmail read today; drafting/Outlook designed |

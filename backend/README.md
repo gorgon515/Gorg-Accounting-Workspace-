@@ -74,8 +74,56 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 | GET | `/accounting/topics` | ASC topics in the knowledge base |
 | GET | `/accounting/asc/{topic}` | explain an ASC topic (e.g. `606`, `revenue`) |
 | POST | `/accounting/memo` | technical memo (Issue/Facts/Guidance/Analysis/Conclusion/Disclosure/CPA) |
+| GET | `/accounting/briefing` | daily accounting-intelligence briefing (`?refresh=true` to pull live) |
+| GET/POST | `/accounting/intel`, `/accounting/intel/refresh` | stored developments feed; live collect |
+| GET | `/accounting/graph` | FASB knowledge graph (`?asc=606` for a subgraph) |
+| POST | `/accounting/checklist` | implementation checklist for an ASC topic |
+| POST | `/accounting/memo/full` | full memo (Facts/Issue/Guidance/Analysis/Alternatives/Conclusion/References) |
+| POST | `/quant/fundamentals` | ratios, growth, quality, peer comparison |
+| POST | `/quant/signal` | research signal (bull/bear/risks/catalysts/confidence) |
+| POST | `/market/briefing` | daily market briefing from symbols/quotes |
+| GET/POST | `/n8n/status`, `/n8n/workflows`, `/n8n/generate` | N8N connectivity + AI workflow JSON |
 
 Bad/insufficient input → `400`; provider/network failure → `503`.
+
+## Phase 4 — intelligence engines
+
+Three packages (run from `backend/`, on the test path):
+
+```
+accounting/                 Accounting Intelligence Engine
+  collectors/               real FASB/SEC/PCAOB/IRS feed collectors (SEC-compliant UA,
+                            network-guarded, env-overridable URLs: HELIOS_FEEDS_<SRC>)
+  parsers/feeds.py          RSS + Atom parsing (stdlib XML) — unit-tested core
+  schemas.py                normalized IntelItem + classifiers + ASC/ASU/effective-date extraction
+  storage/db.py             SQLite store (dedup by stable id, historical tracking, queries)
+  briefing/generator.py     daily briefing (summary/key changes/industries/CPA/actions/confidence)
+  knowledge_graph.py        FASB graph: ASC ↔ ASU ↔ industry ↔ FS area ↔ disclosure ↔ audit ↔ tax
+  research.py               implementation checklists + full technical memo + ASU summary
+quant/                      Quant Research Engine
+  technicals.py             ATR, relative strength, momentum/trend/volume scores (+ Phase-2 core)
+  fundamentals.py           valuation/profitability/leverage ratios, growth, quality, peers
+  signals.py                signal engine (facts/calculations/interpretations/forecasts separated)
+  market_briefing.py        market overview, sector rotation, movers, opportunities
+n8n/                        N8N Integration Layer
+  client.py                 real REST client (list/run/create/monitor; network-guarded)
+  generator.py              AI workflow generator → importable N8N JSON (accounting-briefing example)
+```
+
+**Network note.** Collectors hit the real standard-setter feeds with a fair-access
+User-Agent and run live on a networked machine. In a restricted sandbox the feeds
+are blocked, so the engine degrades gracefully (the briefing reports
+`confidence: None` with the unreachable sources listed). The parsers are verified
+against real-format fixtures; all offline logic (storage, dedup, briefing, graph,
+research, quant, signals, market briefing, N8N generation) is fully unit-tested.
+
+Configure live sources/keys via env: `HELIOS_FEEDS_FASB/SEC/IRS/PCAOB`,
+`HELIOS_HTTP_UA`, `HELIOS_MARKET_PROVIDER` (+ `FMP_API_KEY` / `ALPHA_VANTAGE_KEY`),
+`N8N_URL` / `N8N_API_KEY`, `HELIOS_INTEL_DB`.
+
+Tests: **87 passing** (`pytest -q`) across technicals, factors, risk, accounting
+research, feeds/schemas/collectors/storage, briefing, knowledge graph, quant
+fundamentals/signals, market briefing, providers, N8N, and all routers.
 
 ## Adding a market-data provider
 

@@ -47,6 +47,19 @@ export const helios = {
     ascTopics: (): Promise<{ topics: AscTopic[] }> => call((b) => b.sidecar.ascTopics()),
     explainAsc: (topic: string): Promise<any> => call((b) => b.sidecar.explainAsc(topic)),
     memo: (p: any): Promise<MemoResult> => call((b) => b.sidecar.memo(p)),
+    // Phase 4 — intelligence engines
+    acctBriefing: (refresh?: boolean): Promise<any> => call((b) => b.sidecar.acctBriefing(refresh)),
+    acctIntel: (source?: string): Promise<any> => call((b) => b.sidecar.acctIntel(source)),
+    acctIntelRefresh: (): Promise<any> => call((b) => b.sidecar.acctIntelRefresh()),
+    acctGraph: (asc?: string): Promise<any> => call((b) => b.sidecar.acctGraph(asc)),
+    checklist: (topic: string): Promise<any> => call((b) => b.sidecar.checklist(topic)),
+    memoFull: (p: any): Promise<any> => call((b) => b.sidecar.memoFull(p)),
+    fundamentals: (p: any): Promise<any> => call((b) => b.sidecar.fundamentals(p)),
+    signal: (p: any): Promise<any> => call((b) => b.sidecar.signal(p)),
+    marketBriefing: (p: any): Promise<any> => call((b) => b.sidecar.marketBriefing(p)),
+    n8nStatus: (): Promise<any> => call((b) => b.sidecar.n8nStatus()),
+    n8nWorkflows: (): Promise<any> => call((b) => b.sidecar.n8nWorkflows()),
+    n8nGenerate: (p: any): Promise<any> => call((b) => b.sidecar.n8nGenerate(p)),
   },
 
   language: {

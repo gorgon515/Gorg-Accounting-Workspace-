@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 
-VERSION = "0.2.0"
+VERSION = "0.4.0"
 SERVICE = "helios-intelligence-sidecar"
 
 # Bound to loopback — the sidecar must never be reachable off-box.

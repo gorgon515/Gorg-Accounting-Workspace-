@@ -107,15 +107,22 @@ class MarketData:
         self.provider = provider or YahooProvider()
         self._quotes = _TTLCache(quote_ttl)
         self._history = _TTLCache(history_ttl)
+        self.quote_ttl = quote_ttl
+        self.history_ttl = history_ttl
+        self._refreshed: dict[str, float] = {}  # key → last successful fetch time
+
+    def _mark(self, key: str) -> None:
+        self._refreshed[key] = time.time()
 
     def quote(self, symbol: str) -> dict:
         symbol = symbol.upper().strip()
         cached = self._quotes.get(symbol)
         if cached:
-            return {**cached, "cached": True}
+            return {**cached, "cached": True, "age_seconds": round(time.time() - self._refreshed.get(f"q:{symbol}", time.time()), 1)}
         fresh = self.provider.quote(symbol)
         self._quotes.set(symbol, fresh)
-        return {**fresh, "cached": False}
+        self._mark(f"q:{symbol}")
+        return {**fresh, "cached": False, "age_seconds": 0}
 
     def history(self, symbol: str, rng: str = "6mo", interval: str = "1d") -> dict:
         symbol = symbol.upper().strip()
@@ -125,11 +132,29 @@ class MarketData:
             return {**cached, "cached": True}
         fresh = self.provider.history(symbol, rng, interval)
         self._history.set(key, fresh)
+        self._mark(f"h:{key}")
         return {**fresh, "cached": False}
 
     def prices(self, symbol: str, rng: str = "6mo") -> list[float]:
         """Convenience: just the close series for the quant engine."""
         return self.history(symbol, rng)["prices"]
+
+    def freshness(self) -> dict:
+        """Per-key age and staleness — lets the UI show refresh times / stale data."""
+        now = time.time()
+        out = {}
+        for key, ts in self._refreshed.items():
+            ttl = self.quote_ttl if key.startswith("q:") else self.history_ttl
+            age = now - ts
+            out[key] = {"age_seconds": round(age, 1), "stale": age > ttl, "ttl": ttl}
+        return out
+
+    def is_stale(self, key: str) -> bool:
+        ts = self._refreshed.get(key)
+        if ts is None:
+            return True
+        ttl = self.quote_ttl if key.startswith("q:") else self.history_ttl
+        return (time.time() - ts) > ttl
 
 
 # Module-level singleton reused across requests so the cache is shared.

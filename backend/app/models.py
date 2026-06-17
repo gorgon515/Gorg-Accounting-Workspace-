@@ -55,3 +55,51 @@ class MemoRequest(BaseModel):
     facts: str
     topic: str
     conclusion: Optional[str] = None
+
+
+# ---- Phase 4: intelligence engines ----
+class MemoFullRequest(BaseModel):
+    facts: str
+    issue: str
+    topic: str
+    alternatives: Optional[list[str]] = None
+    conclusion: Optional[str] = None
+
+
+class ChecklistRequest(BaseModel):
+    topic: str
+
+
+class FundamentalsRequest(BaseModel):
+    symbol: str
+    fundamentals: dict[str, Any] = Field(default_factory=dict)
+    history: Optional[dict[str, list[float]]] = None
+
+
+class SignalRequest(BaseModel):
+    symbol: str
+    prices: Optional[list[float]] = None
+    fundamentals: Optional[dict[str, Any]] = None
+    benchmark_prices: Optional[list[float]] = None
+    benchmark_symbol: Optional[str] = None
+    sector: Optional[str] = None
+    range: str = "1y"
+
+
+class MarketBriefingRequest(BaseModel):
+    quotes: Optional[list[dict[str, Any]]] = None
+    symbols: Optional[list[str]] = None
+    portfolio: Optional[list[dict[str, Any]]] = None
+    watchlist_changes: Optional[list[str]] = None
+    earnings: Optional[list[dict[str, Any]]] = None
+    macro: Optional[list[dict[str, Any]]] = None
+
+
+class WorkflowSpecRequest(BaseModel):
+    name: str = "HELIOS Workflow"
+    schedule: str = "0 7 * * *"
+    collect_url: Optional[str] = None
+    email_to: Optional[str] = None
+    subject: Optional[str] = None
+    transform_js: Optional[str] = None
+    kind: Optional[str] = None  # 'accounting_briefing' for the flagship example

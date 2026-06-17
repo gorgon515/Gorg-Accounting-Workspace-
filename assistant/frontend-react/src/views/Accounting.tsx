@@ -37,21 +37,66 @@ export function Accounting() {
 
 function Briefing() {
   const acct = useAsync(() => helios.accounting.summary(), []);
+  const brief = useAsync(() => helios.sidecar.acctBriefing(), []);
+  const intel = useAsync(() => helios.sidecar.acctIntel(), []);
+  const b = brief.data;
+
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-        <MetricCard label="Income" value={fmtMoney(acct.data?.income)} />
-        <MetricCard label="Expenses" value={fmtMoney(acct.data?.expenses)} />
-        <MetricCard label="Net" accent value={fmtMoney(acct.data?.net)} />
-        <MetricCard label="Receivable" value={fmtMoney(acct.data?.receivable)} />
+        <MetricCard label="Net (books)" accent value={fmtMoney(acct.data?.net)} />
+        <MetricCard label="Confidence" value={b?.confidence?.level ?? '—'}
+          sub={b?.confidence ? `${b.confidence.sources_represented?.length ?? 0} sources` : ''} />
+        <MetricCard label="New today" value={b?.new_developments?.length ?? '—'} />
+        <MetricCard label="Effective soon" value={b?.upcoming_effective_dates?.length ?? '—'} />
       </div>
-      <Panel title="Daily accounting briefing" subtitle="standards intelligence">
-        <p className="text-[12px] text-warmgray leading-relaxed">
-          The Accounting Intelligence Engine tracks FASB / SEC / PCAOB / IRS updates and ties them to
-          your books and CPA exam topics. The ASC knowledge base and technical-memo generator are live
-          (see Research and Memo); scheduled live crawlers populate the daily feed in the next phase.
-        </p>
-      </Panel>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Panel title="Daily accounting briefing" subtitle="FASB · SEC · PCAOB · IRS"
+          actions={<Button size="sm" onClick={() => brief.reload()}>refresh</Button>}>
+          {brief.loading ? <Loading /> : !b ? <EmptyState message="Briefing engine offline." /> : (
+            <div className="text-[12px] flex flex-col gap-2.5">
+              <p className="text-ivory/90 leading-relaxed">{b.executive_summary}</p>
+              {b.action_items?.length > 0 && (
+                <div><b className="text-gold">Action items</b>
+                  <ul className="mt-1">{b.action_items.map((a: string, i: number) => <li key={i}>• {a}</li>)}</ul></div>
+              )}
+              {b.affected_industries?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {b.affected_industries.map((s: string) => (
+                    <span key={s} className="mono text-[10px] px-1.5 py-0.5 rounded border border-hairline text-warmgray">{s}</span>
+                  ))}
+                </div>
+              )}
+              {b.cpa_impact?.length > 0 && (
+                <div><b className="text-gold">CPA impact</b>
+                  <ul className="mt-1">{b.cpa_impact.map((c: any, i: number) => <li key={i}>• {c.asc} → {c.exam}</li>)}</ul></div>
+              )}
+              <p className="text-[10px] text-warmgray/70">{b.confidence?.rationale}</p>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Developments feed" subtitle="latest monitored items" scroll className="max-h-[420px]">
+          {intel.loading ? <Loading />
+            : !(intel.data?.items?.length) ? (
+              <EmptyState message="No items stored yet. On a networked machine, click refresh to pull live FASB/SEC/IRS feeds." />
+            ) : (
+              <ul className="flex flex-col gap-1.5">
+                {intel.data.items.slice(0, 20).map((it: any) => (
+                  <li key={it.id} className="rounded-lg border border-hairline bg-obsidian/40 px-3 py-2">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="mono text-[9px] text-gold uppercase">{it.source} · {it.doc_type}</span>
+                      <span className="mono text-[10px] text-warmgray">{it.published || ''}</span>
+                    </div>
+                    <div className="text-[12px]">{it.title}</div>
+                    {it.effective_date && <div className="text-[10px] text-warmgray">effective {it.effective_date}</div>}
+                  </li>
+                ))}
+              </ul>
+            )}
+        </Panel>
+      </div>
     </>
   );
 }

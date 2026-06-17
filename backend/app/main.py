@@ -13,7 +13,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from . import config
-from .routers import accounting, health, markets, quant
+from .routers import (
+    accounting, accounting_intel, health, markets, n8n_router, quant, quant_research,
+)
 from .services.market_data import DataUnavailable
 
 app = FastAPI(
@@ -44,8 +46,11 @@ async def _data_unavailable(_req: Request, exc: DataUnavailable) -> JSONResponse
 
 app.include_router(health.router)
 app.include_router(quant.router)
+app.include_router(quant_research.router)
 app.include_router(markets.router)
 app.include_router(accounting.router)
+app.include_router(accounting_intel.router)
+app.include_router(n8n_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint
