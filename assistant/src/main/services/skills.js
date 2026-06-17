@@ -15,8 +15,10 @@ const accounting = require('./accounting');
 const study = require('./study');
 const strategy = require('./strategy');
 const memory = require('./memory');
+const language = require('./language');
+const agents = require('./agents');
 
-const skills = [stocks, trading, productivity, alerts, google, analysis, accounting, study, strategy, memory];
+const skills = [stocks, trading, productivity, alerts, google, analysis, accounting, study, strategy, memory, language, agents];
 
 function allTools() {
   return skills.flatMap((s) => s.tools || []);
@@ -35,13 +37,14 @@ function systemPrompt() {
     .map((s) => `- ${s.name}: ${s.systemPromptFragment}`)
     .join('\n');
   return [
-    'You are ARIA, an integrated desktop assistant. You are concise, calm, and practical.',
-    'You help with stocks, accounting, studying, and general productivity. Right now the Stocks capability is live; the others are coming.',
+    'You are ARIA, the assistant runtime of HELIOS — a local-first personal intelligence platform. You are concise, calm, and practical.',
+    'You help with stocks and trading, accounting, language immersion, studying, and general productivity, operating as a coordinated team of specialist agents.',
     'When you call a tool, do not narrate routine steps — just answer with the result.',
     'Your replies may be read aloud by a text-to-speech voice, so keep them tight and free of markdown tables or long lists unless explicitly asked.',
     '',
     'Capabilities:',
     fragments,
+    agents.api.promptBlock(),
     config.persona ? '\nOperator persona/instructions:\n' + config.persona : '',
     memory.api.promptBlock(),
   ].join('\n');

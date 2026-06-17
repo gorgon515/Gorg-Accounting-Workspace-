@@ -5,6 +5,12 @@ productivity**, built as an Electron app with a pluggable skill architecture and
 a Claude brain. This repository contains the **first working vertical slice:
 Stocks**, with voice enabled from day one.
 
+> **ARIA is the reference runtime of HELIOS** — the Personal Intelligence OS.
+> The full platform blueprint (architecture, schema, API, roadmaps, deployment —
+> deliverables 1–20) lives in [`../docs/HELIOS`](../docs/HELIOS). Two HELIOS
+> increments now ship in this app: a **multi-agent orchestration layer** and the
+> **Language Immersion Center** (see below).
+
 > Scope note: a "tops any Jarvis" assistant is a platform, not a weekend build.
 > This is the foundation done properly — a real, runnable core you extend skill
 > by skill. The architecture is designed so the other three pillars drop in
@@ -254,6 +260,8 @@ src/
     config.js / store.js    env config + JSON persistence
     services/
       skills.js             skill registry (add pillars here)
+      agents.js             multi-agent orchestration (roster + router)
+      language.js           Language Immersion Center (7 languages)
       stocks.js             ← the Stocks skill (tools + handlers + data API)
   renderer/                 dashboard UI (Chromium, no Node)
     index.html / styles.css
@@ -305,6 +313,16 @@ the relay slots in behind the existing voice interface — `voice.js` is the sea
    saved material, and a **Becker CPA** progress tracker (AUD/FAR/REG/BAR/ISC/
    TCP). Becker has no public API, so progress is tracked locally and the panel
    links out to becker.com for the lessons.
-5. **Hardening** — wake-word engine, auto-update, broader test coverage.
+5. **Language Immersion Center** ✅ — a HELIOS flagship pillar
+   (`services/language.js`). Seven languages (Russian, Spanish, French, German,
+   Italian, Japanese, Mandarin), a shared SM-2 vocab SRS, deterministic **daily
+   missions** across speaking/listening/reading/writing, the **CEFR A1→C2
+   pathway**, **roleplay** scenario seeds, and progress analytics with an honest
+   CEFR estimate. Conversation, grammar correction, and tutoring are brain-driven.
+6. **Multi-agent orchestration** ✅ — `services/agents.js` organizes the skills
+   into the 11 named HELIOS agents (Chief of Staff, Accounting, Tax, Research,
+   Quant, Trading, Language Coach, Email, Calendar, Automation, Knowledge) with a
+   fast local router, a `which_agent` tool, and an **Agents** activity panel.
+7. **Hardening** — wake-word engine, auto-update, broader test coverage.
 
 Not financial advice. Market data may be delayed.

@@ -22,6 +22,8 @@ function register() {
   const accounting = skills.getSkill('accounting').api;
   const study = skills.getSkill('study').api;
   const strategy = skills.getSkill('strategy').api;
+  const language = skills.getSkill('language').api;
+  const agents = skills.getSkill('agents').api;
 
   ipcMain.handle('aria:config', async () => {
     const b = await brain.status();
@@ -115,6 +117,21 @@ function register() {
   // Trade ideas
   ipcMain.handle('strategy:idea', (_e, symbol) => strategy.tradeIdea(symbol));
   ipcMain.handle('strategy:scan', () => strategy.scanIdeas());
+
+  // Language Immersion Center
+  ipcMain.handle('lang:languages', () => language.LANGUAGES);
+  ipcMain.handle('lang:curriculum', () => language.CURRICULUM);
+  ipcMain.handle('lang:profile', () => language.getProfile());
+  ipcMain.handle('lang:setLanguage', (_e, p) => language.setTargetLanguage(p || {}));
+  ipcMain.handle('lang:progress', (_e, lang) => language.progress({ language: lang }));
+  ipcMain.handle('lang:missions', (_e, lang) => language.dailyMissions({ language: lang }));
+  ipcMain.handle('lang:mission:complete', (_e, p) => language.completeMission(p || {}));
+  ipcMain.handle('lang:vocab:add', (_e, v) => language.addVocab(v || {}));
+  ipcMain.handle('lang:due', (_e, lang) => language.dueReview({ language: lang }));
+
+  // Agent orchestration (Agent Activity panel)
+  ipcMain.handle('agents:roster', () => agents.roster(skills.skills));
+  ipcMain.handle('agents:route', (_e, text) => agents.route(text));
 
   // iMessage bridge status (macOS)
   ipcMain.handle('imessage:status', () => imessage.available());

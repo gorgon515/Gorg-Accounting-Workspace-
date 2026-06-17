@@ -90,6 +90,21 @@ contextBridge.exposeInMainWorld('aria', {
     idea: (symbol) => ipcRenderer.invoke('strategy:idea', symbol),
     scan: () => ipcRenderer.invoke('strategy:scan'),
   },
+  language: {
+    languages: () => ipcRenderer.invoke('lang:languages'),
+    curriculum: () => ipcRenderer.invoke('lang:curriculum'),
+    profile: () => ipcRenderer.invoke('lang:profile'),
+    setLanguage: (p) => ipcRenderer.invoke('lang:setLanguage', p),
+    progress: (lang) => ipcRenderer.invoke('lang:progress', lang),
+    missions: (lang) => ipcRenderer.invoke('lang:missions', lang),
+    completeMission: (p) => ipcRenderer.invoke('lang:mission:complete', p),
+    addVocab: (v) => ipcRenderer.invoke('lang:vocab:add', v),
+    due: (lang) => ipcRenderer.invoke('lang:due', lang),
+  },
+  agents: {
+    roster: () => ipcRenderer.invoke('agents:roster'),
+    route: (text) => ipcRenderer.invoke('agents:route', text),
+  },
   imessage: {
     status: () => ipcRenderer.invoke('imessage:status'),
   },
