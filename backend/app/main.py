@@ -15,9 +15,10 @@ from fastapi.responses import JSONResponse
 from . import config
 from .routers import (
     accounting, accounting_intel, accounting_platform_router, execution_router, health, markets,
-    n8n_router, personal, quant, quant_research, workbench,
+    n8n_router, personal, quant, quant_research, security_router, workbench,
 )
 from .services.market_data import DataUnavailable
+from security.vault import VaultLocked
 
 app = FastAPI(
     title="HELIOS Intelligence Sidecar",
@@ -45,6 +46,12 @@ async def _data_unavailable(_req: Request, exc: DataUnavailable) -> JSONResponse
     return JSONResponse(status_code=503, content={"error": str(exc)})
 
 
+@app.exception_handler(VaultLocked)
+async def _vault_locked(_req: Request, exc: VaultLocked) -> JSONResponse:
+    # Vault must be unlocked first → 423 Locked.
+    return JSONResponse(status_code=423, content={"error": str(exc)})
+
+
 app.include_router(health.router)
 app.include_router(quant.router)
 app.include_router(quant_research.router)
@@ -56,6 +63,7 @@ app.include_router(personal.router)
 app.include_router(accounting_platform_router.router)
 app.include_router(workbench.router)
 app.include_router(execution_router.router)
+app.include_router(security_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint

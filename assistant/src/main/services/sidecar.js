@@ -242,6 +242,50 @@ const api = {
   opsFirm: () => call('GET', '/ops/firm'),
   opsPortfolio: () => call('GET', '/ops/portfolio'),
   workflowBuild: (p) => call('POST', '/workflow/build', p),
+  // Phase 9 — security, vault, backup, recovery & multi-device sync
+  securityStatus: () => call('GET', '/security/status'),
+  securityHealth: () => call('GET', '/security/health'),
+  vaultInitialize: (master_password) => call('POST', '/security/initialize', { master_password }),
+  vaultUnlock: (master_password) => call('POST', '/security/unlock', { master_password }),
+  vaultLock: () => call('POST', '/security/lock'),
+  vaultSecrets: () => call('GET', '/vault/secrets'),
+  vaultSetSecret: (p) => call('POST', '/vault/secret', p),
+  vaultGetSecret: (ref) => call('GET', `/vault/secret/${encodeURIComponent(ref)}`),
+  vaultRotateSecret: (ref, value) => call('POST', `/vault/secret/${encodeURIComponent(ref)}/rotate`, { value }),
+  vaultDeleteSecret: (ref) => call('DELETE', `/vault/secret/${encodeURIComponent(ref)}`),
+  vaultRotateMaster: (p) => call('POST', '/vault/rotate-master', p),
+  vaultAccessLog: (limit) => call('GET', '/vault/access-log' + (limit ? `?limit=${limit}` : '')),
+  secMemoryPut: (p) => call('POST', '/security/memory', p),
+  secMemoryGet: (key) => call('GET', `/security/memory/${encodeURIComponent(key)}`),
+  secDocumentPut: (p) => call('POST', '/security/document', p),
+  secDocumentGet: (id) => call('GET', `/security/document/${encodeURIComponent(id)}`),
+  complianceEvents: (q) => call('GET', '/compliance/events' + (q || '')),
+  complianceRecord: (p) => call('POST', '/compliance/record', p),
+  complianceVerify: () => call('GET', '/compliance/verify'),
+  complianceStats: () => call('GET', '/compliance/stats'),
+  permissionMatrix: () => call('GET', '/security/permissions'),
+  permissionForAgent: (agent) => call('GET', `/security/permissions/${encodeURIComponent(agent)}`),
+  integrityLedger: () => call('GET', '/security/integrity/ledger'),
+  integrityAudit: () => call('GET', '/security/integrity/audit'),
+  backupCreate: (p) => call('POST', '/backup/create', p),
+  backupList: (limit) => call('GET', '/backup/list' + (limit ? `?limit=${limit}` : '')),
+  backupStats: () => call('GET', '/backup/stats'),
+  backupVerify: (id) => call('GET', `/backup/${encodeURIComponent(id)}/verify`),
+  backupRetention: (keep) => call('POST', '/backup/retention', { keep }),
+  restoreValidate: (p) => call('POST', '/restore/validate', p),
+  restoreInspect: (p) => call('POST', '/restore/inspect', p),
+  restoreRun: (p) => call('POST', '/restore/run', p),
+  recoveryPoints: () => call('GET', '/recovery/points'),
+  recoveryPlan: () => call('GET', '/recovery/plan'),
+  recoverySimulate: (password) => call('POST', '/recovery/simulate', { password }),
+  recoveryReport: (password) => call('POST', '/recovery/report', password ? { password } : {}),
+  syncRegisterDevice: (name) => call('POST', '/sync/device', { name }),
+  syncDevices: () => call('GET', '/sync/devices'),
+  syncPush: (p) => call('POST', '/sync/push', p),
+  syncPull: (p) => call('POST', '/sync/pull', p),
+  syncConflicts: () => call('GET', '/sync/conflicts'),
+  syncAudit: () => call('GET', '/sync/audit'),
+  syncStatus: () => call('GET', '/sync/status'),
 };
 
 const tools = [
@@ -545,6 +589,49 @@ const tools = [
     description: 'Build a month-end close workflow + execution plan (dependencies, approval gates, deadlines) and the importable N8N JSON.',
     input_schema: { type: 'object', properties: { email_to: { type: 'string' } } },
   },
+  {
+    name: 'security_status',
+    description: 'HELIOS security posture: vault lock/algorithm state, immutable compliance-log integrity, and system health. Use to report whether the platform is secured.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'vault_secret',
+    description: 'Operate on the encrypted vault (AES-256-GCM). action = list | get | set | rotate. Secrets are API keys/tokens/credentials. The vault must be unlocked; plaintext is never stored.',
+    input_schema: {
+      type: 'object',
+      properties: { action: { type: 'string' }, ref: { type: 'string' }, value: { type: 'string' }, category: { type: 'string' } },
+      required: ['action'],
+    },
+  },
+  {
+    name: 'compliance_log',
+    description: 'Query or verify the immutable, hash-chained compliance log. action = verify | stats | events (optional category). Use to prove an audit trail is intact and tamper-evident.',
+    input_schema: { type: 'object', properties: { action: { type: 'string' }, category: { type: 'string' } } },
+  },
+  {
+    name: 'data_integrity_scan',
+    description: 'Run accounting data-integrity checks: ledger (every posted entry balances, trial balance ties, global debits=credits) or audit (posted entries left a create+post audit trail).',
+    input_schema: { type: 'object', properties: { scope: { type: 'string' } } },
+  },
+  {
+    name: 'backup_now',
+    description: 'Create an encrypted, compressed backup of the HELIOS data stores. kind = full | incremental. Requires a backup password used to derive the encryption key.',
+    input_schema: {
+      type: 'object',
+      properties: { password: { type: 'string' }, kind: { type: 'string' }, note: { type: 'string' } },
+      required: ['password'],
+    },
+  },
+  {
+    name: 'recovery_status',
+    description: 'Disaster-recovery readiness: available recovery points and the recovery plan (latest full + incrementals). Optionally pass a password to also run a non-destructive recovery drill.',
+    input_schema: { type: 'object', properties: { password: { type: 'string' } } },
+  },
+  {
+    name: 'sync_status',
+    description: 'Multi-device sync status: server version, registered devices, record count, and recorded conflicts. The vault must be unlocked (sync payloads are AES-256-GCM encrypted).',
+    input_schema: { type: 'object', properties: {} },
+  },
 ];
 
 const handlers = {
@@ -592,6 +679,24 @@ const handlers = {
   month_end_close_status: () => api.closeDashboard(),
   outcome_metrics: () => api.outcomesMetrics(),
   build_close_workflow: (i) => api.workflowBuild({ kind: 'month_end_close', email_to: (i && i.email_to) || 'controller@example.com' }),
+  security_status: () => api.securityStatus(),
+  vault_secret: (i) => {
+    const a = (i && i.action) || 'list';
+    if (a === 'get') return api.vaultGetSecret(i.ref);
+    if (a === 'set') return api.vaultSetSecret({ ref: i.ref, value: i.value, category: i.category });
+    if (a === 'rotate') return api.vaultRotateSecret(i.ref, i.value);
+    return api.vaultSecrets();
+  },
+  compliance_log: (i) => {
+    const a = (i && i.action) || 'verify';
+    if (a === 'stats') return api.complianceStats();
+    if (a === 'events') return api.complianceEvents(i && i.category ? `?category=${encodeURIComponent(i.category)}` : '');
+    return api.complianceVerify();
+  },
+  data_integrity_scan: (i) => ((i && i.scope) === 'audit' ? api.integrityAudit() : api.integrityLedger()),
+  backup_now: (i) => api.backupCreate({ password: i.password, kind: (i && i.kind) || 'full', note: (i && i.note) || '' }),
+  recovery_status: (i) => (i && i.password ? api.recoveryReport(i.password) : api.recoveryPlan()),
+  sync_status: () => api.syncStatus(),
 };
 
 module.exports = {

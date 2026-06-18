@@ -54,6 +54,7 @@ prove the architecture extends as designed:
 | **Accounting platform** (Phase 6) | `backend/accounting_platform/` | ✅ working — real double-entry GL, chart of accounts + templates, journal engine, AP/AR (posting to GL), fixed-asset depreciation, bank reconciliation, financial statements (BS/IS/CF), clients/documents, immutable audit trail, dashboard; Ledger HUD view; 159 backend tests |
 | **Document intelligence + tax/advisory workbench** (Phase 7) | `backend/document_intelligence/`, `tax_research/`, `workpapers/`, `advisory/`, `global_search.py` | ✅ working — real PDF/Excel/Word/email extraction + gated OCR + classification + field extraction; tax research (authority hierarchy + memo) + organizer; workpaper generator; financial-statement analysis; due diligence; global search; 5 new agents; Workbench HUD view; 181 backend tests |
 | **Execution / automation OS** (Phase 8) | `backend/execution/`, `operations/`, `outcomes/` | ✅ working — approval engine with enforced risk tiers (Tier 4 never auto, prepare-only), execution engine (propose/approve/execute/rollback/retry + audit), document→accounting automation, month-end close, outcome tracking + learning calibration, ops dashboards, AI workflow builder; Operations HUD view; 196 backend tests |
+| **Security / vault / backup / recovery / sync** (Phase 9) | `backend/security/`, `backup/`, `sync/` | ✅ working — real **AES-256-GCM + scrypt** vault (master unlock, secret versioning, secret + master rotation, access audit), encrypted memory + document storage, immutable hash-chained compliance log (tamper-evident), agent permission matrix (no agent approves/executes money), ledger/audit integrity scans, encrypted + compressed backups with full/incremental/retention + checksum verify, full/selective/point-in-time restore, disaster-recovery plan + non-destructive drill, multi-device delta sync (encrypted payloads, conflict resolution), system health; Security Center HUD view; 230 backend tests |
 
 All are wired into the registry, exposed over IPC, surfaced in the UI, and
 covered by tests (router 14/14; full language lifecycle; backend 35; registry 11).
@@ -230,6 +231,43 @@ HELIOS turns intelligence into *approved* action — **196 backend tests**:
   brain may *propose* and *view* the queue (`approval_queue`,
   `process_document_to_books`, `month_end_close_status`, `outcome_metrics`,
   `build_close_workflow`); **approve/execute remain human actions** in the UI.
+
+### Phase 9 progress (security, vault, backup, recovery & multi-device sync)
+
+HELIOS becomes a secure, resilient platform — **230 backend tests**, with
+**real cryptography** (no mock encryption): AES-256-GCM authenticated encryption
+and scrypt key derivation throughout.
+
+- **HELIOS Vault** — an encrypted credential store. The master password derives
+  (scrypt) a key that encrypts every secret with AES-256-GCM; secrets are
+  **versioned**, support **rotation** (secret and master — master rotation
+  re-keys all secrets), and every access is audited. Plaintext is never persisted
+  and never returned in listings.
+- **Encrypted memory + document storage** — a namespaced AES-256-GCM key-value
+  store keyed by a 256-bit *data key* held inside the vault; reads/writes are
+  access-logged and nothing sits on disk in plaintext.
+- **Immutable compliance log** — append-only and **hash-chained**: each event's
+  hash binds the previous one, so altering any past record breaks the chain;
+  `verify()` reports the first break.
+- **Agent security model** — a per-agent permission matrix over memory / tools /
+  documents / execution / approval, enforced at runtime. **Invariant: no agent
+  may approve or execute money/filing actions** — execution caps at *propose*.
+- **Data integrity scans** — verify every posted entry balances, the trial
+  balance ties, global debits = credits, and that posted entries left an audit
+  trail.
+- **Backup + Restore + Disaster Recovery** — encrypted, gzip-compressed,
+  catalogued snapshots (full + incremental with unchanged-source skipping),
+  checksum verification, and retention; full / selective / **point-in-time**
+  restore that validates the checksum and decrypts before writing; a recovery
+  plan and a **non-destructive recovery drill** with a readiness report.
+- **Multi-device sync** — delta sync with a server version clock; payloads are
+  AES-256-GCM encrypted in transit and at rest; concurrent edits are recorded as
+  conflicts and resolved last-write-wins; every operation is audited.
+- **HUD**: a **Security Center** view (Overview · Vault · Backup & Recovery ·
+  Sync · Compliance · Permissions) on live data. Brain tools `security_status`,
+  `vault_secret`, `compliance_log`, `data_integrity_scan`, `backup_now`,
+  `recovery_status`, `sync_status`. Locked-vault access to encrypted/sync
+  surfaces returns `423`.
 
 ## The documents (deliverables 1–20)
 

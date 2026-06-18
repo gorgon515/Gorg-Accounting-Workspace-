@@ -16,6 +16,7 @@ import { ChiefOfStaff } from './views/ChiefOfStaff';
 import { Ledger } from './views/Ledger';
 import { Workbench } from './views/Workbench';
 import { Operations } from './views/Operations';
+import { SecurityCenter } from './views/SecurityCenter';
 
 export type RouteGroup = 'Core' | 'Finance' | 'Learning' | 'System';
 
@@ -43,6 +44,7 @@ export const ROUTES: RouteDef[] = [
   { id: 'email', label: 'Email', icon: '✉', group: 'Core', component: Email },
   { id: 'memory', label: 'Memory', icon: '◉', group: 'System', component: Memory },
   { id: 'operations', label: 'Operations', icon: '▶', group: 'System', component: Operations },
+  { id: 'security', label: 'Security Center', icon: '⛨', group: 'System', component: SecurityCenter },
   { id: 'agents', label: 'Agents', icon: '⊹', group: 'System', component: AgentActivity },
   { id: 'automations', label: 'Automations', icon: '⚙', group: 'System', component: Automations },
   { id: 'settings', label: 'Settings', icon: '⚙', group: 'System', component: Settings },

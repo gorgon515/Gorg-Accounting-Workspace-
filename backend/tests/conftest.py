@@ -9,5 +9,8 @@ import tempfile
 _dir = tempfile.mkdtemp(prefix="helios-tests-")
 for _key in ("HELIOS_ACCT_DB", "HELIOS_INTEL_DB", "HELIOS_TASKS_DB", "HELIOS_GOALS_DB",
              "HELIOS_SCHED_DB", "HELIOS_DOCINTEL_DB", "HELIOS_TAXORG_DB",
-             "HELIOS_EXEC_DB", "HELIOS_CLOSE_DB", "HELIOS_OUTCOMES_DB"):
+             "HELIOS_EXEC_DB", "HELIOS_CLOSE_DB", "HELIOS_OUTCOMES_DB",
+             "HELIOS_VAULT_DB", "HELIOS_COMPLIANCE_DB", "HELIOS_ENCSTORE_DB",
+             "HELIOS_SYNC_DB", "HELIOS_BACKUP_DB"):
     os.environ.setdefault(_key, os.path.join(_dir, _key.lower() + ".db"))
+os.environ.setdefault("HELIOS_BACKUP_DIR", os.path.join(_dir, "backups"))

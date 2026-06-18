@@ -226,6 +226,53 @@ Tests: **196 passing** (`pytest -q`) — Phase 1–7 plus Phase-8 approval/execu
 (tier enforcement, Tier-4 prepare-only, rollback, failure handling, audit),
 document automation, month-end close, outcomes/learning, and the execution router.
 
+## Phase 9 — security, vault, backup, recovery & multi-device sync
+
+Real cryptography — **AES-256-GCM** authenticated encryption with **scrypt**
+key derivation. No mock crypto: wrong keys and tampered ciphertext fail
+authentication, hash chains and checksums catch corruption.
+
+```
+security/       crypto.py (AES-256-GCM + scrypt + SHA-256/HMAC; DecryptionError on
+                tamper), vault.py (encrypted credential store: master-password
+                unlock, per-secret versioning, secret + master rotation, access
+                audit — plaintext never persisted/listed), encrypted_store.py
+                (namespaced AES-256-GCM KV for encrypted memory + documents, with
+                access logging + re-key), compliance.py (immutable hash-chained
+                audit log; verify() detects the first broken link),
+                permissions.py (agent permission matrix — invariant: NO agent may
+                approve/execute money/filing actions; enforce() at runtime),
+                integrity.py (ledger consistency + audit-trail verification),
+                health.py (per-store reachability/size + rolled-up status),
+                service.py (vault-rooted lifecycle facade: data key keys the
+                encrypted store + sync)
+backup/         engine.py (encrypted + gzip-compressed, catalogued snapshots;
+                full + incremental; checksum verify; retention), restore.py
+                (full / selective / point-in-time restore; validates checksum +
+                decrypts before writing), recovery.py (disaster recovery: recovery
+                points, plan, non-destructive drill, readiness report)
+sync/           engine.py (multi-device delta sync: device registration, server
+                version clock, encrypted payloads, conflict detection +
+                last-write-wins resolution, audit)
+```
+
+**Security model:** the vault is the root of trust. The master password derives
+(scrypt) a key that unlocks a 256-bit *data key* — itself a vault secret —
+which encrypts memory, documents and sync payloads. Locking tears those down.
+Backups derive their own key from a backup password. Agents may *propose* and
+*view* but never approve/execute money; compliance events are tamper-evident.
+API under `/security/*`, `/vault/*`, `/compliance/*`, `/backup/*`, `/restore/*`,
+`/recovery/*`, `/sync/*`. Locked-vault access to encrypted/sync surfaces → `423`.
+
+Tests: **230 passing** (`pytest -q`) — the 196 above plus Phase-9 crypto
+(roundtrip, wrong-key/AAD/tamper rejection, scrypt determinism), vault
+(versioning, unlock guard, master rotation re-keys all), compliance chain
+verify + tamper detection, permission invariants, ledger/audit integrity,
+encrypted store (no-plaintext-at-rest, re-key), backup/restore (full,
+incremental skip, retention, wrong-password rejection, point-in-time),
+disaster-recovery plan + drill, sync (delta push/pull, encrypted-at-rest,
+conflict resolution), the security service facade, and the Phase-9 router.
+
 ---
 
 Tests (historical): **181 passing** — Phase 1–6 plus Phase-6 GL/statements
