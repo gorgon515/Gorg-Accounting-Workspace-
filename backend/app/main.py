@@ -17,6 +17,8 @@ from .routers import (
     accounting, accounting_intel, accounting_platform_router, execution_router, health, markets,
     n8n_router, personal, quant, quant_research, workbench,
     security_router, backup_router, sync_router, health_router,
+    workspaces_router, licensing_router, monitoring_router, updates_router,
+    plugins_router, public_api_router, webhooks_router,
 )
 from .services.market_data import DataUnavailable
 
@@ -62,6 +64,14 @@ app.include_router(security_router.router)
 app.include_router(backup_router.router)
 app.include_router(sync_router.router)
 app.include_router(health_router.router)
+# Phase 10 — productization, deployment & commercial readiness
+app.include_router(workspaces_router.router)
+app.include_router(licensing_router.router)
+app.include_router(monitoring_router.router)
+app.include_router(updates_router.router)
+app.include_router(plugins_router.router)
+app.include_router(public_api_router.router)
+app.include_router(webhooks_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint

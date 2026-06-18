@@ -1,0 +1,11 @@
+{
+  "name": "example-tool",
+  "version": "1.0.0",
+  "description": "Example HELIOS plugin that demonstrates the plugin SDK.",
+  "author": "HELIOS Platform Team",
+  "entry_point": "main.py",
+  "permissions": ["accounting:read", "memory:read"],
+  "min_helios_version": "0.8.0",
+  "tags": ["example", "demo"],
+  "license": "MIT"
+}
