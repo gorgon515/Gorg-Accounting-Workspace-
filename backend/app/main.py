@@ -19,6 +19,7 @@ from .routers import (
     security_router, backup_router, sync_router, health_router,
     workspaces_router, licensing_router, monitoring_router, updates_router,
     plugins_router, public_api_router, webhooks_router,
+    reasoning_router, intelligence_router, forecasting_router, advisory_router, executive_router,
 )
 from .services.market_data import DataUnavailable
 
@@ -72,6 +73,12 @@ app.include_router(updates_router.router)
 app.include_router(plugins_router.router)
 app.include_router(public_api_router.router)
 app.include_router(webhooks_router.router)
+# Phase 11 — autonomous intelligence & strategic reasoning
+app.include_router(reasoning_router.router)
+app.include_router(intelligence_router.router)
+app.include_router(forecasting_router.router)
+app.include_router(advisory_router.router)
+app.include_router(executive_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint
