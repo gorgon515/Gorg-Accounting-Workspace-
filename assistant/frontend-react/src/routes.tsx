@@ -21,6 +21,12 @@ import { BackupView } from './views/BackupView';
 import { SyncView } from './views/SyncView';
 import { HealthMonitor } from './views/HealthMonitor';
 import { AuditCenter } from './views/AuditCenter';
+import { WorkspaceCenter } from './views/WorkspaceCenter';
+import { PluginManager } from './views/PluginManager';
+import { APICenter } from './views/APICenter';
+import { LicenseCenter } from './views/LicenseCenter';
+import { PerformanceMonitor } from './views/PerformanceMonitor';
+import { DeploymentCenter } from './views/DeploymentCenter';
 
 export type RouteGroup = 'Core' | 'Finance' | 'Learning' | 'System';
 
@@ -55,6 +61,12 @@ export const ROUTES: RouteDef[] = [
   { id: 'sync', label: 'Sync', icon: '⇄', group: 'System', component: SyncView },
   { id: 'health', label: 'Health Monitor', icon: '♥', group: 'System', component: HealthMonitor },
   { id: 'audit', label: 'Audit Center', icon: '⊘', group: 'System', component: AuditCenter },
+  { id: 'workspaces', label: 'Workspaces', icon: '⧉', group: 'System', component: WorkspaceCenter },
+  { id: 'plugins', label: 'Plugins', icon: '⟐', group: 'System', component: PluginManager },
+  { id: 'api', label: 'API Center', icon: '❯', group: 'System', component: APICenter },
+  { id: 'license', label: 'License', icon: '◆', group: 'System', component: LicenseCenter },
+  { id: 'performance', label: 'Performance', icon: '⚡', group: 'System', component: PerformanceMonitor },
+  { id: 'deployment', label: 'Deployment', icon: '⬢', group: 'System', component: DeploymentCenter },
   { id: 'settings', label: 'Settings', icon: '⚙', group: 'System', component: Settings },
 ];
 

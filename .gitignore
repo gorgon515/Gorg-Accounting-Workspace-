@@ -217,5 +217,10 @@ __marimo__/
 # Claude Code agent scratch space
 .claude/
 
+# The Python "lib/" ignore above also matches the React frontend's src/lib/
+# (shared formatters + event bus). Keep that source tracked.
+!assistant/frontend-react/src/lib/
+!assistant/frontend-react/src/lib/**
+
 # Streamlit
 .streamlit/secrets.toml

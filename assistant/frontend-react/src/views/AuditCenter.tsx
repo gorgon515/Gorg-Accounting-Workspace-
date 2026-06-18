@@ -82,7 +82,7 @@ function AuditLogTab() {
   }
 
   async function verifyEntry(id: string | number) {
-    setVerifyResults((prev) => ({ ...prev, [id]: 'loading' }));
+    setVerifyResults((prev) => ({ ...prev, [id]: 'loading' as const }));
     try {
       const result = await helios.security.verifyEntry(id);
       setVerifyResults((prev) => ({ ...prev, [id]: result }));

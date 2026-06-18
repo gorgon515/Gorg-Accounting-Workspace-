@@ -57,7 +57,7 @@ function BackupsTab() {
   const [verifyStates, setVerifyStates] = useState<Record<string, { busy: boolean; result?: string; error?: string }>>({});
 
   const st = status.data as any;
-  const list: any[] = backups.data ?? [];
+  const list: any[] = (backups.data as any) ?? [];
 
   function toggleComponent(c: Component) {
     setComponents((prev) => {
@@ -271,7 +271,7 @@ function BackupsTab() {
 
 function RestoreTab() {
   const points = useAsync(() => (helios as any).backup.restorePoints(), []);
-  const allPoints: any[] = points.data ?? [];
+  const allPoints: any[] = (points.data as any) ?? [];
 
   const [componentFilter, setComponentFilter] = useState('');
   const [selected, setSelected] = useState<any>(null);

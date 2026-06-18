@@ -1,14 +1,19 @@
 import { cls } from '../lib/format';
 
-type Status = 'online' | 'idle' | 'planned' | 'offline' | 'ready' | 'error';
+type Status =
+  | 'online' | 'idle' | 'planned' | 'offline' | 'ready' | 'error'
+  | 'ok' | 'warn' | 'degraded';
 
 const DOT: Record<Status, string> = {
   online: 'bg-helgreen animate-pulseDot',
   ready: 'bg-helgreen',
+  ok: 'bg-helgreen',
   idle: 'bg-warmgray',
   planned: 'bg-transparent border border-warmgray',
   offline: 'bg-helred',
   error: 'bg-helred',
+  warn: 'bg-gold',
+  degraded: 'bg-gold',
 };
 
 export function StatusBadge({ status, label }: { status: Status; label?: string }) {
