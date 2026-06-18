@@ -1,10 +1,12 @@
 'use strict';
 
-// Pre-downloads the local Whisper model so push-to-talk works fully offline
-// afterward. Run: npm run model
+// Pre-downloads the local models so everything works fully offline afterward:
+//   • the Whisper speech model (push-to-talk), and
+//   • the built-in chat model (the zero-setup brain).
+// Run: npm run model
 //
-// Without this, the model downloads automatically on your first use of the
-// Talk button (one time), then runs locally from cache.
+// Without this, each model downloads automatically the first time it's used
+// (one time), then runs locally from cache.
 
 (async () => {
   let transformers;
@@ -14,11 +16,33 @@
     console.error('@huggingface/transformers is not installed. Run `npm install` first.');
     process.exit(1);
   }
-  const { pipeline } = transformers;
-  const model = process.env.WHISPER_MODEL || 'Xenova/whisper-tiny.en';
-  console.log(`Downloading local speech model: ${model} …`);
-  await pipeline('automatic-speech-recognition', model);
-  console.log('Done. The model is cached locally and now works offline.');
+  const { pipeline, env } = transformers;
+
+  // MODELS_DIR redirects the download cache — CI uses this to bundle the
+  // weights into the installers (extraResources), making them fully offline.
+  if (process.env.MODELS_DIR) {
+    env.cacheDir = process.env.MODELS_DIR;
+    console.log(`Saving models to ${process.env.MODELS_DIR}/`);
+  }
+
+  const whisper = process.env.WHISPER_MODEL || 'Xenova/whisper-tiny.en';
+  console.log(`Downloading local speech model: ${whisper} …`);
+  try {
+    await pipeline('automatic-speech-recognition', whisper);
+    console.log('Speech model cached — push-to-talk now works offline.');
+  } catch (e) {
+    console.error(`Speech model failed: ${e.message}`);
+  }
+
+  const chat = process.env.EMBEDDED_MODEL || 'onnx-community/Qwen2.5-0.5B-Instruct';
+  const dtype = process.env.EMBEDDED_DTYPE || 'q4';
+  console.log(`Downloading built-in brain model: ${chat} (${dtype}) …`);
+  try {
+    await pipeline('text-generation', chat, { dtype });
+    console.log('Brain model cached — the built-in brain now works offline.');
+  } catch (e) {
+    console.error(`Brain model failed: ${e.message}`);
+  }
 })().catch((e) => {
   console.error('Failed:', e.message);
   process.exit(1);

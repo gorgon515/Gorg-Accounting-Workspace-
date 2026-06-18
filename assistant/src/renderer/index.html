@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- CSP: allow only what we need; no remote scripts. -->
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:;" />
+        content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data: https://logo.clearbit.com;" />
   <title>ARIA</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="bar">
     <div class="brand">
+      <span class="reactor" aria-hidden="true">
+        <span class="reactor-ring r1"></span>
+        <span class="reactor-ring r2"></span>
+        <span class="reactor-core"></span>
+      </span>
       <span class="mark">ARIA</span>
       <span class="rule"></span>
       <span class="sub">DESKTOP ASSISTANT</span>
@@ -40,9 +45,34 @@
         <button type="submit">Send</button>
       </form>
       <p class="hint" id="voice-hint"></p>
+      <div class="voice-bar" id="voice-bar">
+        <button id="speak-toggle" class="mic" title="Speak replies aloud">🔊 Speak: on</button>
+        <select id="voice-select" title="Assistant voice"></select>
+        <button id="voice-test" class="ghost" title="Hear the selected voice">Test</button>
+      </div>
     </section>
 
     <aside class="sidebar">
+    <!-- Brain: one-click stronger-brain switcher -->
+    <section class="panel" id="brain-panel">
+      <div class="panel-head">
+        <h2>Brain</h2>
+        <span class="muted" id="brain-now">—</span>
+      </div>
+      <div class="brain-opts" id="brain-opts">
+        <button class="brain-opt" data-engine="embedded">
+          <span class="bo-name">Built-in</span><span class="bo-sub">fast · offline · no setup</span>
+        </button>
+        <button class="brain-opt" data-engine="local">
+          <span class="bo-name">Ollama</span><span class="bo-sub">local · stronger · free</span>
+        </button>
+        <button class="brain-opt" data-engine="claude">
+          <span class="bo-name">Claude</span><span class="bo-sub">smartest · API key</span>
+        </button>
+      </div>
+      <div class="brain-detail" id="brain-detail"></div>
+    </section>
+
     <!-- Chart -->
     <section class="panel">
       <div class="panel-head">
@@ -55,8 +85,18 @@
           <button class="r-btn" data-range="1y">1Y</button>
         </div>
       </div>
+
+      <!-- Company identity (logo / monogram + name + sector) -->
+      <div class="company hidden" id="company"></div>
+
       <canvas id="chart-canvas" height="150"></canvas>
       <div class="chart-meta muted" id="chart-meta">Click a ticker to chart it.</div>
+
+      <!-- Fundamentals HUD -->
+      <div class="fundamentals hidden" id="fundamentals"></div>
+
+      <!-- Deep technical readout -->
+      <div class="technical hidden" id="technical"></div>
     </section>
 
     <!-- News -->
@@ -204,13 +244,40 @@
       </div>
 
       <div class="acct-pane hidden" id="pane-vocab">
-        <form class="acct-form" id="vocab-form">
-          <input id="vocab-word" type="text" placeholder="Слово (word)" autocomplete="off" />
-          <input id="vocab-tr" type="text" placeholder="Translation" autocomplete="off" />
-          <input id="vocab-ex" type="text" placeholder="Example (optional)" autocomplete="off" />
-          <button type="submit">Add card</button>
-        </form>
-        <p class="muted" id="vocab-hint">New vocab enters spaced-repetition review. Ask the assistant to "teach me 5 Russian words" to add a batch.</p>
+        <!-- Curriculum sub-tabs -->
+        <div class="ru-tabs" id="ru-tabs">
+          <button class="ru-tab active" data-rtab="vocab">Vocabulary</button>
+          <button class="ru-tab" data-rtab="grammar">Grammar</button>
+          <button class="ru-tab" data-rtab="add">Add card</button>
+        </div>
+
+        <!-- Vocabulary browser -->
+        <div class="ru-pane" id="ru-pane-vocab">
+          <div class="ru-themes" id="ru-themes"><span class="muted">Loading themes…</span></div>
+          <div class="ru-seedbar">
+            <button class="ghost" id="ru-seed-btn" title="Add this theme to spaced-repetition review">＋ Add theme to review</button>
+            <button class="ghost" id="ru-seed-all-btn" title="Add the whole corpus to review">＋ Add all</button>
+            <span class="muted" id="ru-seed-status"></span>
+          </div>
+          <div class="ru-vocab-list" id="ru-vocab-list"><p class="muted">Pick a theme to see words.</p></div>
+        </div>
+
+        <!-- Grammar browser -->
+        <div class="ru-pane hidden" id="ru-pane-grammar">
+          <div class="ru-lessons" id="ru-lessons"><p class="muted">Loading lessons…</p></div>
+          <div class="ru-lesson hidden" id="ru-lesson"></div>
+        </div>
+
+        <!-- Manual add card (kept) -->
+        <div class="ru-pane hidden" id="ru-pane-add">
+          <form class="acct-form" id="vocab-form">
+            <input id="vocab-word" type="text" placeholder="Слово (word)" autocomplete="off" />
+            <input id="vocab-tr" type="text" placeholder="Translation" autocomplete="off" />
+            <input id="vocab-ex" type="text" placeholder="Example (optional)" autocomplete="off" />
+            <button type="submit">Add card</button>
+          </form>
+          <p class="muted" id="vocab-hint">New vocab enters spaced-repetition review. Ask the assistant to "teach me 5 Russian words" to add a batch.</p>
+        </div>
       </div>
 
       <div class="acct-pane hidden" id="pane-cpa">

@@ -1,13 +1,16 @@
 name: Build ARIA installers
 
 # Builds downloadable installers for Windows (.exe), macOS (.dmg/.zip), and
-# Linux (.AppImage/.deb) on their native runners.
+# Linux (.AppImage/.deb) on their native runners and attaches them to a GitHub
+# Release. Each platform job uploads its own installers straight to the Release
+# (no Actions-artifact round-trip — that storage is quota-limited on private
+# repos; Release assets are not).
 #
-# Run it two ways:
+# Run it two ways — both publish to a Release:
 #   • Manually: Actions tab → "Build ARIA installers" → Run workflow
-#     → installers appear as downloadable artifacts on the run page.
+#     → releases under v<package.json version>.
 #   • Tag a release: git tag v0.1.0 && git push origin v0.1.0
-#     → installers are attached to a GitHub Release for public download.
+#     → releases under that tag.
 
 on:
   workflow_dispatch:
@@ -22,6 +25,8 @@ jobs:
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write          # required to upload assets to the Release
     strategy:
       fail-fast: false
       matrix:
@@ -30,47 +35,63 @@ jobs:
       # No code-signing certificates: ship unsigned builds rather than fail.
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: assistant/package-lock.json
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build installers
-        run: npx electron-builder --publish never
+      # Pre-download the voice + brain model weights into models/, which the
+      # build bundles as resources — so the installed app is fully offline
+      # from first launch (no internet needed, ever, for voice or brain).
+      - name: Bundle local AI models (offline-first)
+        run: npm run model
+        env:
+          MODELS_DIR: models
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      # On macOS, build the two arches in separate, sequential invocations.
+      # A single run builds the arm64 and x64 DMGs concurrently and they race
+      # on electron-builder's shared cache lock ("Lock file is already being
+      # held"); serializing the arches avoids that contention deterministically.
+      - name: Build installers
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            npx electron-builder --mac --arm64 --publish never
+            npx electron-builder --mac --x64 --publish never
+          else
+            npx electron-builder --publish never
+          fi
+
+      # Tag-triggered runs release under that tag; manual runs derive
+      # v<package.json version>. The release already existing is fine — assets
+      # are upserted, so no creation race between the three platform jobs.
+      - name: Work out the release tag
+        id: tag
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Upload this platform's installers directly to the Release. Globs that
+      # match nothing on a given OS are ignored (fail_on_unmatched_files=false).
+      - name: Publish installers to the Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: aria-${{ runner.os }}
-          path: |
+          tag_name: ${{ steps.tag.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          fail_on_unmatched_files: false
+          files: |
             assistant/dist/*.exe
             assistant/dist/*.dmg
             assistant/dist/*.zip
             assistant/dist/*.AppImage
             assistant/dist/*.deb
-          if-no-files-found: error
-
-  release:
-    name: Attach to GitHub Release
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-          merge-multiple: true
-
-      - name: Create release with installers
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/**
-          generate_release_notes: true

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "ARIA \u2014 an integrated, voice-driven desktop assistant (stocks, trading, productivity).",
+  "homepage": "https://github.com/gorgon515/Gorg-Accounting-Workspace-",
   "author": "Vincent Gregorio",
   "license": "MIT",
   "main": "src/main/main.js",
@@ -26,7 +27,7 @@
   },
   "devDependencies": {
     "electron": "^33.0.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^26.15.2"
   },
   "optionalDependencies": {
     "@huggingface/transformers": "^3.8.1"
@@ -49,6 +50,13 @@
     "extraMetadata": {
       "main": "src/main/main.js"
     },
+    "extraResources": [
+      {
+        "from": "models",
+        "to": "models",
+        "filter": ["**/*", "!.gitkeep"]
+      }
+    ],
     "mac": {
       "category": "public.app-category.finance",
       "target": [

@@ -2,8 +2,9 @@
 
 A voice-driven desktop assistant for **stocks, accounting, studying, and
 productivity**, built as an Electron app with a pluggable skill architecture and
-a Claude brain. This repository contains the **first working vertical slice:
-Stocks**, with voice enabled from day one.
+a **local-first brain** (built-in on-device model by default; Ollama or Claude
+as optional upgrades). This repository contains the **first working vertical
+slice: Stocks**, with voice enabled from day one.
 
 > Scope note: a "tops any Jarvis" assistant is a platform, not a weekend build.
 > This is the foundation done properly — a real, runnable core you extend skill
@@ -15,22 +16,28 @@ Stocks**, with voice enabled from day one.
 - **Electron desktop app** (Win/Mac/Linux) with a tray icon and dashboard.
 - **Voice from day one** — wake word ("aria") + speech-to-text + spoken replies,
   using the browser-native Web Speech API (no native dependencies).
-- **Claude brain** — natural-language and voice commands run through a manual
-  tool-use loop (`claude-opus-4-8`, adaptive thinking) against the skill registry.
+- **Completely local brain, zero setup** — natural-language and voice commands
+  run through a manual tool-use loop against the skill registry. A built-in
+  on-device model works out of the box (no API key, no installs); Ollama and
+  Claude (`claude-opus-4-8`) are optional upgrades.
 - **Stocks skill** — live quotes, ticker search, price history, and a persisted
-  watchlist via public market-data endpoints. **The data panels work without an
-  API key**; only the conversational/voice brain needs one.
+  watchlist via public market-data endpoints. **No API key needed anywhere** —
+  panels and brain both work without one.
 
 ## Run it
 
 ```bash
 cd assistant
 npm install
-cp .env.example .env      # then paste your ANTHROPIC_API_KEY (optional but needed for voice/chat)
-npm start
+npm start                 # that's it — no API key, no .env needed
 ```
 
-Node 18+ required (uses global `fetch`).
+Everything works with zero configuration: panels, voice, and the brain (the
+built-in local model downloads once on first use; `npm run model` pre-fetches
+it). Copy `.env.example` to `.env` only if you want to customize — e.g. use
+Ollama/Claude as the brain, add Google, or enable the phone bridges.
+
+Node 18+ required (uses global `fetch`); CI builds the installers on Node 24.
 
 ### Web sessions: allow the market-data host
 
@@ -65,34 +72,44 @@ npm start
 ```
 
 Click Talk to record, click again to stop → it transcribes **locally** and asks
-the brain. The first transcription downloads the model weights once (then it's
-offline); `npm run model` does that ahead of time. Set `WHISPER_MODEL` to
-`Xenova/whisper-base.en` or `small.en` for more accuracy at some speed cost.
+the brain. The installers bundle the model weights (offline from first launch);
+from source, the first transcription downloads them once — `npm run model`
+does that ahead of time. Set `WHISPER_MODEL` to `Xenova/whisper-base.en` or
+`small.en` for more accuracy at some speed cost.
 
 **Prefer the cloud instead?** Set `STT_ENGINE=whisper-api` + `STT_API_KEY` in
 `.env` (OpenAI or Groq). Off by default — local is the default.
 
-### The brain — fully local by default (no API key)
+### The brain — completely local, zero setup, no API key
 
 The brain (`src/main/brain.js`) runs a tool-use loop over the skill registry.
-**By default it is fully local** — no API key required:
+**Out of the box it is completely local and needs nothing from you** — no API
+key, no account, no separate install:
 
-1. Install Ollama: <https://ollama.com>
-2. Pull a model: `ollama pull qwen2.5:7b` (or `llama3.2:3b` on lighter hardware)
-3. `npm start` — the header shows `brain online · local · <model>`
+- **Built-in (default)** — a small instruct model
+  (`onnx-community/Qwen2.5-0.5B-Instruct`) runs **in-process on CPU** via
+  transformers.js, the same runtime as the local voice. **The installers
+  bundle the weights**, so the installed app is fully offline from first
+  launch — no internet, no downloads, ever. (Running from source instead
+  downloads them once on first use; `npm run model` pre-fetches.) Upgrade
+  quality with `EMBEDDED_MODEL=onnx-community/Qwen2.5-1.5B-Instruct` in `.env`.
+- **Ollama (optional upgrade)** — install <https://ollama.com> and
+  `ollama pull qwen2.5:7b`; auto mode detects it and prefers it over the
+  built-in model. The app picks up whichever chat model you've pulled.
+- **Claude (optional, not local)** — add `ANTHROPIC_API_KEY` to `.env` to use
+  `claude-opus-4-8` instead — strongest at multi-step tool use. Claude cannot
+  run inside Ollama (it is not open-weights); the API is the only way. Leave
+  the key blank to stay fully local.
 
-The app auto-detects whichever chat model you've pulled. With local voice
-(on-device Whisper) and a local brain, the whole assistant runs on-device — the
-only internet use is public market data and any connections you opt into.
-
-Optional: add `ANTHROPIC_API_KEY` to `.env` to use **Claude**
-(`claude-opus-4-8`) instead — stronger at multi-step tool use, but not local.
-Claude cannot run inside Ollama (it is not an open-weights model); the API is
-the only way to use it. Leave the key blank to stay fully local.
+Auto order: Claude if a key is set → Ollama if it's running → built-in. Force
+one with `BRAIN_ENGINE=embedded | local | claude`. With local voice
+(on-device Whisper), a local brain, and local TTS, the whole assistant runs
+on-device — the only internet use is public market data and any connections
+you opt into.
 
 Customize behavior without code via `ARIA_PERSONA` in `.env` (appended to the
 system prompt), or extend abilities by adding a skill module (see "Adding a
-pillar") — new tools are picked up by both engines automatically.
+pillar") — new tools are picked up by every engine automatically.
 
 ### Trade-idea engine (calls / puts / futures)
 
@@ -211,17 +228,22 @@ workflow (`.github/workflows/build-installers.yml`) on native runners:
 - **macOS** — `ARIA-<ver>.dmg` (+ zip), arm64 & Intel
 - **Linux** — `ARIA-<ver>.AppImage` + `.deb`
 
-Two ways to get them:
+Every run attaches all installers to a **GitHub Release** (Releases page →
+Assets). Two ways to trigger one:
 
-1. **One-off:** GitHub → Actions → *Build ARIA installers* → *Run workflow* →
-   download the artifacts from the run page.
-2. **Versioned release:** `git tag v0.1.0 && git push origin v0.1.0` → the
-   workflow attaches all installers to a public GitHub Release.
+1. **Manual:** GitHub → Actions → *Build ARIA installers* → *Run workflow*.
+   Releases under `v<version>` from `package.json`; the same files are also
+   downloadable as artifacts from the run page.
+2. **Versioned tag:** `git tag v0.2.0 && git push origin v0.2.0` → releases
+   under that tag.
 
 Builds are unsigned (no certificates), so expect the usual first-run prompts:
 Windows SmartScreen → "More info → Run anyway"; macOS → right-click → Open.
-Installers bundle the app + Electron (~160 MB; GPU inference libraries are
-excluded — the local voice model runs on CPU).
+Installers bundle the app + Electron **+ the voice and brain model weights**,
+so the installed app works **completely offline** — voice, brain, tasks,
+ledger, flashcards all run with zero internet. (Only inherently-online
+features — live quotes, news, Google, phone bridges — need a connection.)
+GPU inference libraries are excluded; the local models run on CPU.
 
 ## Packaging — build installers locally
 

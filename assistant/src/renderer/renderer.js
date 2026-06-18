@@ -1,9 +1,12 @@
 'use strict';
 
-// Renderer controller. Talks to the main process only through window.aria
-// (the preload bridge). No Node access here.
-
-const aria = window.aria;
+// Renderer controller. Talks to the main process only through the `aria`
+// global (the preload contextBridge). No Node access here.
+//
+// NOTE: do NOT `const aria = window.aria` — contextBridge exposes `aria` as a
+// non-configurable global property, and a top-level lexical declaration with
+// the same name is a SyntaxError that kills this whole script. Bare `aria`
+// references resolve to the bridge directly.
 
 const els = {
   brainDot: document.getElementById('brain-dot'),
@@ -39,6 +42,9 @@ const els = {
   chartSymbol: document.getElementById('chart-symbol'),
   chartMeta: document.getElementById('chart-meta'),
   chartRanges: document.getElementById('chart-ranges'),
+  company: document.getElementById('company'),
+  fundamentals: document.getElementById('fundamentals'),
+  technical: document.getElementById('technical'),
   newsSymbol: document.getElementById('news-symbol'),
   newslist: document.getElementById('newslist'),
   alertForm: document.getElementById('alert-form'),
@@ -85,6 +91,17 @@ const els = {
   vocabWord: document.getElementById('vocab-word'),
   vocabTr: document.getElementById('vocab-tr'),
   vocabEx: document.getElementById('vocab-ex'),
+  ruTabs: document.getElementById('ru-tabs'),
+  ruPaneVocab: document.getElementById('ru-pane-vocab'),
+  ruPaneGrammar: document.getElementById('ru-pane-grammar'),
+  ruPaneAdd: document.getElementById('ru-pane-add'),
+  ruThemes: document.getElementById('ru-themes'),
+  ruVocabList: document.getElementById('ru-vocab-list'),
+  ruSeedBtn: document.getElementById('ru-seed-btn'),
+  ruSeedAllBtn: document.getElementById('ru-seed-all-btn'),
+  ruSeedStatus: document.getElementById('ru-seed-status'),
+  ruLessons: document.getElementById('ru-lessons'),
+  ruLesson: document.getElementById('ru-lesson'),
   cpaList: document.getElementById('cpa-list'),
   ideaForm: document.getElementById('idea-form'),
   ideaSymbol: document.getElementById('idea-symbol'),
@@ -95,6 +112,9 @@ const els = {
 let chatHistory = [];
 let voice = null;
 let cfg = { hasBrain: false, wakeWord: 'aria' };
+// Speak replies aloud (female voice). Default ON so ARIA has a voice for typed
+// chat too; persisted across sessions.
+let speakReplies = (() => { try { return localStorage.getItem('aria.speak') !== 'off'; } catch { return true; } })();
 
 // ---- helpers ----
 const fmtPrice = (q) =>
@@ -167,7 +187,9 @@ async function sendToBrain(text) {
       tdiv.textContent = `↳ used: ${tools}`;
       els.transcript.insertBefore(tdiv, pending);
     }
-    if (res.ok && voice && voice.isListening && voice.isListening()) voice.speak(res.text);
+    // Speak the reply aloud (female voice) whenever "Speak" is on — not only
+    // in mic mode — so ARIA has a voice for typed chat too.
+    if (res.ok && res.text && speakReplies && voice && voice.speak) voice.speak(res.text);
     // Refresh panels in case the brain changed the watchlist, staged a trade,
     // or added/completed a task.
     loadWatchlist();
@@ -372,7 +394,22 @@ function drawChart(points) {
   const x = (i) => pad + (i / (points.length - 1)) * (w - 2 * pad);
   const y = (v) => (max === min ? h / 2 : pad + (1 - (v - min) / (max - min)) * (h - 2 * pad));
   const up = vals[vals.length - 1] >= vals[0];
+  // Cyan HUD-tinted line; green/red still signals net direction.
   const color = up ? '#6FA98C' : '#C97A6A';
+
+  // Volume bars (subtle, behind the price line) when OHLCV is present.
+  const vols = points.map((p) => (Number.isFinite(p.volume) ? p.volume : null));
+  const maxVol = Math.max(0, ...vols.filter((v) => v != null));
+  if (maxVol > 0) {
+    const volH = Math.max(14, h * 0.22); // bottom band height
+    const bw = Math.max(1, (w - 2 * pad) / points.length - 1);
+    ctx.fillStyle = 'rgba(54,214,255,0.14)';
+    points.forEach((p, i) => {
+      if (vols[i] == null) return;
+      const bh = (vols[i] / maxVol) * volH;
+      ctx.fillRect(x(i) - bw / 2, h - pad - bh, bw, bh);
+    });
+  }
 
   // line
   ctx.beginPath();
@@ -416,10 +453,232 @@ async function loadChart() {
   }
 }
 
+// ---- company identity + fundamentals + technicals ----
+
+// Humanize a large number, e.g. 3.1T / 950B / 12.4M / 4.2K.
+function humanNum(n) {
+  if (n == null || !Number.isFinite(n)) return '—';
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  const fmt = (v, suf) => {
+    const s = v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
+    return `${sign}${s}${suf}`;
+  };
+  if (abs >= 1e12) return fmt(abs / 1e12, 'T');
+  if (abs >= 1e9) return fmt(abs / 1e9, 'B');
+  if (abs >= 1e6) return fmt(abs / 1e6, 'M');
+  if (abs >= 1e3) return fmt(abs / 1e3, 'K');
+  return `${sign}${abs.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+// number|null -> fixed string, or em-dash. Optional suffix (e.g. '%').
+function num(n, digits = 2, suffix = '') {
+  return n == null || !Number.isFinite(n) ? '—' : `${n.toFixed(digits)}${suffix}`;
+}
+
+// Deterministic accent color from a ticker (for the monogram fallback badge).
+function symbolColor(sym) {
+  const s = String(sym || '?');
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
+  return `hsl(${h}, 55%, 42%)`;
+}
+
+// Build the company header: clearbit logo with a monogram badge fallback.
+function renderCompany(symbol, profile) {
+  const el = els.company;
+  if (!el) return;
+  const sym = symbol || (profile && profile.symbol) || '';
+  const name = (profile && profile.name) || sym;
+  const sector = profile && profile.sector;
+  const industry = profile && profile.industry;
+  const sub = [sector, industry].filter(Boolean).join(' · ');
+  const domain = profile && profile.domain;
+
+  el.innerHTML = '';
+  el.classList.remove('hidden');
+
+  // Badge: image if we have a domain, else monogram. Image errors fall back too.
+  const badge = document.createElement('div');
+  badge.className = 'co-badge';
+  const mono = (sym || '?').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || (sym || '?').slice(0, 2).toUpperCase();
+  const drawMonogram = () => {
+    badge.innerHTML = '';
+    badge.style.background = symbolColor(sym);
+    const span = document.createElement('span');
+    span.className = 'co-mono';
+    span.textContent = mono;
+    badge.appendChild(span);
+  };
+  if (domain) {
+    const img = document.createElement('img');
+    img.className = 'co-logo';
+    img.alt = name;
+    img.referrerPolicy = 'no-referrer';
+    img.addEventListener('error', drawMonogram, { once: true });
+    img.src = `https://logo.clearbit.com/${encodeURIComponent(domain)}`;
+    badge.appendChild(img);
+  } else {
+    drawMonogram();
+  }
+
+  const info = document.createElement('div');
+  info.className = 'co-info';
+  info.innerHTML = `
+    <div class="co-name">${escapeHtml(name)}</div>
+    <div class="co-sub mono">${escapeHtml(sub || sym)}</div>`;
+
+  el.appendChild(badge);
+  el.appendChild(info);
+}
+
+// Fundamentals HUD cards. Guards every field for null.
+function renderFundamentals(f) {
+  const el = els.fundamentals;
+  if (!el) return;
+  if (!f) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+
+  // 52-week range with a position marker (week52.position via analyze; here we
+  // derive position from fundamentals high/low and last price isn't known, so
+  // we show the band and compute a marker if both ends exist + dayHigh/Low hint).
+  const lo = f.week52Low, hi = f.week52High;
+  let rangeCard;
+  if (lo != null && hi != null && hi > lo) {
+    // Use last day price proxy: midpoint of day range if available, else null.
+    const px = (f.dayHigh != null && f.dayLow != null) ? (f.dayHigh + f.dayLow) / 2 : null;
+    const pos = px != null ? Math.min(1, Math.max(0, (px - lo) / (hi - lo))) : null;
+    const marker = pos != null
+      ? `<span class="rng-marker" style="left:${(pos * 100).toFixed(1)}%"></span>`
+      : '';
+    rangeCard = `
+      <div class="hud-card hud-wide">
+        <div class="k">52-week range</div>
+        <div class="rng-track">${marker}</div>
+        <div class="rng-ends mono"><span>${num(lo)}</span><span>${num(hi)}</span></div>
+      </div>`;
+  } else {
+    rangeCard = `<div class="hud-card hud-wide"><div class="k">52-week range</div><div class="v">—</div></div>`;
+  }
+
+  const card = (k, v) => `<div class="hud-card"><div class="k">${k}</div><div class="v mono">${v}</div></div>`;
+  el.innerHTML = `
+    ${card('Market cap', humanNum(f.marketCap))}
+    ${card('P/E (TTM)', num(f.peTrailing))}
+    ${card('P/E (fwd)', num(f.peForward))}
+    ${card('EPS', num(f.eps))}
+    ${card('Div yield', num(f.dividendYield, 2, '%'))}
+    ${card('Beta', num(f.beta))}
+    ${card('Profit margin', num(f.profitMargin, 1, '%'))}
+    ${card('Avg vol', humanNum(f.avgVolume))}
+    ${rangeCard}`;
+  el.classList.remove('hidden');
+}
+
+// Deep technical readout from analysis.analyze.
+function renderTechnical(a) {
+  const el = els.technical;
+  if (!el) return;
+  if (!a || !a.indicators) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+
+  const ind = a.indicators;
+  const bias = a.bias || 'neutral';
+  const score = Number.isFinite(a.technicalScore) ? a.technicalScore : 0;
+
+  const macdH = ind.macd ? ind.macd.histogram : null;
+  const adx = ind.adx14 ? ind.adx14.adx : null;
+  const plusDI = ind.adx14 ? ind.adx14.plusDI : null;
+  const minusDI = ind.adx14 ? ind.adx14.minusDI : null;
+  const stochK = ind.stochastic ? ind.stochastic.k : null;
+  const stochD = ind.stochastic ? ind.stochastic.d : null;
+  const obv = ind.obv;
+  const obvTrend = obv == null ? '—' : obv >= 0 ? 'accumulation' : 'distribution';
+
+  const sr = a.supportResistance || { support: [], resistance: [] };
+  const srLine = (label, arr) =>
+    `<span class="sr-label">${label}</span> ${(arr && arr.length)
+      ? arr.map((x) => num(x)).join(' · ')
+      : '—'}`;
+
+  const readout = (k, v, cls = '') =>
+    `<div class="tech-stat"><span class="tk">${k}</span><span class="tv mono ${cls}">${v}</span></div>`;
+
+  const macdCls = macdH == null ? '' : macdH >= 0 ? 'pos' : 'neg';
+  const diCls = (plusDI != null && minusDI != null) ? (plusDI >= minusDI ? 'pos' : 'neg') : '';
+
+  const signals = (a.signals || []).slice(0, 8)
+    .map((s) => `<li>${escapeHtml(s)}</li>`).join('') || '<li class="muted">No signals.</li>';
+
+  el.innerHTML = `
+    <div class="tech-head">
+      <span class="tech-title">Technical</span>
+      <span class="tech-bias ${bias}">${bias}</span>
+    </div>
+    <div class="tech-gauge">
+      <div class="tg-bar"><span class="tg-fill ${bias}" style="width:${score}%"></span></div>
+      <div class="tg-meta mono">${score}/100 · signal confluence (not a win probability)</div>
+    </div>
+    <div class="tech-grid">
+      ${readout('RSI(14)', num(ind.rsi14, 1))}
+      ${readout('MACD hist', num(macdH, 3), macdCls)}
+      ${readout('ADX(14)', num(adx, 1))}
+      ${readout('+DI / −DI', `${num(plusDI, 0)} / ${num(minusDI, 0)}`, diCls)}
+      ${readout('Stoch %K/%D', `${num(stochK, 0)} / ${num(stochD, 0)}`)}
+      ${readout('ATR(14)', num(ind.atr14))}
+      ${readout('OBV trend', obvTrend)}
+      ${readout('Volatility', num(a.volatilityPct, 0, '%'))}
+    </div>
+    <div class="tech-sr mono">
+      <div class="sr-row res">${srLine('Resistance', sr.resistance)}</div>
+      <div class="sr-row sup">${srLine('Support', sr.support)}</div>
+    </div>
+    <ul class="tech-signals">${signals}</ul>`;
+  el.classList.remove('hidden');
+}
+
+// Load company identity + fundamentals for a charted symbol. Never throws.
+async function loadCompany(symbol) {
+  if (!els.company) return;
+  // Show an immediate placeholder header so it doesn't pop in late.
+  renderCompany(symbol, { symbol });
+  try {
+    const [profile, fundamentals] = await Promise.all([
+      aria.stocks.profile(symbol).catch(() => null),
+      aria.stocks.fundamentals(symbol).catch(() => null),
+    ]);
+    renderCompany(symbol, profile || { symbol });
+    renderFundamentals(fundamentals);
+  } catch {
+    // Keep the placeholder header; hide the data grids on hard failure.
+    renderFundamentals(null);
+  }
+}
+
+// Indicators need ≥30 closes; short chart windows (1d/5d/1mo) don't have that,
+// so analysis uses a wider lookback while the chart keeps the selected range.
+function analysisRange(range) {
+  return ['1d', '5d', '1mo'].includes(range) ? '6mo' : range;
+}
+
+// Load the deep technical readout for a charted symbol. Never throws.
+async function loadTechnical(symbol) {
+  if (!els.technical) return;
+  els.technical.classList.remove('hidden');
+  els.technical.innerHTML = '<p class="muted">Analyzing technicals…</p>';
+  try {
+    const a = await aria.analysis.analyze(symbol, analysisRange(chartState.range));
+    renderTechnical(a);
+  } catch (err) {
+    // analyze throws on too-little history; show a graceful note instead.
+    els.technical.innerHTML = `<p class="muted">Technicals unavailable: ${escapeHtml(err.message || 'no data')}.</p>`;
+  }
+}
+
 function setChart(symbol) {
   chartState.symbol = symbol;
   loadChart();
   loadNews(symbol);
+  loadCompany(symbol);
+  loadTechnical(symbol);
 }
 
 function relTime(iso) {
@@ -462,6 +721,8 @@ els.chartRanges.addEventListener('click', (e) => {
   btn.classList.add('active');
   chartState.range = btn.dataset.range;
   loadChart();
+  // Technicals are range-dependent; refresh them for the new window.
+  if (chartState.symbol) loadTechnical(chartState.symbol);
 });
 // Redraw on resize so the canvas stays crisp.
 window.addEventListener('resize', () => chartState.symbol && loadChart());
@@ -1100,6 +1361,7 @@ els.studyTabs.addEventListener('click', (e) => {
   els.paneCpa.classList.toggle('hidden', tab !== 'cpa');
   if (tab === 'review') loadReview();
   if (tab === 'cpa') loadCpa();
+  if (tab === 'vocab') initRussian();
 });
 
 async function loadStudyStats() {
@@ -1169,6 +1431,164 @@ els.vocabForm.addEventListener('submit', async (e) => {
     appendMsg('tool', `✗ ${err.message}`);
   }
 });
+
+// ---- Russian curriculum browser ----
+const ruState = { loaded: false, theme: null, themesLoaded: false, lessonsLoaded: false };
+
+// Sub-tab switching: Vocabulary / Grammar / Add card.
+if (els.ruTabs) {
+  els.ruTabs.addEventListener('click', (e) => {
+    const btn = e.target.closest('.ru-tab');
+    if (!btn) return;
+    els.ruTabs.querySelectorAll('.ru-tab').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    const rtab = btn.dataset.rtab;
+    els.ruPaneVocab.classList.toggle('hidden', rtab !== 'vocab');
+    els.ruPaneGrammar.classList.toggle('hidden', rtab !== 'grammar');
+    els.ruPaneAdd.classList.toggle('hidden', rtab !== 'add');
+    if (rtab === 'grammar') loadRuLessons();
+    if (rtab === 'vocab') loadRuThemes();
+  });
+}
+
+function initRussian() {
+  if (ruState.loaded) return;
+  ruState.loaded = true;
+  loadRuThemes();
+}
+
+async function loadRuThemes() {
+  if (ruState.themesLoaded || !els.ruThemes) return;
+  try {
+    const themes = await aria.study.ruThemes();
+    els.ruThemes.innerHTML = '';
+    if (!themes || !themes.length) {
+      els.ruThemes.innerHTML = '<span class="muted">No themes available.</span>';
+      return;
+    }
+    ruState.themesLoaded = true;
+    themes.forEach((t) => {
+      const chip = document.createElement('button');
+      chip.className = 'ru-chip';
+      chip.dataset.theme = t.theme;
+      chip.innerHTML = `${escapeHtml(t.theme)} <span class="ru-count">${t.count}</span>`;
+      chip.addEventListener('click', () => selectRuTheme(t.theme));
+      els.ruThemes.appendChild(chip);
+    });
+    // Auto-select the first theme so the list isn't empty.
+    selectRuTheme(themes[0].theme);
+  } catch (err) {
+    els.ruThemes.innerHTML = `<span class="err">${escapeHtml(err.message)}</span>`;
+  }
+}
+
+async function selectRuTheme(theme) {
+  ruState.theme = theme;
+  if (els.ruThemes) {
+    els.ruThemes.querySelectorAll('.ru-chip').forEach((c) =>
+      c.classList.toggle('active', c.dataset.theme === theme));
+  }
+  if (els.ruSeedStatus) els.ruSeedStatus.textContent = '';
+  els.ruVocabList.innerHTML = '<p class="muted">Loading words…</p>';
+  try {
+    const words = await aria.study.ruVocab({ theme });
+    els.ruVocabList.innerHTML = '';
+    if (!words || !words.length) {
+      els.ruVocabList.innerHTML = '<p class="muted">No words in this theme.</p>';
+      return;
+    }
+    words.forEach((w) => {
+      const row = document.createElement('div');
+      row.className = 'ru-word';
+      const tags = [w.pos, w.gender].filter(Boolean).join(' · ');
+      row.innerHTML = `
+        <div class="rw-main">
+          <span class="rw-ru">${escapeHtml(w.ru || '')}</span>
+          <span class="rw-tr mono">${escapeHtml(w.translit || '')}</span>
+        </div>
+        <div class="rw-side">
+          <span class="rw-en">${escapeHtml(w.en || '')}</span>
+          ${tags ? `<span class="rw-tags mono">${escapeHtml(tags)}</span>` : ''}
+        </div>`;
+      els.ruVocabList.appendChild(row);
+    });
+  } catch (err) {
+    els.ruVocabList.innerHTML = `<p class="err">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function seedRussian(theme) {
+  if (!els.ruSeedStatus) return;
+  els.ruSeedStatus.textContent = 'Adding…';
+  try {
+    const res = await aria.study.ruSeed(theme ? { theme } : {});
+    const scope = theme ? `“${theme}”` : 'all themes';
+    els.ruSeedStatus.textContent = `${scope}: +${res.added} added, ${res.skipped} already there.`;
+    loadStudyStats();
+    appendMsg('tool', `✓ Russian review: ${res.added} added, ${res.skipped} skipped (${theme || 'all'}).`);
+  } catch (err) {
+    els.ruSeedStatus.textContent = '';
+    appendMsg('tool', `✗ ${err.message}`);
+  }
+}
+
+if (els.ruSeedBtn) {
+  els.ruSeedBtn.addEventListener('click', () => {
+    if (!ruState.theme) { if (els.ruSeedStatus) els.ruSeedStatus.textContent = 'Pick a theme first.'; return; }
+    seedRussian(ruState.theme);
+  });
+}
+if (els.ruSeedAllBtn) {
+  els.ruSeedAllBtn.addEventListener('click', () => seedRussian(null));
+}
+
+async function loadRuLessons() {
+  if (ruState.lessonsLoaded || !els.ruLessons) return;
+  try {
+    const lessons = await aria.study.ruLessons();
+    els.ruLessons.innerHTML = '';
+    if (!lessons || !lessons.length) {
+      els.ruLessons.innerHTML = '<p class="muted">No lessons available.</p>';
+      return;
+    }
+    ruState.lessonsLoaded = true;
+    lessons.forEach((l) => {
+      const row = document.createElement('button');
+      row.className = 'ru-lesson-row';
+      row.innerHTML = `
+        <span class="rl-title">${escapeHtml(l.title || l.id)}</span>
+        <span class="rl-level mono">${escapeHtml(l.level || '')}</span>`;
+      row.addEventListener('click', () => showRuLesson(l));
+      els.ruLessons.appendChild(row);
+    });
+  } catch (err) {
+    els.ruLessons.innerHTML = `<p class="err">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function showRuLesson(lesson) {
+  if (!els.ruLesson || !lesson) return;
+  // Mark the active row.
+  if (els.ruLessons) {
+    els.ruLessons.querySelectorAll('.ru-lesson-row').forEach((r) => r.classList.remove('active'));
+  }
+  const examples = (lesson.examples || []).map((ex) => `
+    <div class="rl-ex">
+      <span class="rl-ex-ru">${escapeHtml(ex.ru || '')}</span>
+      <span class="rl-ex-tr mono">${escapeHtml(ex.translit || '')}</span>
+      <span class="rl-ex-en">${escapeHtml(ex.en || '')}</span>
+    </div>`).join('');
+  // Body may contain newlines; preserve them.
+  els.ruLesson.innerHTML = `
+    <div class="rl-head">
+      <span class="rl-d-title">${escapeHtml(lesson.title || lesson.id)}</span>
+      <span class="rl-d-level mono">${escapeHtml(lesson.level || '')}</span>
+    </div>
+    <div class="rl-body">${escapeHtml(lesson.body || '')}</div>
+    ${examples ? `<div class="rl-examples">${examples}</div>` : ''}`;
+  els.ruLesson.classList.remove('hidden');
+  els.ruLesson.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
 
 async function loadCpa() {
   try {
@@ -1240,6 +1660,180 @@ function initVoice() {
   els.micBtn.addEventListener('click', () => voice.toggle());
 }
 
+// Speak toggle + voice picker + test. Works even when speech recognition is
+// unavailable (the voice object still exposes TTS/list/set).
+function initVoiceControls() {
+  const toggle = document.getElementById('speak-toggle');
+  const select = document.getElementById('voice-select');
+  const test = document.getElementById('voice-test');
+  if (!voice || !voice.speak) {
+    if (toggle) toggle.style.display = 'none';
+    if (select) select.style.display = 'none';
+    if (test) test.style.display = 'none';
+    return;
+  }
+
+  const reflectToggle = () => {
+    toggle.textContent = speakReplies ? '🔊 Speak: on' : '🔇 Speak: off';
+    toggle.classList.toggle('live', speakReplies);
+  };
+  reflectToggle();
+  toggle.addEventListener('click', () => {
+    speakReplies = !speakReplies;
+    try { localStorage.setItem('aria.speak', speakReplies ? 'on' : 'off'); } catch {}
+    reflectToggle();
+    if (speakReplies) voice.speak("Voice on. I'm ARIA.");
+  });
+
+  const populate = () => {
+    const voices = voice.listVoices();
+    if (!voices.length) { select.innerHTML = '<option value="">(system default)</option>'; return; }
+    const cur = voice.getVoiceURI();
+    select.innerHTML = voices
+      .map((v) => {
+        const tag = v.female ? ' ♀' : v.male ? ' ♂' : '';
+        const sel = v.voiceURI === cur ? ' selected' : '';
+        return `<option value="${escapeHtml(v.voiceURI)}"${sel}>${escapeHtml(v.name)} (${escapeHtml(v.lang)})${tag}</option>`;
+      })
+      .join('');
+  };
+  populate();
+  if (voice.onVoices) voice.onVoices(populate); // repopulate when the OS list loads
+
+  select.addEventListener('change', () => {
+    voice.setVoice(select.value);
+    if (speakReplies) voice.speak('This is how I sound.');
+  });
+  test.addEventListener('click', () => voice.speak("Hello, I'm ARIA, your assistant. How can I help you today?"));
+}
+
+// ---- brain switcher (one-click stronger brain) ----
+let brainState = null;
+let brainView = null; // which engine's detail is currently shown
+
+const brainLabelFor = (e) => (e === 'claude' ? 'claude' : e === 'embedded' ? 'built-in' : 'local');
+const shortModel = (m) => String(m || '').split('/').pop();
+
+function brainHeader(b) {
+  if (!b) return;
+  els.brainDot.classList.remove('on', 'off');
+  if (b.ready) {
+    els.brainDot.classList.add('on');
+    els.brainLabel.textContent = `brain online · ${brainLabelFor(b.engine)} · ${shortModel(b.model)}`;
+  } else {
+    els.brainDot.classList.add('off');
+    els.brainLabel.textContent = `brain offline · ${b.reason || 'not configured'}`;
+  }
+}
+
+async function loadBrainPanel() {
+  const panel = document.getElementById('brain-panel');
+  if (!panel || !aria.brain) { if (panel) panel.style.display = 'none'; return; }
+  try { brainState = await aria.brain.settings(); } catch { return; }
+  brainHeader(brainState.status);
+  document.getElementById('brain-now').textContent = brainState.status.ready
+    ? `${brainLabelFor(brainState.status.engine)} · ${shortModel(brainState.status.model)}`
+    : 'offline';
+  document.querySelectorAll('#brain-opts .brain-opt').forEach((b) =>
+    b.classList.toggle('active', b.dataset.engine === brainState.status.engine));
+  if (!brainView) brainView = brainState.status.engine;
+  renderBrainDetail();
+}
+
+function activateMarkup(engine) {
+  const isActive = brainState.status.engine === engine && brainState.status.ready;
+  const label = engine === 'embedded' ? 'Use built-in' : engine === 'local' ? 'Use Ollama' : 'Use Claude';
+  return isActive ? '<p class="brain-active">✓ Currently active</p>'
+    : `<button class="brain-activate" data-engine="${engine}">${label}</button>`;
+}
+
+function renderBrainDetail() {
+  const d = document.getElementById('brain-detail');
+  const s = brainState;
+  const engine = brainView || s.status.engine;
+  if (engine === 'embedded') {
+    d.innerHTML = '<p class="muted">Runs fully on-device — no account, no internet. Fast and private; best for quick commands.</p>' + activateMarkup('embedded');
+  } else if (engine === 'local') {
+    d.innerHTML = s.ollama.ready
+      ? '<p class="muted">Ollama detected — stronger than the built-in model, still fully local and free.</p>' + activateMarkup('local')
+      : `<p class="muted">Ollama isn't running. Install it and pull a model, then click below:</p>
+         <pre class="brain-code">ollama pull qwen2.5:7b</pre>
+         <a class="becker-link" href="https://ollama.com" target="_blank" rel="noopener">Get Ollama ↗</a>
+         <p class="muted">${escapeHtml(s.ollama.reason || '')}</p>` + activateMarkup('local');
+  } else if (engine === 'claude') {
+    if (s.hasKey) {
+      d.innerHTML = `<p class="muted">Claude key saved (${s.keySource}${s.encryptionAvailable ? ', encrypted' : ''}). The strongest brain — best for multi-step reasoning.</p>`
+        + activateMarkup('claude')
+        + '<button class="ghost brain-remove" id="brain-remove-key">Remove key</button>';
+    } else {
+      d.innerHTML = `<p class="muted">Paste an Anthropic API key to use Claude — the smartest brain. Stored ${s.encryptionAvailable ? 'encrypted ' : ''}on-device; only ever sent to Anthropic.</p>
+        <div class="brain-keyrow">
+          <input id="brain-key" type="password" placeholder="sk-ant-…" autocomplete="off" />
+          <button id="brain-key-save">Connect</button>
+        </div>
+        <a class="becker-link" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Get a key ↗</a>
+        <p class="brain-msg muted" id="brain-key-msg"></p>`;
+    }
+  }
+  wireBrainDetail();
+}
+
+async function switchEngine(engine) {
+  try {
+    brainState = await aria.brain.setEngine(engine);
+    brainView = engine;
+    brainHeader(brainState.status);
+    if (aria.warmup) aria.warmup().catch(() => {});
+    appendMsg('tool', `✓ Brain set to ${brainLabelFor(engine)}`);
+    loadBrainPanel();
+  } catch (err) { appendMsg('tool', `✗ ${err.message}`); }
+}
+
+function wireBrainDetail() {
+  const act = document.querySelector('#brain-detail .brain-activate');
+  if (act) act.addEventListener('click', () => switchEngine(act.dataset.engine));
+
+  const save = document.getElementById('brain-key-save');
+  if (save) {
+    const input = document.getElementById('brain-key');
+    const msg = document.getElementById('brain-key-msg');
+    const submit = async () => {
+      const key = input.value.trim();
+      if (!key) return;
+      save.disabled = true; msg.textContent = 'Checking key…';
+      try {
+        const res = await aria.brain.setKey(key);
+        brainState = res; brainView = 'claude';
+        msg.textContent = res.verified ? 'Connected — Claude is active.' : 'Saved (could not verify online); Claude is active.';
+        brainHeader(res.status);
+        if (aria.warmup) aria.warmup().catch(() => {});
+        appendMsg('tool', '✓ Brain set to claude');
+        setTimeout(loadBrainPanel, 600);
+      } catch (err) { msg.textContent = err.message; save.disabled = false; }
+    };
+    save.addEventListener('click', submit);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  }
+
+  const rm = document.getElementById('brain-remove-key');
+  if (rm) rm.addEventListener('click', async () => {
+    try { brainState = await aria.brain.clearKey(); brainView = 'claude'; brainHeader(brainState.status); loadBrainPanel(); }
+    catch (err) { appendMsg('tool', `✗ ${err.message}`); }
+  });
+}
+
+function initBrainPanel() {
+  const opts = document.getElementById('brain-opts');
+  if (!opts) return;
+  opts.addEventListener('click', (e) => {
+    const btn = e.target.closest('.brain-opt');
+    if (!btn) return;
+    brainView = btn.dataset.engine;
+    if (brainState) renderBrainDetail();
+  });
+  loadBrainPanel();
+}
+
 // ---- boot ----
 async function boot() {
   try {
@@ -1248,10 +1842,12 @@ async function boot() {
   const b = cfg.brain || { engine: '?', model: cfg.model, ready: cfg.hasBrain };
   if (b.ready) {
     els.brainDot.classList.add('on');
-    els.brainLabel.textContent = `brain online · ${b.local ? 'local' : 'claude'} · ${b.model}`;
+    const engineLabel = b.engine === 'claude' ? 'claude' : b.engine === 'embedded' ? 'built-in' : 'local';
+    const modelLabel = String(b.model || '').split('/').pop(); // short HF id
+    els.brainLabel.textContent = `brain online · ${engineLabel} · ${modelLabel}`;
   } else {
     els.brainDot.classList.add('off');
-    els.brainLabel.textContent = `brain offline · ${b.local ? 'start Ollama' : 'add API key'}`;
+    els.brainLabel.textContent = `brain offline · ${b.local ? 'no local engine' : 'add API key'}`;
     appendMsg(
       'assistant',
       `Hi — I'm ARIA. The brain is offline: ${b.reason || 'not configured'} ` +
@@ -1259,7 +1855,12 @@ async function boot() {
     );
   }
   initVoice();
+  initVoiceControls();
+  initBrainPanel();
   initTalk();
+  // Warm the local brain in the background so the first reply isn't a cold
+  // model load — makes the first interaction feel instant.
+  if (aria.warmup) setTimeout(() => { aria.warmup().catch(() => {}); }, 1200);
   loadWatchlist();
   refreshTrading();
   loadTasks();

@@ -30,18 +30,29 @@ const FUTURES_MAP = {
 };
 
 // ---------- directional bias + setup score ----------
+// Trend-following signals (SMA cross, price vs SMA50) are only trustworthy when
+// the market is actually trending, so we gate their weight on ADX: ADX < 20 is
+// effectively rangebound (trend signals get reduced weight and a caveat),
+// ADX >= 25 is a confirmed trend (full weight + a directional-DI confirmation).
 function scoreFromAnalysis(a) {
   const ind = a.indicators;
   let score = 0;
   const reasons = [];
 
+  const adx = ind.adx14 && typeof ind.adx14.adx === 'number' ? ind.adx14 : null;
+  const trending = adx ? adx.adx >= 20 : true;   // no ADX -> don't penalize (legacy behavior)
+  const strongTrend = adx ? adx.adx >= 25 : false;
+
   if (ind.sma20 != null && ind.sma50 != null) {
-    if (ind.sma20 > ind.sma50) { score += 2; reasons.push('SMA20 > SMA50 (uptrend)'); }
-    else { score -= 2; reasons.push('SMA20 < SMA50 (downtrend)'); }
+    // Full weight (2) when trending, halved (1) when rangebound/weak trend.
+    const w = trending ? 2 : 1;
+    if (ind.sma20 > ind.sma50) { score += w; reasons.push(`SMA20 > SMA50 (uptrend${trending ? '' : ', weak — low ADX'})`); }
+    else { score -= w; reasons.push(`SMA20 < SMA50 (downtrend${trending ? '' : ', weak — low ADX'})`); }
   }
   if (ind.sma50 != null) {
-    if (a.price > ind.sma50) { score += 1; reasons.push('price above SMA50'); }
-    else { score -= 1; reasons.push('price below SMA50'); }
+    const w = trending ? 1 : 0; // ignore the SMA50 trend filter when rangebound
+    if (a.price > ind.sma50) { score += w; if (w) reasons.push('price above SMA50'); }
+    else { score -= w; if (w) reasons.push('price below SMA50'); }
   }
   if (ind.macd) {
     if (ind.macd.histogram >= 0) { score += 1; reasons.push('MACD momentum positive'); }
@@ -52,11 +63,23 @@ function scoreFromAnalysis(a) {
     else if (ind.rsi14 <= 30) { score += 1; reasons.push(`RSI ${ind.rsi14.toFixed(0)} oversold (bounce potential)`); }
     else reasons.push(`RSI ${ind.rsi14.toFixed(0)} neutral`);
   }
+  // ADX directional confirmation — only counts on a confirmed trend.
+  if (adx) {
+    if (strongTrend) {
+      if (adx.plusDI >= adx.minusDI) { score += 1; reasons.push(`ADX ${adx.adx.toFixed(0)} strong trend, +DI > -DI (bullish)`); }
+      else { score -= 1; reasons.push(`ADX ${adx.adx.toFixed(0)} strong trend, -DI > +DI (bearish)`); }
+    } else if (!trending) {
+      reasons.push(`ADX ${adx.adx.toFixed(0)} weak — range-bound, trend signals discounted`);
+    } else {
+      reasons.push(`ADX ${adx.adx.toFixed(0)} trending`);
+    }
+  }
 
-  const max = 5;
+  // Max possible magnitude: SMA cross(2) + SMA50(1) + MACD(1) + RSI(1) + ADX DI(1).
+  const max = 6;
   const bias = score >= 2 ? 'bullish' : score <= -2 ? 'bearish' : 'neutral';
   // setupScore: confluence strength 0–100 (NOT probability of profit)
-  const setupScore = Math.round((Math.abs(score) / max) * 100);
+  const setupScore = Math.min(100, Math.round((Math.abs(score) / max) * 100));
   return { score, bias, setupScore, reasons };
 }
 
@@ -136,9 +159,23 @@ async function tradeIdea(symbol, { allowFutures = true } = {}) {
   }
 
   const isCall = bias === 'bullish';
-  // Underlying-based plan
-  const stop = round2(isCall ? a.price * 0.95 : a.price * 1.05);
-  const target = round2(isCall ? a.price * 1.08 : a.price * 0.92);
+  // Underlying-based plan. Prefer a volatility-aware stop: 2× ATR(14) from
+  // entry, which adapts the stop distance to the symbol's recent range instead
+  // of an arbitrary flat %. Fall back to the legacy ±5% when ATR is unavailable.
+  const atr14 = a.indicators && typeof a.indicators.atr14 === 'number' ? a.indicators.atr14 : null;
+  const ATR_MULT = 2;
+  let stop;
+  let stopBasis;
+  if (atr14 != null && atr14 > 0) {
+    stop = round2(isCall ? a.price - ATR_MULT * atr14 : a.price + ATR_MULT * atr14);
+    stopBasis = `${ATR_MULT}× ATR(14) (ATR=${round2(atr14)})`;
+  } else {
+    stop = round2(isCall ? a.price * 0.95 : a.price * 1.05);
+    stopBasis = 'flat 5% (ATR unavailable)';
+  }
+  // Target keeps a roughly 1.6:1 reward:risk versus the chosen stop.
+  const riskPerShare = round2(Math.abs(a.price - stop));
+  const target = round2(isCall ? a.price + riskPerShare * 1.6 : a.price - riskPerShare * 1.6);
 
   // Real options idea (best-effort; underlying plan still returned if chain unavailable)
   let option = null;
@@ -190,7 +227,7 @@ async function tradeIdea(symbol, { allowFutures = true } = {}) {
   return {
     ...base,
     recommendation: isCall ? 'bullish' : 'bearish',
-    underlyingPlan: { entry: a.price, stop, target, riskPerShare: round2(Math.abs(a.price - stop)) },
+    underlyingPlan: { entry: a.price, stop, target, riskPerShare, stopBasis },
     option,
     spread,
     optionError,
