@@ -367,6 +367,63 @@ export const helios = {
     morningBriefing: (): Promise<any> => call((b) => b.sidecar.execMorningBriefing()),
   },
 
+  // Phase 12 — knowledge engine, RAG, institutional memory & self-improving intelligence
+  knowledge: {
+    ingest: (p: any): Promise<any> => call((b) => b.sidecar.knowledgeIngest(p)),
+    list: (p?: any): Promise<any> => call((b) => b.sidecar.knowledgeList(p)),
+    get: (id: string): Promise<any> => call((b) => b.sidecar.knowledgeGet(id)),
+    update: (id: string, fields: any): Promise<any> => call((b) => b.sidecar.knowledgeUpdate(id, fields)),
+    link: (p: any): Promise<any> => call((b) => b.sidecar.knowledgeLink(p)),
+    links: (id: string): Promise<any> => call((b) => b.sidecar.knowledgeLinks(id)),
+    conflicts: (resolved?: boolean): Promise<any> => call((b) => b.sidecar.knowledgeConflicts(resolved)),
+    resolveConflict: (id: number, resolution: string): Promise<any> => call((b) => b.sidecar.knowledgeResolveConflict(id, resolution)),
+    gaps: (status?: string): Promise<any> => call((b) => b.sidecar.knowledgeGaps(status)),
+    addGap: (p: any): Promise<any> => call((b) => b.sidecar.knowledgeAddGap(p)),
+    health: (): Promise<any> => call((b) => b.sidecar.knowledgeHealth()),
+    stats: (): Promise<any> => call((b) => b.sidecar.knowledgeStats()),
+  },
+
+  institutionalMemory: {
+    record: (p: any): Promise<any> => call((b) => b.sidecar.memoryRecord(p)),
+    list: (p?: any): Promise<any> => call((b) => b.sidecar.memoryList(p)),
+    get: (id: string): Promise<any> => call((b) => b.sidecar.memoryGet(id)),
+    updateOutcome: (id: string, outcome: string, confidence: number): Promise<any> =>
+      call((b) => b.sidecar.memoryUpdateOutcome(id, outcome, confidence)),
+    search: (q: string): Promise<any> => call((b) => b.sidecar.memorySearch(q)),
+    stats: (): Promise<any> => call((b) => b.sidecar.memoryStats()),
+  },
+
+  rag: {
+    query: (p: any): Promise<any> => call((b) => b.sidecar.ragQuery(p)),
+    search: (p: any): Promise<any> => call((b) => b.sidecar.ragSearch(p)),
+    embed: (text: string, model?: string): Promise<any> => call((b) => b.sidecar.ragEmbed(text, model)),
+    models: (): Promise<any> => call((b) => b.sidecar.ragModels()),
+    benchmark: (model: string, n?: number): Promise<any> => call((b) => b.sidecar.ragBenchmark(model, n)),
+    modelStats: (model: string): Promise<any> => call((b) => b.sidecar.ragModelStats(model)),
+    collections: (): Promise<any> => call((b) => b.sidecar.ragCollections()),
+    metrics: (): Promise<any> => call((b) => b.sidecar.ragMetrics()),
+  },
+
+  synthesis: {
+    synthesize: (p: any): Promise<any> => call((b) => b.sidecar.synthesisSynthesize(p)),
+    reports: (domain?: string): Promise<any> => call((b) => b.sidecar.synthesisReports(domain)),
+    getReport: (id: string): Promise<any> => call((b) => b.sidecar.synthesisGetReport(id)),
+    stats: (): Promise<any> => call((b) => b.sidecar.synthesisStats()),
+  },
+
+  selfImprovement: {
+    record: (p: any): Promise<any> => call((b) => b.sidecar.siRecord(p)),
+    accuracy: (window?: number): Promise<any> => call((b) => b.sidecar.siAccuracy(window)),
+    trend: (kind: string): Promise<any> => call((b) => b.sidecar.siTrend(kind)),
+    history: (kind?: string): Promise<any> => call((b) => b.sidecar.siHistory(kind)),
+    generateOpportunities: (): Promise<any> => call((b) => b.sidecar.siGenerateOpportunities()),
+    opportunities: (status?: string): Promise<any> => call((b) => b.sidecar.siOpportunities(status)),
+    addPriority: (p: any): Promise<any> => call((b) => b.sidecar.siAddPriority(p)),
+    priorities: (): Promise<any> => call((b) => b.sidecar.siPriorities()),
+    runCycle: (): Promise<any> => call((b) => b.sidecar.siRunCycle()),
+    dashboard: (): Promise<any> => call((b) => b.sidecar.siDashboard()),
+  },
+
   // main → renderer push (price alerts). No-op outside Electron.
   onAlert(cb: (a: any) => void): void {
     const b = bridge();

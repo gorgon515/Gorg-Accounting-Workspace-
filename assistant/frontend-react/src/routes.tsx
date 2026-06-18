@@ -33,8 +33,12 @@ import { ScenarioLab } from './views/ScenarioLab';
 import { OpportunityCenter } from './views/OpportunityCenter';
 import { RiskCenter } from './views/RiskCenter';
 import { StrategicPlanningCenter } from './views/StrategicPlanningCenter';
+import { KnowledgeCenter } from './views/KnowledgeCenter';
+import { RAGCenter } from './views/RAGCenter';
+import { ResearchCenter } from './views/ResearchCenter';
+import { LearningCenter } from './views/LearningCenter';
 
-export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Learning' | 'System';
+export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Knowledge' | 'Learning' | 'System';
 
 export interface RouteDef {
   id: string;
@@ -55,6 +59,10 @@ export const ROUTES: RouteDef[] = [
   { id: 'opportunities', label: 'Opportunities', icon: '↗', group: 'Strategy', component: OpportunityCenter },
   { id: 'risks', label: 'Risk Center', icon: '⚠', group: 'Strategy', component: RiskCenter },
   { id: 'strategy', label: 'Strategic Planning', icon: '⊛', group: 'Strategy', component: StrategicPlanningCenter },
+  { id: 'knowledge', label: 'Knowledge Center', icon: '◈', group: 'Knowledge', component: KnowledgeCenter },
+  { id: 'rag', label: 'Semantic Search', icon: '⊗', group: 'Knowledge', component: RAGCenter },
+  { id: 'research', label: 'Research', icon: '⊕', group: 'Knowledge', component: ResearchCenter },
+  { id: 'learning', label: 'Learning Center', icon: '∞', group: 'Knowledge', component: LearningCenter },
   { id: 'markets', label: 'Markets', icon: '▤', group: 'Finance', component: Markets },
   { id: 'portfolio', label: 'Portfolio', icon: '◴', group: 'Finance', component: Portfolio },
   { id: 'accounting', label: 'Accounting', icon: '§', group: 'Finance', component: Accounting },

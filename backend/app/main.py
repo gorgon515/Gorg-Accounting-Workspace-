@@ -20,6 +20,7 @@ from .routers import (
     workspaces_router, licensing_router, monitoring_router, updates_router,
     plugins_router, public_api_router, webhooks_router,
     reasoning_router, intelligence_router, forecasting_router, advisory_router, executive_router,
+    knowledge_router, memory_router, rag_router, synthesis_router, self_improvement_router,
 )
 from .services.market_data import DataUnavailable
 
@@ -79,6 +80,12 @@ app.include_router(intelligence_router.router)
 app.include_router(forecasting_router.router)
 app.include_router(advisory_router.router)
 app.include_router(executive_router.router)
+# Phase 12 — knowledge engine, RAG, institutional memory & self-improving intelligence
+app.include_router(knowledge_router.router)
+app.include_router(memory_router.router)
+app.include_router(rag_router.router)
+app.include_router(synthesis_router.router)
+app.include_router(self_improvement_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint
