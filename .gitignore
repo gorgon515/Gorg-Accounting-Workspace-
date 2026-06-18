@@ -214,5 +214,8 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# Claude Code agent scratch space
+.claude/
+
 # Streamlit
 .streamlit/secrets.toml
