@@ -106,6 +106,18 @@ export const helios = {
     advisoryAnalysis: (asOf: string): Promise<any> => call((b) => b.sidecar.advisoryAnalysis(asOf)),
     advisoryDD: (year: number): Promise<any> => call((b) => b.sidecar.advisoryDD(year)),
     globalSearch: (q: string): Promise<any> => call((b) => b.sidecar.globalSearch(q)),
+    // Phase 8 — execution
+    execQueue: (): Promise<any> => call((b) => b.sidecar.execQueue()),
+    execActions: (status?: string): Promise<any> => call((b) => b.sidecar.execActions(status)),
+    execApprove: (p: any): Promise<any> => call((b) => b.sidecar.execApprove(p)),
+    execReject: (p: any): Promise<any> => call((b) => b.sidecar.execReject(p)),
+    execExecute: (id: number): Promise<any> => call((b) => b.sidecar.execExecute(id)),
+    execRollback: (id: number): Promise<any> => call((b) => b.sidecar.execRollback(id)),
+    closeStart: (period: string): Promise<any> => call((b) => b.sidecar.closeStart(period)),
+    closeUpdate: (p: any): Promise<any> => call((b) => b.sidecar.closeUpdate(p)),
+    closeDashboard: (): Promise<any> => call((b) => b.sidecar.closeDashboard()),
+    outcomesMetrics: (): Promise<any> => call((b) => b.sidecar.outcomesMetrics()),
+    opsFirm: (): Promise<any> => call((b) => b.sidecar.opsFirm()),
   },
 
   language: {

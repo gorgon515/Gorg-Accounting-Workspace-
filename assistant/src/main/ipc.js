@@ -213,6 +213,21 @@ function register() {
   ipcMain.handle('sidecar:advisoryAnalysis', (_e, asOf) => sidecar.advisoryAnalysis(asOf));
   ipcMain.handle('sidecar:advisoryDD', (_e, year) => sidecar.advisoryDD(year));
   ipcMain.handle('sidecar:globalSearch', (_e, q) => sidecar.globalSearch(q));
+  // Phase 8 — execution / automation
+  ipcMain.handle('sidecar:execQueue', () => sidecar.execQueue());
+  ipcMain.handle('sidecar:execActions', (_e, status) => sidecar.execActions(status));
+  ipcMain.handle('sidecar:execApprove', (_e, p) => sidecar.execApprove(p.id, p));
+  ipcMain.handle('sidecar:execReject', (_e, p) => sidecar.execReject(p.id, p));
+  ipcMain.handle('sidecar:execExecute', (_e, id) => sidecar.execExecute(id));
+  ipcMain.handle('sidecar:execRollback', (_e, id) => sidecar.execRollback(id));
+  ipcMain.handle('sidecar:execAutomateDoc', (_e, p) => sidecar.execAutomateDoc(p));
+  ipcMain.handle('sidecar:closeStart', (_e, period) => sidecar.closeStart(period));
+  ipcMain.handle('sidecar:closeUpdate', (_e, p) => sidecar.closeUpdate(p));
+  ipcMain.handle('sidecar:closeDashboard', () => sidecar.closeDashboard());
+  ipcMain.handle('sidecar:outcomesMetrics', () => sidecar.outcomesMetrics());
+  ipcMain.handle('sidecar:opsFirm', () => sidecar.opsFirm());
+  ipcMain.handle('sidecar:opsPortfolio', () => sidecar.opsPortfolio());
+  ipcMain.handle('sidecar:workflowBuild', (_e, p) => sidecar.workflowBuild(p));
 
   // Memory (Memory Center)
   ipcMain.handle('memory:list', (_e, query) => memory.recall(query ? { query } : {}));

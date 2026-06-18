@@ -95,3 +95,44 @@ def from_spec(spec: dict) -> dict:
     if spec.get("email_to"):
         nodes.append(email_send(spec["email_to"], spec.get("subject", name), name="Distribute"))
     return build_workflow(name, nodes)
+
+
+# ---- AI workflow builder: workflow + execution plan (dependencies/approvals/deadlines) ----
+_MONTH_END_STEPS = [
+    {"step": "Record routine journal entries", "depends_on": [], "approval": "tier2", "offset_days": 1},
+    {"step": "Post accruals & prepaids", "depends_on": ["Record routine journal entries"], "approval": "tier2", "offset_days": 2},
+    {"step": "Post depreciation", "depends_on": [], "approval": "tier2", "offset_days": 2},
+    {"step": "Complete reconciliations", "depends_on": ["Record routine journal entries"], "approval": "tier3", "offset_days": 3},
+    {"step": "Review procedures (flux/variance)", "depends_on": ["Post accruals & prepaids", "Complete reconciliations"], "approval": "review", "offset_days": 4},
+    {"step": "Post closing entries", "depends_on": ["Review procedures (flux/variance)"], "approval": "tier3", "offset_days": 5},
+    {"step": "Generate financial statements", "depends_on": ["Post closing entries"], "approval": "tier1", "offset_days": 5},
+]
+
+
+def month_end_close_workflow(*, sidecar_url: str = "http://127.0.0.1:8420", email_to: str = "controller@example.com") -> dict:
+    """N8N workflow: trigger close → fetch statements package → format → email."""
+    nodes = [
+        schedule_trigger("0 8 1 * *", name="Month Start"),  # 1st of month
+        http_get(f"{sidecar_url}/platform/trial-balance", name="Trial Balance"),
+        code_node("return [{json:{body:'Month-end close package attached.'}}];", name="Assemble Package"),
+        email_send(email_to, "Month-End Close Package", name="Notify Controller"),
+    ]
+    return build_workflow("HELIOS — Month-End Close", nodes)
+
+
+def build_plan(spec: dict) -> dict:
+    """Natural-language → workflow + execution plan. kind='month_end_close' uses the
+    standard close plan; otherwise a generic collect→process→distribute plan."""
+    kind = spec.get("kind")
+    if kind == "month_end_close":
+        from datetime import date, timedelta
+        base = date.today()
+        plan = [{**s, "deadline": (base + timedelta(days=s["offset_days"])).isoformat()} for s in _MONTH_END_STEPS]
+        return {"name": "Month-End Close", "workflow": month_end_close_workflow(email_to=spec.get("email_to", "controller@example.com")),
+                "execution_plan": plan, "approvals_required": [s["step"] for s in plan if s["approval"].startswith("tier")]}
+    wf = from_spec(spec)
+    return {"name": wf["name"], "workflow": wf,
+            "execution_plan": [{"step": n["name"], "depends_on": [], "approval": "tier2", "deadline": None}
+                               for n in wf["nodes"]],
+            "approvals_required": []}
+

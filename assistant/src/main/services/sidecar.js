@@ -223,6 +223,25 @@ const api = {
   advisoryAnalysis: (asOf) => call('GET', `/workbench/advisory/analysis?as_of=${asOf}`),
   advisoryDD: (year) => call('GET', `/workbench/advisory/due-diligence?year=${year}`),
   globalSearch: (q) => call('GET', `/workbench/search?q=${encodeURIComponent(q)}`),
+  // Phase 8 — execution / automation operating system
+  execQueue: () => call('GET', '/exec/queue'),
+  execActions: (status) => call('GET', '/exec/actions' + (status ? `?status=${status}` : '')),
+  execPropose: (p) => call('POST', '/exec/propose', p),
+  execApprove: (id, p) => call('POST', `/exec/${id}/approve`, p || {}),
+  execReject: (id, p) => call('POST', `/exec/${id}/reject`, p || {}),
+  execExecute: (id) => call('POST', `/exec/${id}/execute`),
+  execRollback: (id) => call('POST', `/exec/${id}/rollback`),
+  execRetry: (id) => call('POST', `/exec/${id}/retry`),
+  execAutomateDoc: (p) => call('POST', '/exec/automation/document', p),
+  closeStart: (period) => call('POST', `/close/start?period=${period}`),
+  closeUpdate: (p) => call('POST', '/close/update', p),
+  closeDashboard: () => call('GET', '/close/dashboard'),
+  closePackage: (period) => call('GET', `/close/${period}/package`),
+  outcomesMetrics: () => call('GET', '/outcomes/metrics'),
+  opsTaxSeason: () => call('GET', '/ops/tax-season'),
+  opsFirm: () => call('GET', '/ops/firm'),
+  opsPortfolio: () => call('GET', '/ops/portfolio'),
+  workflowBuild: (p) => call('POST', '/workflow/build', p),
 };
 
 const tools = [
@@ -497,6 +516,35 @@ const tools = [
     description: 'Search across documents, accounting records, tax research, and clients with one ranked query.',
     input_schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
   },
+  {
+    name: 'approval_queue',
+    description: 'View actions awaiting human approval, grouped by status, with their risk tiers. HELIOS proposes; the user approves and executes in the Approvals Center. Use to report what is pending.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'process_document_to_books',
+    description: 'Run document intelligence on document text and PROPOSE a draft accounting action (e.g. a draft AP bill or journal entry) for human approval — never posts automatically.',
+    input_schema: {
+      type: 'object',
+      properties: { text: { type: 'string' }, vendor_id: { type: 'number' }, expense_account: { type: 'string' } },
+      required: ['text'],
+    },
+  },
+  {
+    name: 'month_end_close_status',
+    description: 'Get the month-end close dashboard: per-period checklist progress and readiness to close.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'outcome_metrics',
+    description: 'Learning feedback: recommendation accuracy, completion rate, and per-agent performance with suggested confidence calibration.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'build_close_workflow',
+    description: 'Build a month-end close workflow + execution plan (dependencies, approval gates, deadlines) and the importable N8N JSON.',
+    input_schema: { type: 'object', properties: { email_to: { type: 'string' } } },
+  },
 ];
 
 const handlers = {
@@ -539,6 +587,11 @@ const handlers = {
   financial_analysis: (i) => api.advisoryAnalysis(i.as_of),
   due_diligence: (i) => api.advisoryDD(i.year || new Date().getFullYear()),
   global_search: (i) => api.globalSearch(i.query),
+  approval_queue: () => api.execQueue(),
+  process_document_to_books: (i) => api.execAutomateDoc(i || {}),
+  month_end_close_status: () => api.closeDashboard(),
+  outcome_metrics: () => api.outcomesMetrics(),
+  build_close_workflow: (i) => api.workflowBuild({ kind: 'month_end_close', email_to: (i && i.email_to) || 'controller@example.com' }),
 };
 
 module.exports = {

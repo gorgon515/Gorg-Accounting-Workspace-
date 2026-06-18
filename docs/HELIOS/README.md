@@ -53,6 +53,7 @@ prove the architecture extends as designed:
 | **Chief of Staff / operational layer** (Phase 5) | `backend/tasks`, `goals`, `scheduler`, `email_intel`, `calendar_intel`, `cos`, `integrations` | ✅ working — task & goal intelligence, timezone-aware scheduler, email/calendar intelligence, daily briefing + evening review + memory-driven planner, Google/Outlook adapters; Chief of Staff HUD view; 131 backend tests |
 | **Accounting platform** (Phase 6) | `backend/accounting_platform/` | ✅ working — real double-entry GL, chart of accounts + templates, journal engine, AP/AR (posting to GL), fixed-asset depreciation, bank reconciliation, financial statements (BS/IS/CF), clients/documents, immutable audit trail, dashboard; Ledger HUD view; 159 backend tests |
 | **Document intelligence + tax/advisory workbench** (Phase 7) | `backend/document_intelligence/`, `tax_research/`, `workpapers/`, `advisory/`, `global_search.py` | ✅ working — real PDF/Excel/Word/email extraction + gated OCR + classification + field extraction; tax research (authority hierarchy + memo) + organizer; workpaper generator; financial-statement analysis; due diligence; global search; 5 new agents; Workbench HUD view; 181 backend tests |
+| **Execution / automation OS** (Phase 8) | `backend/execution/`, `operations/`, `outcomes/` | ✅ working — approval engine with enforced risk tiers (Tier 4 never auto, prepare-only), execution engine (propose/approve/execute/rollback/retry + audit), document→accounting automation, month-end close, outcome tracking + learning calibration, ops dashboards, AI workflow builder; Operations HUD view; 196 backend tests |
 
 All are wired into the registry, exposed over IPC, surfaced in the UI, and
 covered by tests (router 14/14; full language lifecycle; backend 35; registry 11).
@@ -204,6 +205,31 @@ A professional tax & advisory workbench — **181 backend tests**:
   a **Workbench** HUD view; brain tools `process_document`, `tax_research`,
   `tax_memo`, `generate_workpaper`, `financial_analysis`, `due_diligence`,
   `global_search`.
+
+### Phase 8 progress (execution / automation operating system)
+
+HELIOS turns intelligence into *approved* action — **196 backend tests**:
+
+- **Approval + Execution engine** — every action carries a **risk tier**, affected
+  records/accounts/documents, confidence, and a full audit trail. Tier 1 may
+  auto-execute; Tier 2/3 require human approval; **Tier 4 (broker/tax-filing/
+  external) never auto-executes, needs explicit confirm, and only PREPARES** — a
+  human performs the external act. Executed accounting actions are **reversible**
+  (`rollback` reverses the GL entry); failures are recorded and retryable.
+- **Document → Accounting automation** — a processed invoice/receipt becomes a
+  *draft* AP bill or journal entry awaiting approval; on approve, it posts to the GL.
+- **Month-End Close System** — checklist (JEs/accruals/prepaids/depreciation/
+  reconciliations/review/closing/statements), progress, and a close package
+  (TB + BS + IS + CF) from the live books.
+- **Outcome Tracking + Learning** — records recommendations and outcomes, scores
+  accuracy and per-agent performance, and suggests confidence calibration.
+- **Operations dashboards** (tax season, firm ops, portfolio ops) + an **AI
+  workflow builder** (month-end close workflow + execution plan with dependencies,
+  approval gates, and deadlines).
+- **HUD**: an **Operations** view (Approvals · Month-End Close · Outcomes). The
+  brain may *propose* and *view* the queue (`approval_queue`,
+  `process_document_to_books`, `month_end_close_status`, `outcome_metrics`,
+  `build_close_workflow`); **approve/execute remain human actions** in the UI.
 
 ## The documents (deliverables 1–20)
 

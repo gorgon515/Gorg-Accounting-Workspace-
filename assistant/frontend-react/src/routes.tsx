@@ -15,6 +15,7 @@ import { AgentActivity } from './views/AgentActivity';
 import { ChiefOfStaff } from './views/ChiefOfStaff';
 import { Ledger } from './views/Ledger';
 import { Workbench } from './views/Workbench';
+import { Operations } from './views/Operations';
 
 export type RouteGroup = 'Core' | 'Finance' | 'Learning' | 'System';
 
@@ -41,6 +42,7 @@ export const ROUTES: RouteDef[] = [
   { id: 'calendar', label: 'Calendar', icon: '◷', group: 'Core', component: Calendar },
   { id: 'email', label: 'Email', icon: '✉', group: 'Core', component: Email },
   { id: 'memory', label: 'Memory', icon: '◉', group: 'System', component: Memory },
+  { id: 'operations', label: 'Operations', icon: '▶', group: 'System', component: Operations },
   { id: 'agents', label: 'Agents', icon: '⊹', group: 'System', component: AgentActivity },
   { id: 'automations', label: 'Automations', icon: '⚙', group: 'System', component: Automations },
   { id: 'settings', label: 'Settings', icon: '⚙', group: 'System', component: Settings },

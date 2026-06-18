@@ -199,7 +199,36 @@ verified by a generated-PDF round-trip test. Brain tools: `process_document`,
 `tax_research`, `tax_memo`, `generate_workpaper`, `financial_analysis`,
 `due_diligence`, `global_search`.
 
-Tests: **181 passing** (`pytest -q`) — Phase 1–6 plus Phase-6 GL/statements
+## Phase 8 — execution / automation operating system
+
+```
+execution/      engine.py (approval + execution: risk tiers, propose/approve/reject/
+                execute/rollback/retry + audit), registry.py (tier map + executors
+                wired to the GL), automation.py (document → draft accounting action)
+operations/     close.py (month-end checklist + close package), dashboards.py
+                (tax-season / firm-ops / portfolio-ops aggregators)
+outcomes/       engine.py (recommendation + outcome tracking, accuracy, agent
+                performance, confidence calibration feedback)
+n8n/generator.py  + month_end_close_workflow + build_plan (workflow + execution
+                plan with dependencies/approvals/deadlines)
+```
+
+**Safety model (enforced + tested):** every action has a risk tier — Tier 1 may
+auto-execute; Tier 2/3 require human approval before `execute()`; **Tier 4
+(broker/tax-filing/external) NEVER auto-executes, requires explicit confirm to
+approve, and the executor only PREPARES** (HELIOS never performs the external act).
+Executed accounting actions are reversible via `rollback` (reverses the GL entry).
+The brain may *propose* and *view* the queue (`approval_queue`,
+`process_document_to_books`); approve/execute are human actions in the UI. API
+under `/exec/*`, `/close/*`, `/outcomes/*`, `/ops/*`, `/workflow/build`.
+
+Tests: **196 passing** (`pytest -q`) — Phase 1–7 plus Phase-8 approval/execution
+(tier enforcement, Tier-4 prepare-only, rollback, failure handling, audit),
+document automation, month-end close, outcomes/learning, and the execution router.
+
+---
+
+Tests (historical): **181 passing** — Phase 1–6 plus Phase-6 GL/statements
 (balance-sheet identity, cash-flow reconciliation, period controls, reversals),
 AP/AR + aging, depreciation, bank reconciliation, audit, importers, dashboard, and
 Phase-7 document intelligence (real PDF extraction, classification, field
