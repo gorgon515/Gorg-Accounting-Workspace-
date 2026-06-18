@@ -207,6 +207,22 @@ const api = {
   acctImportJournal: (csv) => call('POST', '/platform/import/journal', { csv }),
   acctAudit: () => call('GET', '/platform/audit'),
   acctDashboard: (asOf) => call('GET', '/platform/dashboard' + (asOf ? `?as_of=${asOf}` : '')),
+  // Phase 7 — tax & advisory workbench
+  ocrStatus: () => call('GET', '/workbench/docs/ocr-status'),
+  docProcess: (p) => call('POST', '/workbench/docs/process', p),
+  docSearch: (q) => call('GET', '/workbench/docs/search' + (q ? `?q=${encodeURIComponent(q)}` : '')),
+  taxTopics: () => call('GET', '/workbench/tax/topics'),
+  taxResearch: (query) => call('POST', '/workbench/tax/research', { query }),
+  taxMemo: (p) => call('POST', '/workbench/tax/memo', p),
+  orgClient: (p) => call('POST', '/workbench/tax/organizer/client', p),
+  orgDashboard: () => call('GET', '/workbench/tax/organizer/dashboard'),
+  wpTrialBalance: (asOf) => call('GET', '/workbench/workpapers/trial-balance' + (asOf ? `?as_of=${asOf}` : '')),
+  wpLead: (type, asOf) => call('GET', `/workbench/workpapers/lead/${type}` + (asOf ? `?as_of=${asOf}` : '')),
+  wpDepreciation: () => call('GET', '/workbench/workpapers/depreciation'),
+  wpTax: (year) => call('GET', `/workbench/workpapers/tax/${year}`),
+  advisoryAnalysis: (asOf) => call('GET', `/workbench/advisory/analysis?as_of=${asOf}`),
+  advisoryDD: (year) => call('GET', `/workbench/advisory/due-diligence?year=${year}`),
+  globalSearch: (q) => call('GET', `/workbench/search?q=${encodeURIComponent(q)}`),
 };
 
 const tools = [
@@ -434,6 +450,53 @@ const tools = [
     description: 'Live accounting dashboard: cash position, AR/AP aging, MTD/YTD profitability, balance-sheet summary, recent entries, alerts.',
     input_schema: { type: 'object', properties: {} },
   },
+  {
+    name: 'process_document',
+    description:
+      'Run document intelligence on a document: extract real text (PDF/Excel/Word/email/text), classify it (invoice/W-2/1099/K-1/bank statement/contract/…), extract fields, and validate — with confidence. Pass text directly, or base64 file content. Scanned images need OCR (reports unavailable rather than guessing).',
+    input_schema: {
+      type: 'object',
+      properties: { text: { type: 'string' }, base64: { type: 'string' }, filename: { type: 'string' } },
+    },
+  },
+  {
+    name: 'tax_research',
+    description: 'Research a tax issue against primary authorities (IRC/Treasury Regs/rulings/cases), ranked by authority hierarchy, with planning opportunities and risk. Topics include home office, business meals, §179, QBI/§199A, S-corp reasonable comp, hobby loss.',
+    input_schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+  },
+  {
+    name: 'tax_memo',
+    description: 'Generate a tax memo (Facts/Issues/Authorities/Analysis/Alternatives/Conclusion/Recommendations/References) grounded in the cited authorities.',
+    input_schema: {
+      type: 'object',
+      properties: { facts: { type: 'string' }, issues: { type: 'string' }, topic: { type: 'string' } },
+      required: ['facts', 'issues', 'topic'],
+    },
+  },
+  {
+    name: 'generate_workpaper',
+    description: 'Generate a workpaper from the books: kind = trial_balance | lead (account_type) | depreciation | tax (year). Schedules tie to the trial balance.',
+    input_schema: {
+      type: 'object',
+      properties: { kind: { type: 'string' }, account_type: { type: 'string' }, year: { type: 'number' }, as_of: { type: 'string' } },
+      required: ['kind'],
+    },
+  },
+  {
+    name: 'financial_analysis',
+    description: 'Financial statement analysis as of a date: liquidity, profitability, leverage, efficiency, cash-flow & earnings quality, with executive/board summaries.',
+    input_schema: { type: 'object', properties: { as_of: { type: 'string' } }, required: ['as_of'] },
+  },
+  {
+    name: 'due_diligence',
+    description: 'Run a due-diligence review for a year: ratios, customer/vendor concentration, working capital, quality of earnings, and risk flags.',
+    input_schema: { type: 'object', properties: { year: { type: 'number' } }, required: ['year'] },
+  },
+  {
+    name: 'global_search',
+    description: 'Search across documents, accounting records, tax research, and clients with one ranked query.',
+    input_schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+  },
 ];
 
 const handlers = {
@@ -463,6 +526,19 @@ const handlers = {
     return api.acctTrialBalance(i.as_of);
   },
   accounting_dashboard: () => api.acctDashboard(),
+  process_document: (i) => api.docProcess(i || {}),
+  tax_research: (i) => api.taxResearch(i.query),
+  tax_memo: (i) => api.taxMemo(i || {}),
+  generate_workpaper: (i) => {
+    const k = (i && i.kind) || 'trial_balance';
+    if (k === 'lead') return api.wpLead(i.account_type || 'asset', i.as_of);
+    if (k === 'depreciation') return api.wpDepreciation();
+    if (k === 'tax') return api.wpTax(i.year || new Date().getFullYear());
+    return api.wpTrialBalance(i.as_of);
+  },
+  financial_analysis: (i) => api.advisoryAnalysis(i.as_of),
+  due_diligence: (i) => api.advisoryDD(i.year || new Date().getFullYear()),
+  global_search: (i) => api.globalSearch(i.query),
 };
 
 module.exports = {

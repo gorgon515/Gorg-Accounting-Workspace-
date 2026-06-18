@@ -199,6 +199,20 @@ function register() {
   ipcMain.handle('sidecar:acctImportJournal', (_e, csv) => sidecar.acctImportJournal(csv));
   ipcMain.handle('sidecar:acctAudit', () => sidecar.acctAudit());
   ipcMain.handle('sidecar:acctDashboard', (_e, asOf) => sidecar.acctDashboard(asOf));
+  // Phase 7 — tax & advisory workbench
+  ipcMain.handle('sidecar:ocrStatus', () => sidecar.ocrStatus());
+  ipcMain.handle('sidecar:docProcess', (_e, p) => sidecar.docProcess(p));
+  ipcMain.handle('sidecar:docSearch', (_e, q) => sidecar.docSearch(q));
+  ipcMain.handle('sidecar:taxTopics', () => sidecar.taxTopics());
+  ipcMain.handle('sidecar:taxResearch', (_e, query) => sidecar.taxResearch(query));
+  ipcMain.handle('sidecar:taxMemo', (_e, p) => sidecar.taxMemo(p));
+  ipcMain.handle('sidecar:orgClient', (_e, p) => sidecar.orgClient(p));
+  ipcMain.handle('sidecar:orgDashboard', () => sidecar.orgDashboard());
+  ipcMain.handle('sidecar:wpTrialBalance', (_e, asOf) => sidecar.wpTrialBalance(asOf));
+  ipcMain.handle('sidecar:wpLead', (_e, p) => sidecar.wpLead(p.type, p.asOf));
+  ipcMain.handle('sidecar:advisoryAnalysis', (_e, asOf) => sidecar.advisoryAnalysis(asOf));
+  ipcMain.handle('sidecar:advisoryDD', (_e, year) => sidecar.advisoryDD(year));
+  ipcMain.handle('sidecar:globalSearch', (_e, q) => sidecar.globalSearch(q));
 
   // Memory (Memory Center)
   ipcMain.handle('memory:list', (_e, query) => memory.recall(query ? { query } : {}));

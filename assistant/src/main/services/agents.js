@@ -81,6 +81,51 @@ const AGENTS = [
     keywords: ['cpa', 'far', 'reg', 'aud', 'tcp', 'bar', 'isc', 'exam', 'becker', 'simulation', 'mcq', 'study plan'],
   },
   {
+    key: 'tax_research', name: 'Tax Research Agent',
+    role: 'Tax research with primary authorities (IRC / Treasury Regs / rulings / cases), authority hierarchy, memos, risk, and planning.',
+    persona: 'Authority-driven, conservative, cite-everything tax researcher.',
+    instructions: 'Use tax_research and tax_memo. Rank authorities by hierarchy; never assert a position without citing the controlling authority.',
+    skills: ['sidecar'],
+    permissions: { memory: MEM.READ, canPropose: false },
+    keywords: ['tax research', 'irc', 'treasury reg', 'revenue ruling', 'revenue procedure', 'tax memo', 'tax authority', 'section 179', '199a', 'qbi', 'reasonable compensation', 'hobby loss', 'tax court'],
+  },
+  {
+    key: 'document', name: 'Document Agent',
+    role: 'Reads source documents (PDF/Excel/Word/email/scans), classifies them, extracts fields, and links them to clients and records.',
+    persona: 'Meticulous document processor.',
+    instructions: 'Use process_document to extract real text/fields. Report confidence; flag when a scan needs OCR that is unavailable rather than guessing.',
+    skills: ['sidecar'],
+    permissions: { memory: MEM.READ, canPropose: false },
+    keywords: ['document intelligence', 'ocr', 'scanned', 'extract document', 'classify document', 'process document'],
+  },
+  {
+    key: 'workpaper', name: 'Workpaper Agent',
+    role: 'Generates lead schedules, trial-balance, depreciation, reconciliation, and tax workpapers from the books, with cross-references.',
+    persona: 'Organized preparer who ties everything out.',
+    instructions: 'Use generate_workpaper. Ensure schedules tie to the trial balance and cross-reference cleanly.',
+    skills: ['sidecar'],
+    permissions: { memory: MEM.READ, canPropose: false },
+    keywords: ['workpaper', 'lead schedule', 'tie out', 'tieout', 'reconciliation workpaper', 'm-1', 'book-to-tax'],
+  },
+  {
+    key: 'due_diligence', name: 'Due Diligence Agent',
+    role: 'Financial statement review, ratio/trend analysis, quality of earnings, concentration and working-capital risk.',
+    persona: 'Skeptical analyst hunting for risk.',
+    instructions: 'Use due_diligence and financial_analysis. Separate facts/calculations from interpretation; quantify concentration and earnings-quality risk.',
+    skills: ['sidecar'],
+    permissions: { memory: MEM.READ, canPropose: false },
+    keywords: ['due diligence', 'quality of earnings', 'diligence', 'working capital', 'ratio analysis'],
+  },
+  {
+    key: 'advisory', name: 'Advisory Agent',
+    role: 'Client advisory synthesis across accounting, tax, and financial analysis; executive/board-level summaries.',
+    persona: 'Trusted advisor who turns numbers into decisions.',
+    instructions: 'Combine financial_analysis, tax_research, and accounting context into clear recommendations with explicit assumptions.',
+    skills: ['sidecar', 'memory'],
+    permissions: { memory: MEM.RW, canPropose: false },
+    keywords: ['advisory', 'financial analysis', 'board report', 'management report', 'recommendation'],
+  },
+  {
     key: 'research', name: 'Research Agent',
     role: 'General information gathering and news synthesis.',
     persona: 'Curious, concise, sourced.',
@@ -171,6 +216,9 @@ const byKey = Object.fromEntries(AGENTS.map((a) => [a.key, a]));
 const TOOL_AGENT_OVERRIDE = {
   quant_analyze: 'quant', quant_factors: 'quant', quant_risk: 'quant',
   quant_portfolio: 'portfolio', explain_asc: 'fasb', accounting_memo: 'fasb',
+  tax_research: 'tax_research', tax_memo: 'tax_research',
+  process_document: 'document', generate_workpaper: 'workpaper',
+  due_diligence: 'due_diligence', financial_analysis: 'advisory', global_search: 'knowledge',
 };
 
 // ---- routing ------------------------------------------------------------------

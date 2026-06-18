@@ -52,6 +52,7 @@ prove the architecture extends as designed:
 | **Intelligence engines** (Phase 4) | `backend/accounting/`, `backend/quant/`, `backend/n8n/` | ✅ working — accounting collectors/storage/briefing/graph/research, quant fundamentals/signals/market-briefing, N8N client + workflow generator; wired to the HUD; 87 backend tests |
 | **Chief of Staff / operational layer** (Phase 5) | `backend/tasks`, `goals`, `scheduler`, `email_intel`, `calendar_intel`, `cos`, `integrations` | ✅ working — task & goal intelligence, timezone-aware scheduler, email/calendar intelligence, daily briefing + evening review + memory-driven planner, Google/Outlook adapters; Chief of Staff HUD view; 131 backend tests |
 | **Accounting platform** (Phase 6) | `backend/accounting_platform/` | ✅ working — real double-entry GL, chart of accounts + templates, journal engine, AP/AR (posting to GL), fixed-asset depreciation, bank reconciliation, financial statements (BS/IS/CF), clients/documents, immutable audit trail, dashboard; Ledger HUD view; 159 backend tests |
+| **Document intelligence + tax/advisory workbench** (Phase 7) | `backend/document_intelligence/`, `tax_research/`, `workpapers/`, `advisory/`, `global_search.py` | ✅ working — real PDF/Excel/Word/email extraction + gated OCR + classification + field extraction; tax research (authority hierarchy + memo) + organizer; workpaper generator; financial-statement analysis; due diligence; global search; 5 new agents; Workbench HUD view; 181 backend tests |
 
 All are wired into the registry, exposed over IPC, surfaced in the UI, and
 covered by tests (router 14/14; full language lifecycle; backend 35; registry 11).
@@ -179,6 +180,30 @@ backend tests**, no network needed:
   Audit); brain tools `post_journal_entry`, `financial_statement`,
   `accounting_dashboard`. The Phase-1/4 accounting *research* (ASC/memo/briefing)
   remains alongside the new transactional platform.
+
+### Phase 7 progress (document intelligence + tax/advisory workbench)
+
+A professional tax & advisory workbench — **181 backend tests**:
+
+- **Document Intelligence** — real text extraction from **PDF (text layer),
+  Excel, Word, email, CSV**, a **classifier** (invoice/W-2/1099/K-1/bank
+  statement/contract/tax return/financial statement/memo/workpaper/correspondence)
+  with confidence, **field extraction** per type, validation, and a linked
+  extraction store. **OCR honesty:** Tesseract image OCR is real but
+  *availability-gated* — when the binary is absent it reports unavailable and
+  raises rather than fabricating text.
+- **Tax Research Engine** — citable authority KB (IRC/Treasury Regs/rulings/cases),
+  **authority hierarchy**, risk, planning, and a tax-memo generator; plus a
+  **Client Tax Organizer** (profiles, document requests, missing-doc tracking).
+- **Workpaper Generator** — lead/trial-balance/depreciation/reconciliation/
+  book-to-tax workpapers from the live books, cross-referenced + versioned.
+- **Financial Statement Analysis** + **Due Diligence Engine** — ratios, cash-flow
+  & earnings quality, concentration, working capital, risk flags.
+- **Global Search** across documents, accounting records, tax research, clients.
+- **5 new agents** (Tax Research, Document, Workpaper, Due Diligence, Advisory) and
+  a **Workbench** HUD view; brain tools `process_document`, `tax_research`,
+  `tax_memo`, `generate_workpaper`, `financial_analysis`, `due_diligence`,
+  `global_search`.
 
 ## The documents (deliverables 1–20)
 

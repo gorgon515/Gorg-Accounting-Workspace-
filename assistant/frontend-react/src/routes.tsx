@@ -14,6 +14,7 @@ import { Settings } from './views/Settings';
 import { AgentActivity } from './views/AgentActivity';
 import { ChiefOfStaff } from './views/ChiefOfStaff';
 import { Ledger } from './views/Ledger';
+import { Workbench } from './views/Workbench';
 
 export type RouteGroup = 'Core' | 'Finance' | 'Learning' | 'System';
 
@@ -34,6 +35,7 @@ export const ROUTES: RouteDef[] = [
   { id: 'portfolio', label: 'Portfolio', icon: '◴', group: 'Finance', component: Portfolio },
   { id: 'accounting', label: 'Accounting', icon: '§', group: 'Finance', component: Accounting },
   { id: 'ledger', label: 'Ledger / Books', icon: '⊞', group: 'Finance', component: Ledger },
+  { id: 'workbench', label: 'Tax & Advisory', icon: '⊟', group: 'Finance', component: Workbench },
   { id: 'cpa', label: 'CPA Center', icon: '✓', group: 'Learning', component: CPACenter },
   { id: 'language', label: 'Language', icon: '⌘', group: 'Learning', component: Language },
   { id: 'calendar', label: 'Calendar', icon: '◷', group: 'Core', component: Calendar },

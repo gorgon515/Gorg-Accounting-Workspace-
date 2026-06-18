@@ -177,10 +177,34 @@ trial-balance, statements, AP/AR, assets, bank, clients, documents, import, audi
 dashboard); invalid/unbalanced entries → HTTP 400. Brain tools: `post_journal_entry`,
 `financial_statement`, `accounting_dashboard`.
 
-Tests: **159 passing** (`pytest -q`) across the Phase 1–5 engines plus Phase-6
-GL/statements (balance-sheet identity, cash-flow reconciliation, period controls,
-reversals), AP/AR + aging, fixed-asset depreciation, bank reconciliation, audit
-trail, importers, dashboard, and the platform router.
+## Phase 7 — document intelligence + tax & advisory workbench
+
+```
+document_intelligence/  textextract (real PDF/Excel/Word/email/csv), ocr (Tesseract,
+                        availability-gated — never fabricates text), classify, extract,
+                        validate, pipeline, store (linked extractions)
+tax_research/           authority KB (IRC/Reg/rulings/cases) + hierarchy + memo + risk +
+                        planning; organizer (tax profiles, doc requests, missing tracker)
+workpapers/             trial-balance / lead / depreciation / reconciliation / tax (M-1)
+                        workpapers from the books + cross-ref + version store
+advisory/               fs_analysis (liquidity/profitability/leverage/efficiency/quality)
+                        + due_diligence (concentration, working capital, QoE, risk)
+global_search.py        ranked search across documents, GL, tax research, clients
+```
+
+API under `/workbench/*`. **OCR honesty:** Tesseract isn't bundled — image OCR is
+reported unavailable and raises rather than inventing text; **digital PDF/Excel/
+Word/email extraction is real** (pypdf/openpyxl/python-docx/stdlib email) and
+verified by a generated-PDF round-trip test. Brain tools: `process_document`,
+`tax_research`, `tax_memo`, `generate_workpaper`, `financial_analysis`,
+`due_diligence`, `global_search`.
+
+Tests: **181 passing** (`pytest -q`) — Phase 1–6 plus Phase-6 GL/statements
+(balance-sheet identity, cash-flow reconciliation, period controls, reversals),
+AP/AR + aging, depreciation, bank reconciliation, audit, importers, dashboard, and
+Phase-7 document intelligence (real PDF extraction, classification, field
+extraction, gated OCR), tax research + memo + organizer, workpapers, financial
+analysis, due diligence, and global search.
 
 ## Adding a market-data provider
 

@@ -94,6 +94,18 @@ export const helios = {
     acctAssets: (): Promise<any> => call((b) => b.sidecar.acctAssets()),
     acctAudit: (): Promise<any> => call((b) => b.sidecar.acctAudit()),
     acctDashboard: (asOf?: string): Promise<any> => call((b) => b.sidecar.acctDashboard(asOf)),
+    // Phase 7 — workbench
+    ocrStatus: (): Promise<any> => call((b) => b.sidecar.ocrStatus()),
+    docProcess: (p: any): Promise<any> => call((b) => b.sidecar.docProcess(p)),
+    docSearch: (q?: string): Promise<any> => call((b) => b.sidecar.docSearch(q)),
+    taxResearch: (query: string): Promise<any> => call((b) => b.sidecar.taxResearch(query)),
+    taxMemo: (p: any): Promise<any> => call((b) => b.sidecar.taxMemo(p)),
+    orgDashboard: (): Promise<any> => call((b) => b.sidecar.orgDashboard()),
+    orgClient: (p: any): Promise<any> => call((b) => b.sidecar.orgClient(p)),
+    wpTrialBalance: (asOf?: string): Promise<any> => call((b) => b.sidecar.wpTrialBalance(asOf)),
+    advisoryAnalysis: (asOf: string): Promise<any> => call((b) => b.sidecar.advisoryAnalysis(asOf)),
+    advisoryDD: (year: number): Promise<any> => call((b) => b.sidecar.advisoryDD(year)),
+    globalSearch: (q: string): Promise<any> => call((b) => b.sidecar.globalSearch(q)),
   },
 
   language: {
