@@ -16,6 +16,7 @@ from . import config
 from .routers import (
     accounting, accounting_intel, accounting_platform_router, execution_router, health, markets,
     n8n_router, personal, quant, quant_research, workbench,
+    security_router, backup_router, sync_router, health_router,
 )
 from .services.market_data import DataUnavailable
 
@@ -56,6 +57,11 @@ app.include_router(personal.router)
 app.include_router(accounting_platform_router.router)
 app.include_router(workbench.router)
 app.include_router(execution_router.router)
+# Phase 9 — security, backup, sync, health
+app.include_router(security_router.router)
+app.include_router(backup_router.router)
+app.include_router(sync_router.router)
+app.include_router(health_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint

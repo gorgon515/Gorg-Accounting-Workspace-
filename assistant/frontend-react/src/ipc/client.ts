@@ -169,6 +169,71 @@ export const helios = {
     forget: (p: any): Promise<any> => call((b) => b.memory.forget(p)),
   },
 
+  // Phase 9 — security, backup, sync, health
+  security: {
+    status: (): Promise<any> => call((b) => b.sidecar.securityStatus()),
+    vaultStatus: (): Promise<any> => call((b) => b.sidecar.vaultStatus()),
+    vaultInit: (p: any): Promise<any> => call((b) => b.sidecar.vaultInit(p)),
+    vaultUnlock: (p: any): Promise<any> => call((b) => b.sidecar.vaultUnlock(p)),
+    vaultLock: (): Promise<any> => call((b) => b.sidecar.vaultLock()),
+    listSecrets: (): Promise<any> => call((b) => b.sidecar.listSecrets()),
+    storeSecret: (p: any): Promise<any> => call((b) => b.sidecar.storeSecret(p)),
+    retrieveSecret: (name: string): Promise<any> => call((b) => b.sidecar.retrieveSecret(name)),
+    deleteSecret: (name: string): Promise<any> => call((b) => b.sidecar.deleteSecret(name)),
+    rotateSecret: (name: string, p: any): Promise<any> => call((b) => b.sidecar.rotateSecret(name, p)),
+    secretHistory: (name: string): Promise<any> => call((b) => b.sidecar.secretHistory(name)),
+    vaultAudit: (): Promise<any> => call((b) => b.sidecar.vaultAudit()),
+    complianceLog: (p?: any): Promise<any> => call((b) => b.sidecar.complianceLog(p)),
+    verifyEntry: (id: number): Promise<any> => call((b) => b.sidecar.verifyEntry(id)),
+    verifyChain: (): Promise<any> => call((b) => b.sidecar.verifyChain()),
+    listAgents: (): Promise<any> => call((b) => b.sidecar.listAgents()),
+    checkPermission: (p: any): Promise<any> => call((b) => b.sidecar.checkPermission(p)),
+  },
+
+  backup: {
+    status: (): Promise<any> => call((b) => b.sidecar.backupStatus()),
+    createFull: (p: any): Promise<any> => call((b) => b.sidecar.backupFull(p)),
+    createIncremental: (p: any): Promise<any> => call((b) => b.sidecar.backupIncremental(p)),
+    createSelective: (p: any): Promise<any> => call((b) => b.sidecar.backupSelective(p)),
+    list: (): Promise<any> => call((b) => b.sidecar.backupList()),
+    verify: (id: string): Promise<any> => call((b) => b.sidecar.backupVerify(id)),
+    restorePoints: (): Promise<any> => call((b) => b.sidecar.restorePoints()),
+    restoreFull: (p: any): Promise<any> => call((b) => b.sidecar.restoreFull(p)),
+    restoreSelective: (p: any): Promise<any> => call((b) => b.sidecar.restoreSelective(p)),
+    restorePit: (p: any): Promise<any> => call((b) => b.sidecar.restorePit(p)),
+    drStatus: (): Promise<any> => call((b) => b.sidecar.drStatus()),
+    drIntegrity: (): Promise<any> => call((b) => b.sidecar.drIntegrity()),
+    drSimulate: (id: string): Promise<any> => call((b) => b.sidecar.drSimulate(id)),
+    drPlan: (): Promise<any> => call((b) => b.sidecar.drPlan()),
+    drReport: (): Promise<any> => call((b) => b.sidecar.drReport()),
+  },
+
+  sync: {
+    status: (): Promise<any> => call((b) => b.sidecar.syncStatus()),
+    registerDevice: (p: any): Promise<any> => call((b) => b.sidecar.syncRegisterDevice(p)),
+    listDevices: (): Promise<any> => call((b) => b.sidecar.syncListDevices()),
+    heartbeat: (id: string): Promise<any> => call((b) => b.sidecar.syncHeartbeat(id)),
+    deregisterDevice: (id: string): Promise<any> => call((b) => b.sidecar.syncDeregisterDevice(id)),
+    startSession: (p: any): Promise<any> => call((b) => b.sidecar.syncStartSession(p)),
+    completeSession: (id: string, p: any): Promise<any> => call((b) => b.sidecar.syncCompleteSession(id, p)),
+    getDelta: (p: any): Promise<any> => call((b) => b.sidecar.syncDelta(p)),
+    push: (p: any): Promise<any> => call((b) => b.sidecar.syncPush(p)),
+    listConflicts: (): Promise<any> => call((b) => b.sidecar.syncConflicts()),
+    resolveConflict: (id: number, p: any): Promise<any> => call((b) => b.sidecar.syncResolveConflict(id, p)),
+    auditLog: (p?: any): Promise<any> => call((b) => b.sidecar.syncAudit(p)),
+  },
+
+  healthMonitor: {
+    status: (): Promise<any> => call((b) => b.sidecar.healthStatus()),
+    database: (): Promise<any> => call((b) => b.sidecar.healthDatabase()),
+    security: (): Promise<any> => call((b) => b.sidecar.healthSecurity()),
+    backup: (): Promise<any> => call((b) => b.sidecar.healthBackup()),
+    sync: (): Promise<any> => call((b) => b.sidecar.healthSync()),
+    dailyReport: (): Promise<any> => call((b) => b.sidecar.healthDailyReport()),
+    weeklyReport: (): Promise<any> => call((b) => b.sidecar.healthWeeklyReport()),
+    history: (): Promise<any> => call((b) => b.sidecar.healthHistory()),
+  },
+
   // main → renderer push (price alerts). No-op outside Electron.
   onAlert(cb: (a: any) => void): void {
     const b = bridge();

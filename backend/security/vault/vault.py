@@ -217,6 +217,8 @@ class Vault:
                 "INSERT INTO vault_secret_history (secret_id,version,encrypted_value,archived_at) VALUES (?,?,?,?)",
                 (row["id"], row["version"], row["encrypted_value"], now),
             )
+            # Remove history records before deleting parent (FK constraint)
+            conn.execute("DELETE FROM vault_secret_history WHERE secret_id=?", (row["id"],))
             conn.execute("DELETE FROM vault_secret WHERE name=?", (name,))
             conn.commit()
         self._audit("secret_delete", name=name, category=row["category"], user=user)
@@ -291,8 +293,8 @@ class Vault:
         old_key = self._require_key()
         conn = self._get_conn()
         rows = conn.execute("SELECT id, name, encrypted_value FROM vault_secret").fetchall()
-        new_salt = new_salt()
-        new_key = derive_key(new_password, new_salt)
+        new_salt_bytes = new_salt()
+        new_key = derive_key(new_password, new_salt_bytes)
         now = _now()
         with self._lock:
             for row in rows:
@@ -300,7 +302,7 @@ class Vault:
                 new_enc = encrypt_str(new_key, plaintext)
                 conn.execute("UPDATE vault_secret SET encrypted_value=?,updated_at=? WHERE id=?",
                              (new_enc, now, row["id"]))
-            salt_b64 = base64.b64encode(new_salt).decode("ascii")
+            salt_b64 = base64.b64encode(new_salt_bytes).decode("ascii")
             conn.execute("UPDATE vault_meta SET value=? WHERE key='salt'", (salt_b64,))
             conn.commit()
         self._key = new_key

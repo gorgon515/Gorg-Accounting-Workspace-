@@ -16,6 +16,11 @@ import { ChiefOfStaff } from './views/ChiefOfStaff';
 import { Ledger } from './views/Ledger';
 import { Workbench } from './views/Workbench';
 import { Operations } from './views/Operations';
+import { SecurityCenter } from './views/SecurityCenter';
+import { BackupView } from './views/BackupView';
+import { SyncView } from './views/SyncView';
+import { HealthMonitor } from './views/HealthMonitor';
+import { AuditCenter } from './views/AuditCenter';
 
 export type RouteGroup = 'Core' | 'Finance' | 'Learning' | 'System';
 
@@ -45,6 +50,11 @@ export const ROUTES: RouteDef[] = [
   { id: 'operations', label: 'Operations', icon: '▶', group: 'System', component: Operations },
   { id: 'agents', label: 'Agents', icon: '⊹', group: 'System', component: AgentActivity },
   { id: 'automations', label: 'Automations', icon: '⚙', group: 'System', component: Automations },
+  { id: 'security', label: 'Security Center', icon: '⚿', group: 'System', component: SecurityCenter },
+  { id: 'backup', label: 'Backup & Recovery', icon: '⊙', group: 'System', component: BackupView },
+  { id: 'sync', label: 'Sync', icon: '⇄', group: 'System', component: SyncView },
+  { id: 'health', label: 'Health Monitor', icon: '♥', group: 'System', component: HealthMonitor },
+  { id: 'audit', label: 'Audit Center', icon: '⊘', group: 'System', component: AuditCenter },
   { id: 'settings', label: 'Settings', icon: '⚙', group: 'System', component: Settings },
 ];
 
