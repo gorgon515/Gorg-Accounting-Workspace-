@@ -317,6 +317,56 @@ export const helios = {
     setupDataDir: (): Promise<any> => call((b) => b.sidecar.updatesSetupDataDir()),
   },
 
+  // Phase 11 — strategic reasoning & autonomous intelligence
+  reasoning: {
+    recommend: (): Promise<any> => call((b) => b.sidecar.reasoningRecommend()),
+    decompose: (p: any): Promise<any> => call((b) => b.sidecar.reasoningDecompose(p)),
+    prioritize: (p: any): Promise<any> => call((b) => b.sidecar.reasoningPrioritize(p)),
+    tradeoffs: (p: any): Promise<any> => call((b) => b.sidecar.reasoningTradeoffs(p)),
+    constraints: (p: any): Promise<any> => call((b) => b.sidecar.reasoningConstraints(p)),
+    runProposals: (): Promise<any> => call((b) => b.sidecar.reasoningRunProposals()),
+    listProposals: (status?: string): Promise<any> => call((b) => b.sidecar.reasoningListProposals(status)),
+    proposalStats: (): Promise<any> => call((b) => b.sidecar.reasoningProposalStats()),
+    decideProposal: (id: string, decision: string): Promise<any> => call((b) => b.sidecar.reasoningDecide(id, decision)),
+    learningAccuracy: (kind?: string): Promise<any> => call((b) => b.sidecar.reasoningLearningAccuracy(kind)),
+  },
+
+  intelligence: {
+    buildGraph: (): Promise<any> => call((b) => b.sidecar.intelBuildGraph()),
+    graph: (domain?: string): Promise<any> => call((b) => b.sidecar.intelGraph(domain)),
+    insights: (): Promise<any> => call((b) => b.sidecar.intelInsights()),
+    graphStats: (): Promise<any> => call((b) => b.sidecar.intelGraphStats()),
+    scanOpportunities: (): Promise<any> => call((b) => b.sidecar.intelScanOpps()),
+    listOpportunities: (p?: any): Promise<any> => call((b) => b.sidecar.intelListOpps(p)),
+    setOpportunityStatus: (id: string, status: string): Promise<any> => call((b) => b.sidecar.intelOppStatus(id, status)),
+    scanRisks: (): Promise<any> => call((b) => b.sidecar.intelScanRisks()),
+    listRisks: (p?: any): Promise<any> => call((b) => b.sidecar.intelListRisks(p)),
+    riskSummary: (): Promise<any> => call((b) => b.sidecar.intelRiskSummary()),
+    setRiskStatus: (id: string, status: string): Promise<any> => call((b) => b.sidecar.intelRiskStatus(id, status)),
+  },
+
+  forecasting: {
+    metric: (metric: string, months?: number): Promise<any> => call((b) => b.sidecar.forecastMetric(metric, months)),
+    all: (months?: number): Promise<any> => call((b) => b.sidecar.forecastAll(months)),
+    retirement: (p: any): Promise<any> => call((b) => b.sidecar.forecastRetirement(p)),
+    scenario: (p: any): Promise<any> => call((b) => b.sidecar.forecastScenario(p)),
+    sensitivity: (p: any): Promise<any> => call((b) => b.sidecar.forecastSensitivity(p)),
+    levers: (): Promise<any> => call((b) => b.sidecar.forecastLevers()),
+  },
+
+  advisory: {
+    personalDashboard: (): Promise<any> => call((b) => b.sidecar.advisoryPersonalDashboard()),
+    personalRecommendations: (horizon?: string): Promise<any> => call((b) => b.sidecar.advisoryPersonalRecs(horizon)),
+    businessAnalysis: (): Promise<any> => call((b) => b.sidecar.advisoryBusinessAnalysis()),
+    executiveReport: (): Promise<any> => call((b) => b.sidecar.advisoryExecReport()),
+    capacity: (p: any): Promise<any> => call((b) => b.sidecar.advisoryCapacity(p)),
+  },
+
+  executive: {
+    commandCenter: (): Promise<any> => call((b) => b.sidecar.execCommandCenter()),
+    morningBriefing: (): Promise<any> => call((b) => b.sidecar.execMorningBriefing()),
+  },
+
   // main → renderer push (price alerts). No-op outside Electron.
   onAlert(cb: (a: any) => void): void {
     const b = bridge();

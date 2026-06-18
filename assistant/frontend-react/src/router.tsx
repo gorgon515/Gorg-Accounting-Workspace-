@@ -12,7 +12,7 @@ const NavContext = createContext<Nav>({ active: 'dashboard', navigate: () => {} 
 // context-held active view id gives instant, dependency-free navigation. Other
 // components can also navigate by emitting a 'navigate' bus event.
 export function NavProvider({ children }: { children: ReactNode }) {
-  const [active, setActive] = useState('dashboard');
+  const [active, setActive] = useState('executive');
   useEffect(() => bus.on('navigate', (id?: any) => typeof id === 'string' && setActive(id)), []);
   return <NavContext.Provider value={{ active, navigate: setActive }}>{children}</NavContext.Provider>;
 }

@@ -27,8 +27,14 @@ import { APICenter } from './views/APICenter';
 import { LicenseCenter } from './views/LicenseCenter';
 import { PerformanceMonitor } from './views/PerformanceMonitor';
 import { DeploymentCenter } from './views/DeploymentCenter';
+import { ExecutiveCommandCenter } from './views/ExecutiveCommandCenter';
+import { ForecastCenter } from './views/ForecastCenter';
+import { ScenarioLab } from './views/ScenarioLab';
+import { OpportunityCenter } from './views/OpportunityCenter';
+import { RiskCenter } from './views/RiskCenter';
+import { StrategicPlanningCenter } from './views/StrategicPlanningCenter';
 
-export type RouteGroup = 'Core' | 'Finance' | 'Learning' | 'System';
+export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Learning' | 'System';
 
 export interface RouteDef {
   id: string;
@@ -40,9 +46,15 @@ export interface RouteDef {
 
 // Order matches the HELIOS left-sidebar navigation spec.
 export const ROUTES: RouteDef[] = [
+  { id: 'executive', label: 'Command Center', icon: '✦', group: 'Core', component: ExecutiveCommandCenter },
   { id: 'assistant', label: 'Assistant', icon: '◈', group: 'Core', component: Assistant },
   { id: 'cos', label: 'Chief of Staff', icon: '★', group: 'Core', component: ChiefOfStaff },
   { id: 'dashboard', label: 'Dashboard', icon: '⬡', group: 'Core', component: Dashboard },
+  { id: 'forecast', label: 'Forecast Center', icon: '◇', group: 'Strategy', component: ForecastCenter },
+  { id: 'scenario', label: 'Scenario Lab', icon: '⟿', group: 'Strategy', component: ScenarioLab },
+  { id: 'opportunities', label: 'Opportunities', icon: '↗', group: 'Strategy', component: OpportunityCenter },
+  { id: 'risks', label: 'Risk Center', icon: '⚠', group: 'Strategy', component: RiskCenter },
+  { id: 'strategy', label: 'Strategic Planning', icon: '⊛', group: 'Strategy', component: StrategicPlanningCenter },
   { id: 'markets', label: 'Markets', icon: '▤', group: 'Finance', component: Markets },
   { id: 'portfolio', label: 'Portfolio', icon: '◴', group: 'Finance', component: Portfolio },
   { id: 'accounting', label: 'Accounting', icon: '§', group: 'Finance', component: Accounting },
