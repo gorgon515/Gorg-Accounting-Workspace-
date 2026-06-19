@@ -58,8 +58,11 @@ import { ExecutiveHUD } from './views/ExecutiveHUD';
 import { NotificationCenter } from './views/NotificationCenter';
 import { DesktopCenter } from './views/DesktopCenter';
 import { PresenceCenter } from './views/PresenceCenter';
+import { OperationsDashboard } from './views/OperationsDashboard';
+import { DevelopmentCenter } from './views/DevelopmentCenter';
+import { EvolutionCenter } from './views/EvolutionCenter';
 
-export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Investing' | 'Knowledge' | 'Operations' | 'Learning' | 'System' | 'Experience';
+export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Investing' | 'Knowledge' | 'Operations' | 'Learning' | 'System' | 'Experience' | 'Platform';
 
 export interface RouteDef {
   id: string;
@@ -130,6 +133,9 @@ export const ROUTES: RouteDef[] = [
   { id: 'notifications', label: 'Notifications', icon: '◔', group: 'Experience', component: NotificationCenter },
   { id: 'desktop', label: 'Desktop Center', icon: '⬡', group: 'Experience', component: DesktopCenter },
   { id: 'presence', label: 'Presence', icon: '⊛', group: 'Experience', component: PresenceCenter },
+  { id: 'opsdashboard', label: 'Operations', icon: '◉', group: 'Platform', component: OperationsDashboard },
+  { id: 'devcenter', label: 'Development Center', icon: '⬡', group: 'Platform', component: DevelopmentCenter },
+  { id: 'evolution', label: 'Evolution', icon: '∞', group: 'Platform', component: EvolutionCenter },
 ];
 
 export const ROUTE_BY_ID: Record<string, RouteDef> = Object.fromEntries(ROUTES.map((r) => [r.id, r]));

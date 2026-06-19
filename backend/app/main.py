@@ -28,6 +28,9 @@ from .routers import (
     quant_agents_router, portfolio_command_router,
     voice_router, conversation_router, notifications_router, presence_router,
     ambient_router, llm_runtime_router, desktop_router, voice_agents_router,
+    runtime_router, feature_flags_router, release_channels_router,
+    migrations_router, plugin_upgrades_router, feedback_router,
+    evolution_router, stability_router, ops_dashboard_router,
 )
 from .services.market_data import DataUnavailable
 
@@ -125,6 +128,16 @@ app.include_router(ambient_router.router)
 app.include_router(llm_runtime_router.router)
 app.include_router(desktop_router.router)
 app.include_router(voice_agents_router.router)
+# Phase 15.5 — live operations, stability & continuous evolution
+app.include_router(runtime_router.router)
+app.include_router(feature_flags_router.router)
+app.include_router(release_channels_router.router)
+app.include_router(migrations_router.router)
+app.include_router(plugin_upgrades_router.router)
+app.include_router(feedback_router.router)
+app.include_router(evolution_router.router)
+app.include_router(stability_router.router)
+app.include_router(ops_dashboard_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint
