@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to create (e.g. v15.5.0)
+        required: true
+        default: v15.5.0
+      target:
+        description: Target commitish (branch or SHA)
+        required: true
+        default: gorg-main
+      name:
+        description: Release title
+        required: false
+        default: ''
+      prerelease:
+        description: Mark as pre-release
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create tag and GitHub release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const inp = context.payload.inputs;
+            const tag = inp.tag;
+            const target = inp.target;
+            const title = inp.name && inp.name.trim() ? inp.name : `HELIOS ${tag}`;
+            const prerelease = String(inp.prerelease).toLowerCase() === 'true';
+            const body = [
+              '## HELIOS ' + tag + ' — Live Operations, Stability & Continuous Evolution Framework',
+              '',
+              'Transforms HELIOS from a feature-complete platform into a daily-use operating environment.',
+              '',
+              '### Backend — 9 new engine modules + 9 routers (109 endpoints)',
+              '- runtime: production/sandbox/development/daily_driver modes, startup diagnostics, crash recovery',
+              '- feature_flags: enable/disable, role & workspace rollout, kill switches, evaluation analytics',
+              '- release_channels: stable/beta/experimental/development channels, version pinning, rollback',
+              '- migrations: schema migration with backup-before-apply, rollback, integrity verification',
+              '- plugin_upgrades: version management, semver compatibility, sandbox gate, rollback',
+              '- feedback: error/usage/friction/failure capture, dedup by signature, severity tracking',
+              '- evolution: improvement backlog ordered by priority score (weight x frequency)',
+              '- stability: crash analysis, failure clustering, memory leak detection, reliability scoring',
+              '- ops_dashboard: single-pane aggregator across all subsystems',
+              '',
+              '### Frontend — 3 React views in new "Platform" nav group',
+              '- Operations Dashboard, Development Center, Evolution Center',
+              '',
+              '### Tests',
+              '- 65 unit + 12 integration tests; 713 total passing',
+              '',
+              '### Security constraints unchanged',
+              '- Human approval required; no autonomous trading, tax filing, banking, or legal submissions.',
+            ].join('\n');
+            const res = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              target_commitish: target,
+              name: title,
+              body,
+              draft: false,
+              prerelease,
+            });
+            core.notice('Created release ' + res.data.html_url);
