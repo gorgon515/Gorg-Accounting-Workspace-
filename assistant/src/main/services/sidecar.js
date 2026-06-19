@@ -51,17 +51,31 @@ async function ping(timeoutMs = 1200) {
   }
 }
 
+// Bundled backend binary (standalone HELIOS desktop build). When set, it is a
+// self-contained server — launched directly with no Python interpreter. It
+// reads HELIOS_SIDECAR_PORT to match the port the shell pings.
+const BUNDLED_BIN = config.sidecarBin || process.env.HELIOS_SIDECAR_BIN || '';
+
 function spawnSidecar() {
-  const py = pythonCmd();
-  const args = ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(config.sidecarPort)];
-  const proc = spawn(py, args, { cwd: BACKEND_DIR, env: { ...process.env }, stdio: 'ignore' });
+  let proc;
+  if (BUNDLED_BIN) {
+    proc = spawn(BUNDLED_BIN, [], {
+      cwd: path.dirname(BUNDLED_BIN),
+      env: { ...process.env, HELIOS_SIDECAR_PORT: String(config.sidecarPort) },
+      stdio: 'ignore',
+    });
+  } else {
+    const py = pythonCmd();
+    const args = ['-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', String(config.sidecarPort)];
+    proc = spawn(py, args, { cwd: BACKEND_DIR, env: { ...process.env }, stdio: 'ignore' });
+  }
   proc.on('exit', (code) => {
     if (child === proc) child = null;
     if (code && code !== 0) lastError = `sidecar exited (code ${code})`;
   });
   proc.on('error', (err) => {
     if (child === proc) child = null;
-    lastError = `failed to launch python (${err.message})`;
+    lastError = `failed to launch backend (${err.message})`;
   });
   return proc;
 }

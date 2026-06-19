@@ -1,0 +1,92 @@
+name: Build HELIOS installers
+
+# Builds the standalone HELIOS desktop app — the React Command Center plus a
+# bundled, Python-free FastAPI backend (PyInstaller) — for Windows (.exe),
+# macOS (.dmg/.zip, Apple Silicon) and Linux (.AppImage). Separate from the
+# ARIA installer workflow; both ship side by side.
+#
+#   • Manually: Actions → "Build HELIOS installers" → Run workflow
+#   • On a release tag (v*): installers are attached to the GitHub Release.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    name: HELIOS (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    env:
+      # No code-signing certificates: ship unsigned builds rather than fail.
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build backend binary (PyInstaller)
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-desktop.txt
+          pip install pyinstaller
+          pyinstaller helios.spec --noconfirm
+
+      - name: Stage backend into the app project
+        shell: bash
+        run: |
+          rm -rf assistant/helios-backend-dist
+          cp -r backend/dist/helios-backend assistant/helios-backend-dist
+          ls -la assistant/helios-backend-dist | head
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build HELIOS frontend (Command Center)
+        working-directory: assistant/frontend-react
+        run: |
+          npm install
+          npm run build
+
+      - name: Build HELIOS desktop app
+        working-directory: assistant
+        run: |
+          npm install
+          npx electron-builder --config electron-builder.helios.yml --publish never
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: helios-${{ runner.os }}
+          path: |
+            assistant/dist-helios/*.exe
+            assistant/dist-helios/*.dmg
+            assistant/dist-helios/*.zip
+            assistant/dist-helios/*.AppImage
+          if-no-files-found: error
+
+  release:
+    name: Attach HELIOS to GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Attach installers to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**
