@@ -1,0 +1,5 @@
+# Test/dev dependencies (the service layer also runs under stdlib unittest)
+-r requirements.txt
+pytest>=8.0
+httpx>=0.27
+reportlab>=4.0   # generate real PDFs for document-extraction tests

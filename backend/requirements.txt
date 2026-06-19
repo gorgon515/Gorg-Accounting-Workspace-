@@ -1,0 +1,25 @@
+# HELIOS Intelligence Sidecar — runtime dependencies
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.6
+requests>=2.31
+# Document intelligence — real text extraction (digital documents)
+pypdf>=4.0
+openpyxl>=3.1
+python-docx>=1.1
+# Optional: scanned-image OCR (also needs the system `tesseract` binary)
+# pytesseract>=0.3.10
+# Phase 9 — security, encryption, vault
+cryptography>=42.0
+# Phase 12 — knowledge engine, RAG, vector memory, embeddings
+sentence-transformers>=2.7
+chromadb>=0.5
+rank-bm25>=0.2
+# Phase 12 — TF-IDF + LSA local embeddings (offline)
+scikit-learn>=1.4
+# Phase 13 — live connectors & data ingestion
+# (requests already included above; no additional deps needed for connectors)
+# yahoo-fin>=0.8  # optional: richer Yahoo Finance support
+# Phase 14 — quant lab, backtesting, portfolio optimization, risk analytics
+numpy>=1.26
+scipy>=1.11

@@ -40,7 +40,18 @@ const config = {
     .filter(Boolean),
   telegramAlerts: process.env.TELEGRAM_ALERTS !== 'false',
   // Optional extra persona/behavior appended to the brain's system prompt.
-  persona: process.env.ARIA_PERSONA || '',
+  persona: process.env.ARIA_PERSONA || process.env.HELIOS_PERSONA || '',
+  // UI: 'classic' (the vanilla renderer, default) or 'react' (the HELIOS HUD in
+  // frontend-react/dist, when built). Kept opt-in until visually validated so the
+  // working app never regresses.
+  uiMode: (process.env.HELIOS_UI || 'classic').toLowerCase(),
+  // HELIOS Intelligence Sidecar (Python/FastAPI). Quant + accounting compute.
+  // Autostarts on first use unless disabled; degrades gracefully if absent.
+  sidecarUrl: process.env.HELIOS_SIDECAR_URL || 'http://127.0.0.1:8420',
+  sidecarPort: Number(process.env.HELIOS_SIDECAR_PORT || 8420),
+  sidecarAutostart: process.env.HELIOS_SIDECAR_AUTOSTART !== 'false',
+  sidecarDir: process.env.HELIOS_SIDECAR_DIR || '',
+  sidecarPython: process.env.HELIOS_SIDECAR_PYTHON || '',
   // Speech-to-text engine: 'local' (on-device Whisper via transformers.js;
   // default) or 'whisper-api' (cloud, opt-in). Local keeps all audio on-device.
   sttEngine: (process.env.STT_ENGINE || 'local').toLowerCase(),

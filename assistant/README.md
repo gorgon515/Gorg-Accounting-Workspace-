@@ -5,6 +5,12 @@ productivity**, built as an Electron app with a pluggable skill architecture and
 a Claude brain. This repository contains the **first working vertical slice:
 Stocks**, with voice enabled from day one.
 
+> **ARIA is the reference runtime of HELIOS** — the Personal Intelligence OS.
+> The full platform blueprint (architecture, schema, API, roadmaps, deployment —
+> deliverables 1–20) lives in [`../docs/HELIOS`](../docs/HELIOS). Two HELIOS
+> increments now ship in this app: a **multi-agent orchestration layer** and the
+> **Language Immersion Center** (see below).
+
 > Scope note: a "tops any Jarvis" assistant is a platform, not a weekend build.
 > This is the foundation done properly — a real, runnable core you extend skill
 > by skill. The architecture is designed so the other three pillars drop in
@@ -254,6 +260,9 @@ src/
     config.js / store.js    env config + JSON persistence
     services/
       skills.js             skill registry (add pillars here)
+      agents.js             multi-agent orchestration (roster + router + logging)
+      sidecar.js            bridge to the Python/FastAPI Intelligence Sidecar
+      language.js           Language Immersion Center (7 languages)
       stocks.js             ← the Stocks skill (tools + handlers + data API)
   renderer/                 dashboard UI (Chromium, no Node)
     index.html / styles.css
@@ -305,6 +314,41 @@ the relay slots in behind the existing voice interface — `voice.js` is the sea
    saved material, and a **Becker CPA** progress tracker (AUD/FAR/REG/BAR/ISC/
    TCP). Becker has no public API, so progress is tracked locally and the panel
    links out to becker.com for the lessons.
-5. **Hardening** — wake-word engine, auto-update, broader test coverage.
+5. **Language Immersion Center** ✅ — a HELIOS flagship pillar
+   (`services/language.js`). Seven languages (Russian, Spanish, French, German,
+   Italian, Japanese, Mandarin), a shared SM-2 vocab SRS, deterministic **daily
+   missions** across speaking/listening/reading/writing, the **CEFR A1→C2
+   pathway**, **roleplay** scenario seeds, and progress analytics with an honest
+   CEFR estimate. Conversation, grammar correction, and tutoring are brain-driven.
+6. **Multi-agent orchestration** ✅ — `services/agents.js` organizes the skills
+   into **15 named HELIOS agents** (Chief of Staff, Accounting, Tax, **FASB**,
+   **SEC**, **CPA Coach**, Research, **Quant Research**, **Portfolio**, Trading,
+   Language Coach, Email, Calendar, Automation, Knowledge). Each has a persona,
+   system instructions, and tool/memory **permissions** (no agent can execute
+   money/send actions — only propose). A fast local **router** classifies
+   requests, a `which_agent` tool introspects the team, every tool call is logged
+   to an **Agent Activity** feed, and the **Agents** panel shows live status.
+7. **Intelligence Sidecar** ✅ — a local **Python/FastAPI** compute tier
+   (`../backend`, supervised by `services/sidecar.js`). The **Quant Research
+   Engine** (technicals, factor scoring, risk, portfolio analytics) and the
+   **Accounting Intelligence Engine** (ASC knowledge base + technical-memo
+   generator) are exposed to the brain as tools (`quant_analyze`, `quant_factors`,
+   `quant_risk`, `quant_portfolio`, `explain_asc`, `accounting_memo`). Autostarted
+   on first use; degrades gracefully if Python is absent. See `../backend/README.md`.
+8. **React HUD Command Center** ✅ (builds) — a premium React/TS/Tailwind/Framer
+   front end in [`frontend-react/`](frontend-react): design system, three-column
+   command center, 13 views (Dashboard, Assistant, Markets, Portfolio, Accounting,
+   CPA, Language, Calendar, Email, Memory, Agents, Automations, Settings), a typed
+   IPC client, and a real-time event bus. Built additively and **opt-in** — run
+   with `HELIOS_UI=react npm start` (after `cd frontend-react && npm install &&
+   npm run build`); the classic renderer stays the default until validated.
+9. **Hardening** — wake-word engine, auto-update, live N8N + accounting crawlers.
+
+### Tests
+
+```bash
+npm test          # assistant: agent routing + registry integrity (Node test runner)
+# backend: cd ../backend && .venv/bin/python -m pytest -q   (35 tests)
+```
 
 Not financial advice. Market data may be delayed.

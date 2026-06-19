@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #0e0e10;
+  color: #f2ede4;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 300;
+  overflow: hidden;
+}
+
+@layer components {
+  /* Glassmorphism panel surface used across the HUD. */
+  .glass {
+    @apply bg-charcoal/60 backdrop-blur-md border border-hairline rounded-xl;
+  }
+  .hairline {
+    border-color: rgba(242, 237, 228, 0.1);
+  }
+  .mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  /* Thin scrollbars to match the terminal aesthetic. */
+  .scroll-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scroll-thin::-webkit-scrollbar-thumb {
+    background: rgba(242, 237, 228, 0.12);
+    border-radius: 999px;
+  }
+  .scroll-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

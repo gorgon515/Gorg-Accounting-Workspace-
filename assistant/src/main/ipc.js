@@ -22,6 +22,10 @@ function register() {
   const accounting = skills.getSkill('accounting').api;
   const study = skills.getSkill('study').api;
   const strategy = skills.getSkill('strategy').api;
+  const language = skills.getSkill('language').api;
+  const agents = skills.getSkill('agents').api;
+  const sidecar = skills.getSkill('sidecar').api;
+  const memory = skills.getSkill('memory').api;
 
   ipcMain.handle('aria:config', async () => {
     const b = await brain.status();
@@ -115,6 +119,122 @@ function register() {
   // Trade ideas
   ipcMain.handle('strategy:idea', (_e, symbol) => strategy.tradeIdea(symbol));
   ipcMain.handle('strategy:scan', () => strategy.scanIdeas());
+
+  // Language Immersion Center
+  ipcMain.handle('lang:languages', () => language.LANGUAGES);
+  ipcMain.handle('lang:curriculum', () => language.CURRICULUM);
+  ipcMain.handle('lang:profile', () => language.getProfile());
+  ipcMain.handle('lang:setLanguage', (_e, p) => language.setTargetLanguage(p || {}));
+  ipcMain.handle('lang:progress', (_e, lang) => language.progress({ language: lang }));
+  ipcMain.handle('lang:missions', (_e, lang) => language.dailyMissions({ language: lang }));
+  ipcMain.handle('lang:mission:complete', (_e, p) => language.completeMission(p || {}));
+  ipcMain.handle('lang:vocab:add', (_e, v) => language.addVocab(v || {}));
+  ipcMain.handle('lang:due', (_e, lang) => language.dueReview({ language: lang }));
+
+  // Agent orchestration (Agent Activity panel)
+  ipcMain.handle('agents:roster', () => agents.roster(skills.skills));
+  ipcMain.handle('agents:route', (_e, text) => agents.route(text));
+  ipcMain.handle('agents:activity', () => agents.recentActivity());
+
+  // Intelligence Sidecar (Quant Research + Accounting Intelligence)
+  ipcMain.handle('sidecar:status', () => sidecar.status());
+  // Generic REST passthrough for Phase 13 operational platform.
+  ipcMain.handle('sidecar:request', (_e, p) => sidecar.request((p && p.method) || 'GET', p && p.route, p && p.body));
+  ipcMain.handle('sidecar:analyze', (_e, p) => sidecar.analyze(p || {}));
+  ipcMain.handle('sidecar:factors', (_e, p) => sidecar.factors(p || {}));
+  ipcMain.handle('sidecar:risk', (_e, p) => sidecar.risk(p || {}));
+  ipcMain.handle('sidecar:portfolio', (_e, p) => sidecar.portfolio(p || {}));
+  ipcMain.handle('sidecar:ascTopics', () => sidecar.ascTopics());
+  ipcMain.handle('sidecar:explainAsc', (_e, topic) => sidecar.explainAsc(topic));
+  ipcMain.handle('sidecar:memo', (_e, p) => sidecar.memo(p || {}));
+  // Phase 4 — intelligence engines
+  ipcMain.handle('sidecar:acctBriefing', (_e, refresh) => sidecar.accountingBriefing(refresh));
+  ipcMain.handle('sidecar:acctIntel', (_e, source) => sidecar.accountingIntel(source));
+  ipcMain.handle('sidecar:acctIntelRefresh', () => sidecar.accountingIntelRefresh());
+  ipcMain.handle('sidecar:acctGraph', (_e, asc) => sidecar.accountingGraph(asc));
+  ipcMain.handle('sidecar:checklist', (_e, topic) => sidecar.checklist(topic));
+  ipcMain.handle('sidecar:memoFull', (_e, p) => sidecar.memoFull(p || {}));
+  ipcMain.handle('sidecar:fundamentals', (_e, p) => sidecar.fundamentals(p || {}));
+  ipcMain.handle('sidecar:signal', (_e, p) => sidecar.signal(p || {}));
+  ipcMain.handle('sidecar:marketBriefing', (_e, p) => sidecar.marketBriefing(p || {}));
+  ipcMain.handle('sidecar:n8nStatus', () => sidecar.n8nStatus());
+  ipcMain.handle('sidecar:n8nWorkflows', () => sidecar.n8nWorkflows());
+  ipcMain.handle('sidecar:n8nGenerate', (_e, p) => sidecar.n8nGenerate(p || {}));
+  // Phase 5 — personal chief of staff
+  ipcMain.handle('sidecar:createTask', (_e, p) => sidecar.createTask(p));
+  ipcMain.handle('sidecar:listTasks', (_e, status) => sidecar.listTasks(status));
+  ipcMain.handle('sidecar:completeTask', (_e, tid) => sidecar.completeTask(tid));
+  ipcMain.handle('sidecar:deleteTask', (_e, tid) => sidecar.deleteTask(tid));
+  ipcMain.handle('sidecar:recommendTasks', () => sidecar.recommendTasks());
+  ipcMain.handle('sidecar:createGoal', (_e, p) => sidecar.createGoal(p));
+  ipcMain.handle('sidecar:goalsDashboard', () => sidecar.goalsDashboard());
+  ipcMain.handle('sidecar:goalProgress', (_e, p) => sidecar.goalProgress(p));
+  ipcMain.handle('sidecar:deleteGoal', (_e, gid) => sidecar.deleteGoal(gid));
+  ipcMain.handle('sidecar:schedulerJobs', () => sidecar.schedulerJobs());
+  ipcMain.handle('sidecar:schedulerSeed', () => sidecar.schedulerSeed());
+  ipcMain.handle('sidecar:schedulerTick', () => sidecar.schedulerTick());
+  ipcMain.handle('sidecar:cosBriefingAuto', () => sidecar.cosBriefingAuto());
+  ipcMain.handle('sidecar:cosPlanAuto', () => sidecar.cosPlanAuto());
+  ipcMain.handle('sidecar:cosDailyBriefing', (_e, ctx) => sidecar.cosDailyBriefing(ctx));
+  ipcMain.handle('sidecar:cosEveningReview', (_e, ctx) => sidecar.cosEveningReview(ctx));
+  ipcMain.handle('sidecar:emailBriefing', (_e, emails) => sidecar.emailBriefing(emails));
+  ipcMain.handle('sidecar:calendarPlan', (_e, p) => sidecar.calendarPlan(p));
+  // Phase 6 — accounting platform
+  ipcMain.handle('sidecar:acctSeed', (_e, template) => sidecar.acctSeed(template));
+  ipcMain.handle('sidecar:acctChart', () => sidecar.acctChart());
+  ipcMain.handle('sidecar:acctJournal', (_e, p) => sidecar.acctJournal(p));
+  ipcMain.handle('sidecar:acctEntries', (_e, q) => sidecar.acctEntries(q));
+  ipcMain.handle('sidecar:acctTrialBalance', (_e, asOf) => sidecar.acctTrialBalance(asOf));
+  ipcMain.handle('sidecar:acctBalanceSheet', (_e, asOf) => sidecar.acctBalanceSheet(asOf));
+  ipcMain.handle('sidecar:acctIncome', (_e, p) => sidecar.acctIncome(p.start, p.end));
+  ipcMain.handle('sidecar:acctCashFlow', (_e, p) => sidecar.acctCashFlow(p.start, p.end));
+  ipcMain.handle('sidecar:acctApAging', () => sidecar.acctApAging());
+  ipcMain.handle('sidecar:acctArAging', () => sidecar.acctArAging());
+  ipcMain.handle('sidecar:acctAddVendor', (_e, p) => sidecar.acctAddVendor(p));
+  ipcMain.handle('sidecar:acctAddBill', (_e, p) => sidecar.acctAddBill(p));
+  ipcMain.handle('sidecar:acctAddCustomer', (_e, p) => sidecar.acctAddCustomer(p));
+  ipcMain.handle('sidecar:acctAddInvoice', (_e, p) => sidecar.acctAddInvoice(p));
+  ipcMain.handle('sidecar:acctAssets', () => sidecar.acctAssets());
+  ipcMain.handle('sidecar:acctAddAsset', (_e, p) => sidecar.acctAddAsset(p));
+  ipcMain.handle('sidecar:acctAssetSchedule', (_e, id) => sidecar.acctAssetSchedule(id));
+  ipcMain.handle('sidecar:acctClients', () => sidecar.acctClients());
+  ipcMain.handle('sidecar:acctImportJournal', (_e, csv) => sidecar.acctImportJournal(csv));
+  ipcMain.handle('sidecar:acctAudit', () => sidecar.acctAudit());
+  ipcMain.handle('sidecar:acctDashboard', (_e, asOf) => sidecar.acctDashboard(asOf));
+  // Phase 7 — tax & advisory workbench
+  ipcMain.handle('sidecar:ocrStatus', () => sidecar.ocrStatus());
+  ipcMain.handle('sidecar:docProcess', (_e, p) => sidecar.docProcess(p));
+  ipcMain.handle('sidecar:docSearch', (_e, q) => sidecar.docSearch(q));
+  ipcMain.handle('sidecar:taxTopics', () => sidecar.taxTopics());
+  ipcMain.handle('sidecar:taxResearch', (_e, query) => sidecar.taxResearch(query));
+  ipcMain.handle('sidecar:taxMemo', (_e, p) => sidecar.taxMemo(p));
+  ipcMain.handle('sidecar:orgClient', (_e, p) => sidecar.orgClient(p));
+  ipcMain.handle('sidecar:orgDashboard', () => sidecar.orgDashboard());
+  ipcMain.handle('sidecar:wpTrialBalance', (_e, asOf) => sidecar.wpTrialBalance(asOf));
+  ipcMain.handle('sidecar:wpLead', (_e, p) => sidecar.wpLead(p.type, p.asOf));
+  ipcMain.handle('sidecar:advisoryAnalysis', (_e, asOf) => sidecar.advisoryAnalysis(asOf));
+  ipcMain.handle('sidecar:advisoryDD', (_e, year) => sidecar.advisoryDD(year));
+  ipcMain.handle('sidecar:globalSearch', (_e, q) => sidecar.globalSearch(q));
+  // Phase 8 — execution / automation
+  ipcMain.handle('sidecar:execQueue', () => sidecar.execQueue());
+  ipcMain.handle('sidecar:execActions', (_e, status) => sidecar.execActions(status));
+  ipcMain.handle('sidecar:execApprove', (_e, p) => sidecar.execApprove(p.id, p));
+  ipcMain.handle('sidecar:execReject', (_e, p) => sidecar.execReject(p.id, p));
+  ipcMain.handle('sidecar:execExecute', (_e, id) => sidecar.execExecute(id));
+  ipcMain.handle('sidecar:execRollback', (_e, id) => sidecar.execRollback(id));
+  ipcMain.handle('sidecar:execAutomateDoc', (_e, p) => sidecar.execAutomateDoc(p));
+  ipcMain.handle('sidecar:closeStart', (_e, period) => sidecar.closeStart(period));
+  ipcMain.handle('sidecar:closeUpdate', (_e, p) => sidecar.closeUpdate(p));
+  ipcMain.handle('sidecar:closeDashboard', () => sidecar.closeDashboard());
+  ipcMain.handle('sidecar:outcomesMetrics', () => sidecar.outcomesMetrics());
+  ipcMain.handle('sidecar:opsFirm', () => sidecar.opsFirm());
+  ipcMain.handle('sidecar:opsPortfolio', () => sidecar.opsPortfolio());
+  ipcMain.handle('sidecar:workflowBuild', (_e, p) => sidecar.workflowBuild(p));
+
+  // Memory (Memory Center)
+  ipcMain.handle('memory:list', (_e, query) => memory.recall(query ? { query } : {}));
+  ipcMain.handle('memory:remember', (_e, m) => memory.remember(m || {}));
+  ipcMain.handle('memory:forget', (_e, p) => memory.forget(p || {}));
 
   // iMessage bridge status (macOS)
   ipcMain.handle('imessage:status', () => imessage.available());

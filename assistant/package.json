@@ -9,6 +9,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --enable-logging",
+    "test": "node --test test/*.test.js",
     "icon": "electron scripts/make-icon.js",
     "model": "node scripts/get-model.js",
     "pack": "electron-builder --dir",

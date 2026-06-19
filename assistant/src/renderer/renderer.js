@@ -1206,6 +1206,137 @@ function loadStudy() {
   loadReview();
 }
 
+// ---- language immersion ----
+const langEls = {
+  select: document.getElementById('lang-select'),
+  tabs: document.getElementById('lang-tabs'),
+  paneToday: document.getElementById('pane-lang-today'),
+  paneVocab: document.getElementById('pane-lang-vocab'),
+  panePath: document.getElementById('pane-lang-path'),
+  progress: document.getElementById('lang-progress'),
+  missions: document.getElementById('lang-missions'),
+  vocabForm: document.getElementById('lang-vocab-form'),
+  word: document.getElementById('lang-word'),
+  tr: document.getElementById('lang-tr'),
+  ex: document.getElementById('lang-ex'),
+  path: document.getElementById('lang-path'),
+};
+let curLang = 'russian';
+
+async function initLanguage() {
+  try {
+    const [langs, profile] = await Promise.all([aria.language.languages(), aria.language.profile()]);
+    curLang = profile.language || 'russian';
+    langEls.select.innerHTML = langs
+      .map((l) => `<option value="${l.code}">${l.flag} ${l.name}</option>`)
+      .join('');
+    langEls.select.value = curLang;
+  } catch {}
+
+  langEls.select.addEventListener('change', async () => {
+    curLang = langEls.select.value;
+    try { await aria.language.setLanguage({ language: curLang }); } catch {}
+    loadLanguage();
+  });
+
+  langEls.tabs.addEventListener('click', (e) => {
+    const btn = e.target.closest('.t-tab');
+    if (!btn) return;
+    langEls.tabs.querySelectorAll('.t-tab').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    langEls.paneToday.classList.toggle('hidden', tab !== 'today');
+    langEls.paneVocab.classList.toggle('hidden', tab !== 'vocab');
+    langEls.panePath.classList.toggle('hidden', tab !== 'path');
+    if (tab === 'path') loadPathway();
+  });
+
+  langEls.vocabForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const word = langEls.word.value.trim();
+    const translation = langEls.tr.value.trim();
+    if (!word || !translation) return;
+    try {
+      await aria.language.addVocab({ language: curLang, word, translation, example: langEls.ex.value.trim() });
+      langEls.word.value = '';
+      langEls.tr.value = '';
+      langEls.ex.value = '';
+      appendMsg('tool', `✓ Added ${curLang} card: ${word}`);
+      loadLanguage();
+      loadStudyStats();
+    } catch (err) {
+      appendMsg('tool', `✗ ${err.message}`);
+    }
+  });
+
+  loadLanguage();
+}
+
+async function loadLanguage() {
+  try {
+    const p = await aria.language.progress(curLang);
+    langEls.progress.textContent =
+      `${p.flag} ${p.name} · ${p.words} words · ${p.dueNow} due · ${p.streakDays}-day streak · ~${p.estimatedLevel} (self ${p.selfLevel})`;
+  } catch {}
+  try {
+    const { missions } = await aria.language.missions(curLang);
+    langEls.missions.innerHTML = '';
+    missions.forEach((m) => {
+      const row = document.createElement('div');
+      row.className = 'mission' + (m.done ? ' done' : '');
+      row.innerHTML =
+        `<span class="m-kind">${escapeHtml(m.kind)}</span>` +
+        `<span class="m-text">${escapeHtml(m.text)}</span>` +
+        `<button class="m-check" title="Mark done">${m.done ? '✓' : ''}</button>`;
+      row.querySelector('.m-check').addEventListener('click', async () => {
+        if (m.done) return;
+        try { await aria.language.completeMission({ id: m.id, language: curLang }); } catch {}
+        loadLanguage();
+      });
+      langEls.missions.appendChild(row);
+    });
+  } catch {}
+}
+
+async function loadPathway() {
+  try {
+    const c = await aria.language.curriculum();
+    langEls.path.innerHTML = c
+      .map(
+        (lv) =>
+          `<div class="path-row"><span class="path-lv">${lv.level}</span>` +
+          `<div class="path-body"><b>${escapeHtml(lv.label)}</b>` +
+          `<span class="muted"> — ${escapeHtml(lv.goals.join(' · '))}</span></div></div>`
+      )
+      .join('');
+  } catch (err) {
+    langEls.path.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
+// ---- agent activity ----
+async function loadAgents() {
+  const list = document.getElementById('agent-list');
+  const count = document.getElementById('agents-count');
+  try {
+    const roster = await aria.agents.roster();
+    if (count) count.textContent = `${roster.filter((a) => a.status === 'online').length}/${roster.length} online`;
+    list.innerHTML = '';
+    roster.forEach((a) => {
+      const row = document.createElement('div');
+      row.className = 'agent-row';
+      row.title = a.planned ? `${a.role} (planned: ${a.planned})` : a.role;
+      row.innerHTML =
+        `<span class="agent-dot ${a.status}"></span>` +
+        `<span class="agent-name">${escapeHtml(a.name)}</span>` +
+        `<span class="agent-tools muted">${a.status === 'planned' ? 'planned' : a.tools + ' tools'}</span>`;
+      list.appendChild(row);
+    });
+  } catch (err) {
+    list.innerHTML = `<p class="err">${err.message}</p>`;
+  }
+}
+
 // ---- voice ----
 function setVoiceHint(state) {
   const map = {
@@ -1271,6 +1402,8 @@ async function boot() {
   loadAgenda();
   loadAccounting();
   loadStudy();
+  initLanguage();
+  loadAgents();
 
   // Chart the first watchlist symbol on load.
   try {

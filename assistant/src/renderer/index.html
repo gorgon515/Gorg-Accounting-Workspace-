@@ -219,6 +219,47 @@
       </div>
     </section>
 
+    <!-- Language Immersion -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Language</h2>
+        <select id="lang-select" class="lang-select" title="Target language"></select>
+      </div>
+      <div class="acct-tabs" id="lang-tabs">
+        <button class="t-tab active" data-tab="today">Today</button>
+        <button class="t-tab" data-tab="vocab">Vocab</button>
+        <button class="t-tab" data-tab="path">Pathway</button>
+      </div>
+
+      <div class="acct-pane" id="pane-lang-today">
+        <div class="study-stats muted" id="lang-progress"></div>
+        <div class="missions" id="lang-missions"></div>
+      </div>
+
+      <div class="acct-pane hidden" id="pane-lang-vocab">
+        <form class="acct-form" id="lang-vocab-form">
+          <input id="lang-word" type="text" placeholder="Word / phrase" autocomplete="off" />
+          <input id="lang-tr" type="text" placeholder="Translation" autocomplete="off" />
+          <input id="lang-ex" type="text" placeholder="Example (optional)" autocomplete="off" />
+          <button type="submit">Add card</button>
+        </form>
+        <p class="muted" id="lang-vocab-hint">New vocab enters spaced-repetition review (shared with Study). Ask the assistant to "teach me 5 words" for a batch, or "start a café roleplay".</p>
+      </div>
+
+      <div class="acct-pane hidden" id="pane-lang-path">
+        <div class="path-list" id="lang-path"></div>
+      </div>
+    </section>
+
+    <!-- Agent activity -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Agents</h2>
+        <span class="muted" id="agents-count"></span>
+      </div>
+      <div class="agent-list" id="agent-list"><p class="muted">Loading…</p></div>
+    </section>
+
     <!-- Lookup -->
     <section class="panel">
       <div class="panel-head"><h2>Look up</h2></div>

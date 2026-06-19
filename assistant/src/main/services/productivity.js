@@ -223,8 +223,8 @@ const tools = [
     },
   },
   {
-    name: 'add_note',
-    description: 'Save a quick note or thought for later.',
+    name: 'add_quick_note',
+    description: 'Save a quick note or thought for later (general productivity notes, distinct from study material).',
     input_schema: {
       type: 'object',
       properties: { text: { type: 'string' } },
@@ -232,8 +232,8 @@ const tools = [
     },
   },
   {
-    name: 'list_notes',
-    description: 'List saved notes, newest first.',
+    name: 'list_quick_notes',
+    description: 'List saved quick (productivity) notes, newest first.',
     input_schema: { type: 'object', properties: {} },
   },
   {
@@ -248,8 +248,8 @@ const handlers = {
   list_tasks: async (i) => listTasks(i),
   complete_task: (i) => completeTask(i),
   delete_task: (i) => deleteTask(i),
-  add_note: (i) => addNote(i),
-  list_notes: async () => listNotes(),
+  add_quick_note: (i) => addNote(i),
+  list_quick_notes: async () => listNotes(),
   daily_briefing: () => briefing(),
 };
 
