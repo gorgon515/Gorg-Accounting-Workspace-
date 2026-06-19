@@ -52,8 +52,14 @@ import { PortfolioRiskCenter } from './views/PortfolioRiskCenter';
 import { FactorCenter } from './views/FactorCenter';
 import { MacroCenter } from './views/MacroCenter';
 import { ThesisCenter } from './views/ThesisCenter';
+import { VoiceCenter } from './views/VoiceCenter';
+import { ConversationCenter } from './views/ConversationCenter';
+import { ExecutiveHUD } from './views/ExecutiveHUD';
+import { NotificationCenter } from './views/NotificationCenter';
+import { DesktopCenter } from './views/DesktopCenter';
+import { PresenceCenter } from './views/PresenceCenter';
 
-export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Investing' | 'Knowledge' | 'Operations' | 'Learning' | 'System';
+export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Investing' | 'Knowledge' | 'Operations' | 'Learning' | 'System' | 'Experience';
 
 export interface RouteDef {
   id: string;
@@ -118,6 +124,12 @@ export const ROUTES: RouteDef[] = [
   { id: 'performance', label: 'Performance', icon: '⚡', group: 'System', component: PerformanceMonitor },
   { id: 'deployment', label: 'Deployment', icon: '⬢', group: 'System', component: DeploymentCenter },
   { id: 'settings', label: 'Settings', icon: '⚙', group: 'System', component: Settings },
+  { id: 'hud', label: 'Executive HUD', icon: '✦', group: 'Experience', component: ExecutiveHUD },
+  { id: 'voice', label: 'Voice Center', icon: '◈', group: 'Experience', component: VoiceCenter },
+  { id: 'conversation', label: 'Conversation', icon: '◎', group: 'Experience', component: ConversationCenter },
+  { id: 'notifications', label: 'Notifications', icon: '◔', group: 'Experience', component: NotificationCenter },
+  { id: 'desktop', label: 'Desktop Center', icon: '⬡', group: 'Experience', component: DesktopCenter },
+  { id: 'presence', label: 'Presence', icon: '⊛', group: 'Experience', component: PresenceCenter },
 ];
 
 export const ROUTE_BY_ID: Record<string, RouteDef> = Object.fromEntries(ROUTES.map((r) => [r.id, r]));

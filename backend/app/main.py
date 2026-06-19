@@ -26,6 +26,8 @@ from .routers import (
     quant_lab_router, backtesting_router, portfolio_lab_router, risk_analytics_router,
     factor_router, altdata_router, thesis_router, earnings_router, macro_router,
     quant_agents_router, portfolio_command_router,
+    voice_router, conversation_router, notifications_router, presence_router,
+    ambient_router, llm_runtime_router, desktop_router, voice_agents_router,
 )
 from .services.market_data import DataUnavailable
 
@@ -114,6 +116,15 @@ app.include_router(earnings_router.router)
 app.include_router(macro_router.router)
 app.include_router(quant_agents_router.router)
 app.include_router(portfolio_command_router.router)
+# Phase 15 — voice OS, conversation, notifications, presence, ambient, LLM runtime, desktop, agents
+app.include_router(voice_router.router)
+app.include_router(conversation_router.router)
+app.include_router(notifications_router.router)
+app.include_router(presence_router.router)
+app.include_router(ambient_router.router)
+app.include_router(llm_runtime_router.router)
+app.include_router(desktop_router.router)
+app.include_router(voice_agents_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint
