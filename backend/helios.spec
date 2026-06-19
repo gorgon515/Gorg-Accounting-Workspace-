@@ -84,7 +84,7 @@ exe = EXE(
 coll = COLLECT(
     exe,
     a.binaries,
-    a.zipfile,
+    a.zipfiles,
     a.datas,
     name="helios-backend",
 )
