@@ -1,0 +1,35 @@
+name: Move Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag name to move/create
+        required: true
+        default: v15.5.0
+      sha:
+        description: Target commit SHA (defaults to the dispatched ref)
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move or create tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.payload.inputs.tag;
+            const sha = context.payload.inputs.sha || context.sha;
+            const common = { owner: context.repo.owner, repo: context.repo.repo };
+            try {
+              await github.rest.git.updateRef({ ...common, ref: `tags/${tag}`, sha, force: true });
+              core.notice(`Moved ${tag} -> ${sha}`);
+            } catch (e) {
+              await github.rest.git.createRef({ ...common, ref: `refs/tags/${tag}`, sha });
+              core.notice(`Created ${tag} -> ${sha}`);
+            }
