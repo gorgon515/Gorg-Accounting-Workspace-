@@ -20,3 +20,6 @@ scikit-learn>=1.4
 # Phase 13 — live connectors & data ingestion
 # (requests already included above; no additional deps needed for connectors)
 # yahoo-fin>=0.8  # optional: richer Yahoo Finance support
+# Phase 14 — quant lab, backtesting, portfolio optimization, risk analytics
+numpy>=1.26
+scipy>=1.11

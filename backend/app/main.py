@@ -23,6 +23,9 @@ from .routers import (
     knowledge_router, memory_router, rag_router, synthesis_router, self_improvement_router,
     connectors_router, live_intel_router, research_router, financial_hub_router,
     cpa_ops_router, market_intel_router, fusion_router, event_monitor_router, agents_router,
+    quant_lab_router, backtesting_router, portfolio_lab_router, risk_analytics_router,
+    factor_router, altdata_router, thesis_router, earnings_router, macro_router,
+    quant_agents_router, portfolio_command_router,
 )
 from .services.market_data import DataUnavailable
 
@@ -98,6 +101,19 @@ app.include_router(market_intel_router.router)
 app.include_router(fusion_router.router)
 app.include_router(event_monitor_router.router)
 app.include_router(agents_router.router)
+# Phase 14 — quant lab, backtesting, portfolio, risk, factors, alt-data,
+# thesis, earnings, macro, investment agents & portfolio command center
+app.include_router(quant_lab_router.router)
+app.include_router(backtesting_router.router)
+app.include_router(portfolio_lab_router.router)
+app.include_router(risk_analytics_router.router)
+app.include_router(factor_router.router)
+app.include_router(altdata_router.router)
+app.include_router(thesis_router.router)
+app.include_router(earnings_router.router)
+app.include_router(macro_router.router)
+app.include_router(quant_agents_router.router)
+app.include_router(portfolio_command_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint

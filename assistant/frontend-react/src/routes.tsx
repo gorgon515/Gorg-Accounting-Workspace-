@@ -44,8 +44,16 @@ import { MarketOperations } from './views/MarketOperations';
 import { CPAOperations } from './views/CPAOperations';
 import { EventMonitor } from './views/EventMonitor';
 import { SignalsDashboard } from './views/SignalsDashboard';
+import { PortfolioCommandCenter } from './views/PortfolioCommandCenter';
+import { QuantLab } from './views/QuantLab';
+import { BacktestingCenter } from './views/BacktestingCenter';
+import { PortfolioLab } from './views/PortfolioLab';
+import { PortfolioRiskCenter } from './views/PortfolioRiskCenter';
+import { FactorCenter } from './views/FactorCenter';
+import { MacroCenter } from './views/MacroCenter';
+import { ThesisCenter } from './views/ThesisCenter';
 
-export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Knowledge' | 'Operations' | 'Learning' | 'System';
+export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Investing' | 'Knowledge' | 'Operations' | 'Learning' | 'System';
 
 export interface RouteDef {
   id: string;
@@ -82,6 +90,14 @@ export const ROUTES: RouteDef[] = [
   { id: 'accounting', label: 'Accounting', icon: '§', group: 'Finance', component: Accounting },
   { id: 'ledger', label: 'Ledger / Books', icon: '⊞', group: 'Finance', component: Ledger },
   { id: 'workbench', label: 'Tax & Advisory', icon: '⊟', group: 'Finance', component: Workbench },
+  { id: 'pcc', label: 'Portfolio Command', icon: '◉', group: 'Investing', component: PortfolioCommandCenter },
+  { id: 'quantlab', label: 'Quant Lab', icon: 'ƒ', group: 'Investing', component: QuantLab },
+  { id: 'backtesting', label: 'Backtesting', icon: '⟲', group: 'Investing', component: BacktestingCenter },
+  { id: 'portfoliolab', label: 'Portfolio Lab', icon: '◫', group: 'Investing', component: PortfolioLab },
+  { id: 'portfoliorisk', label: 'Risk Center', icon: '⚠', group: 'Investing', component: PortfolioRiskCenter },
+  { id: 'factors', label: 'Factor Center', icon: '⊞', group: 'Investing', component: FactorCenter },
+  { id: 'macro', label: 'Macro Center', icon: '◍', group: 'Investing', component: MacroCenter },
+  { id: 'theses', label: 'Thesis Center', icon: '✎', group: 'Investing', component: ThesisCenter },
   { id: 'cpa', label: 'CPA Center', icon: '✓', group: 'Learning', component: CPACenter },
   { id: 'language', label: 'Language', icon: '⌘', group: 'Learning', component: Language },
   { id: 'calendar', label: 'Calendar', icon: '◷', group: 'Core', component: Calendar },

@@ -2,7 +2,7 @@ import { ROUTES, type RouteGroup } from '../routes';
 import { useNav } from '../router';
 import { cls } from '../lib/format';
 
-const GROUPS: RouteGroup[] = ['Core', 'Strategy', 'Finance', 'Knowledge', 'Operations', 'Learning', 'System'];
+const GROUPS: RouteGroup[] = ['Core', 'Strategy', 'Finance', 'Investing', 'Knowledge', 'Operations', 'Learning', 'System'];
 
 export function Sidebar() {
   const { active, navigate } = useNav();

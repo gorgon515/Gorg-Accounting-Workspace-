@@ -564,6 +564,117 @@ export const helios = {
     stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/agents/stats/all')),
   },
 
+  // Phase 14 — quant lab, backtesting, portfolio, risk, factors, alt-data,
+  // thesis, earnings, macro, investment agents & portfolio command center.
+  quantLab: {
+    strategies: (p?: { status?: string; category?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/quant-lab/strategies${qs(p)}`)),
+    createStrategy: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/quant-lab/strategies', p)),
+    getStrategy: (id: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/quant-lab/strategies/${id}`)),
+    updateStrategy: (id: string, p: any): Promise<any> => call((b) => b.sidecar.request('PUT', `/api/quant-lab/strategies/${id}`, p)),
+    versions: (id: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/quant-lab/strategies/${id}/versions`)),
+    runExperiment: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/quant-lab/experiments', p)),
+    experiments: (p?: { strategy_id?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/quant-lab/experiments${qs(p)}`)),
+    hypotheses: (status?: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/quant-lab/hypotheses${qs({ status })}`)),
+    createHypothesis: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/quant-lab/hypotheses', p)),
+    notebooks: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/quant-lab/notebooks')),
+    createNotebook: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/quant-lab/notebooks', p)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/quant-lab/stats')),
+  },
+
+  backtesting: {
+    run: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/backtesting/run', p)),
+    walkForward: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/backtesting/walk-forward', p)),
+    monteCarlo: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/backtesting/monte-carlo', p)),
+    sensitivity: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/backtesting/sensitivity', p)),
+    runs: (p?: { strategy_id?: string }): Promise<any> => call((b) => b.sidecar.request('GET', `/api/backtesting/runs${qs(p)}`)),
+    getRun: (id: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/backtesting/runs/${id}`)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/backtesting/stats')),
+  },
+
+  portfolioLab: {
+    methods: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/portfolio-lab/methods')),
+    list: (status?: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/portfolio-lab/portfolios${qs({ status })}`)),
+    construct: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/portfolio-lab/portfolios', p)),
+    get: (id: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/portfolio-lab/portfolios/${id}`)),
+    rebalance: (id: string): Promise<any> => call((b) => b.sidecar.request('POST', `/api/portfolio-lab/portfolios/${id}/rebalance`)),
+    rebalances: (p?: { portfolio_id?: string; status?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/portfolio-lab/rebalances${qs(p)}`)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/portfolio-lab/stats')),
+  },
+
+  riskAnalytics: {
+    analyze: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/risk-analytics/analyze', p)),
+    stressTest: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/risk-analytics/stress-test', p)),
+    scenario: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/risk-analytics/scenario', p)),
+    factorExposure: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/risk-analytics/factor-exposure', p)),
+    scenarios: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/risk-analytics/scenarios')),
+    reports: (p?: { portfolio_id?: string }): Promise<any> => call((b) => b.sidecar.request('GET', `/api/risk-analytics/reports${qs(p)}`)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/risk-analytics/stats')),
+  },
+
+  factors: {
+    library: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/factors/library')),
+    score: (symbol: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/factors/score/${symbol}`)),
+    rank: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/factors/rank', p)),
+    combine: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/factors/combine', p)),
+    snapshot: (symbols: string[]): Promise<any> => call((b) => b.sidecar.request('POST', '/api/factors/snapshot', { symbols })),
+    custom: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/factors/custom')),
+    createCustom: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/factors/custom', p)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/factors/stats')),
+  },
+
+  altdata: {
+    datasets: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/altdata/datasets')),
+    ingest: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/altdata/ingest', p)),
+    observations: (dataset: string, symbol?: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/altdata/observations/${dataset}${qs({ symbol })}`)),
+    generateSignals: (dataset: string): Promise<any> => call((b) => b.sidecar.request('POST', `/api/altdata/signals/${dataset}`)),
+    signals: (dataset?: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/altdata/signals${qs({ dataset })}`)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/altdata/stats')),
+  },
+
+  thesis: {
+    list: (p?: { status?: string; symbol?: string }): Promise<any> => call((b) => b.sidecar.request('GET', `/api/thesis/theses${qs(p)}`)),
+    create: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/thesis/theses', p)),
+    get: (id: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/thesis/theses/${id}`)),
+    update: (id: string, fields: any): Promise<any> => call((b) => b.sidecar.request('PUT', `/api/thesis/theses/${id}`, { fields })),
+    addReview: (id: string, p: any): Promise<any> => call((b) => b.sidecar.request('POST', `/api/thesis/theses/${id}/review`, p)),
+    reviews: (id: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/thesis/theses/${id}/reviews`)),
+    close: (id: string, p: any): Promise<any> => call((b) => b.sidecar.request('POST', `/api/thesis/theses/${id}/close`, p)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/thesis/stats')),
+  },
+
+  earnings: {
+    events: (p?: { symbol?: string; status?: string }): Promise<any> => call((b) => b.sidecar.request('GET', `/api/earnings/events${qs(p)}`)),
+    addEvent: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/earnings/events', p)),
+    surprise: (eid: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/earnings/events/${eid}/surprise`)),
+    scorecard: (eid: string): Promise<any> => call((b) => b.sidecar.request('POST', `/api/earnings/events/${eid}/scorecard`)),
+    scorecards: (p?: { symbol?: string }): Promise<any> => call((b) => b.sidecar.request('GET', `/api/earnings/scorecards${qs(p)}`)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/earnings/stats')),
+  },
+
+  macro: {
+    indicators: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/macro/indicators')),
+    yieldCurve: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/macro/yield-curve')),
+    classifyRegime: (): Promise<any> => call((b) => b.sidecar.request('POST', '/api/macro/regime')),
+    regimeHistory: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/macro/regime/history')),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/macro/stats')),
+  },
+
+  quantAgents: {
+    list: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/quant-agents')),
+    run: (key: string, p?: any): Promise<any> => call((b) => b.sidecar.request('POST', `/api/quant-agents/${key}/run`, p || { trigger: 'manual', inputs: {} })),
+    runs: (key: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/quant-agents/${key}/runs`)),
+    actions: (key: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/quant-agents/${key}/actions`)),
+  },
+
+  portfolioCommand: {
+    overview: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/portfolio-command/overview')),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/portfolio-command/stats')),
+  },
+
   // main → renderer push (price alerts). No-op outside Electron.
   onAlert(cb: (a: any) => void): void {
     const b = bridge();
