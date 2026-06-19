@@ -52,6 +52,8 @@ const config = {
   sidecarAutostart: process.env.HELIOS_SIDECAR_AUTOSTART !== 'false',
   sidecarDir: process.env.HELIOS_SIDECAR_DIR || '',
   sidecarPython: process.env.HELIOS_SIDECAR_PYTHON || '',
+  // Standalone HELIOS desktop build: a bundled, Python-free backend binary.
+  sidecarBin: process.env.HELIOS_SIDECAR_BIN || '',
   // Speech-to-text engine: 'local' (on-device Whisper via transformers.js;
   // default) or 'whisper-api' (cloud, opt-in). Local keeps all audio on-device.
   sttEngine: (process.env.STT_ENGINE || 'local').toLowerCase(),

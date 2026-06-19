@@ -1,0 +1,17 @@
+# Lean runtime dependencies for the bundled HELIOS desktop backend.
+#
+# Deliberately excludes the heavy/optional ML stack (sentence-transformers,
+# chromadb, scikit-learn, torch). Those are imported lazily and guarded across
+# the backend, so the app boots and runs without them — semantic-search/RAG
+# features simply report unavailable. This keeps the PyInstaller bundle small
+# and the CI build fast and reliable.
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.6
+requests>=2.31
+pypdf>=4.0
+openpyxl>=3.1
+python-docx>=1.1
+cryptography>=42.0
+numpy>=1.26
+scipy>=1.11

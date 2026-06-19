@@ -1,0 +1,53 @@
+# electron-builder config for the standalone HELIOS desktop app.
+#
+# Same Electron shell as ARIA, packaged as its own product ("HELIOS") with two
+# extra resources: the React Command Center (frontend) and a Python-free backend
+# binary (helios-backend). src/main/helios-mode.js detects these at launch and
+# switches the shell into HELIOS mode. Built via:
+#   npx electron-builder --config electron-builder.helios.yml
+appId: com.gorg.helios
+productName: HELIOS
+copyright: Copyright © 2026
+directories:
+  output: dist-helios
+  buildResources: build
+extraMetadata:
+  name: helios-desktop
+files:
+  - src/**/*
+  - build/icon.png
+  - "!**/*.map"
+extraResources:
+  - from: frontend-react/dist
+    to: frontend
+  # Populated by the build workflow: the PyInstaller backend (onedir) is copied
+  # to assistant/helios-backend-dist so it lives inside the project directory.
+  - from: helios-backend-dist
+    to: helios-backend
+mac:
+  category: public.app-category.finance
+  target:
+    - target: dmg
+      arch: [arm64]
+    - target: zip
+      arch: [arm64]
+  icon: build/icon.png
+dmg:
+  title: HELIOS ${version}
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.png
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: HELIOS
+linux:
+  category: Office
+  target:
+    - target: AppImage
+      arch: [x64]
+  icon: build/icon.png
+  maintainer: Vincent Gregorio

@@ -3,6 +3,10 @@
 const { app, BrowserWindow, Tray, Menu, nativeImage, shell, Notification, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
+// Must run before ./config (which snapshots env at load): when the bundled
+// HELIOS resources are present this switches the shell into HELIOS mode
+// (React UI + bundled backend). No-op for the ARIA build.
+const { isHelios } = require('./helios-mode');
 const store = require('./store');
 const ipc = require('./ipc');
 const skills = require('./services/skills');
@@ -20,7 +24,8 @@ const tgHistories = new Map(); // per-chat conversation history
 let mainWindow = null;
 let tray = null;
 
-app.setName('ARIA');
+const APP_NAME = isHelios ? 'HELIOS' : 'ARIA';
+if (!isHelios) app.setName('ARIA'); // helios-mode already set the name to HELIOS
 
 function buildAppMenu() {
   const isMac = process.platform === 'darwin';
@@ -50,7 +55,7 @@ function createWindow() {
     minWidth: 880,
     minHeight: 640,
     backgroundColor: '#0E0E10',
-    title: 'ARIA',
+    title: APP_NAME,
     icon: path.join(__dirname, '..', '..', 'build', 'icon.png'),
     show: false,
     webPreferences: {
@@ -64,7 +69,11 @@ function createWindow() {
   // build exists; otherwise the classic renderer. Both share this preload, so
   // window.aria (the IPC bridge) is identical for either UI. Default = classic
   // so the app never regresses before the React HUD is validated.
-  const reactIndex = path.join(__dirname, '..', '..', 'frontend-react', 'dist', 'index.html');
+  // In the packaged HELIOS app the Command Center is bundled under resources;
+  // helios-mode exports its path via HELIOS_FRONTEND_INDEX. In dev it lives in
+  // the source tree.
+  const reactIndex = process.env.HELIOS_FRONTEND_INDEX
+    || path.join(__dirname, '..', '..', 'frontend-react', 'dist', 'index.html');
   if (config.uiMode === 'react' && fs.existsSync(reactIndex)) {
     mainWindow.loadFile(reactIndex);
   } else {
