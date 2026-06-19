@@ -138,6 +138,8 @@ function register() {
 
   // Intelligence Sidecar (Quant Research + Accounting Intelligence)
   ipcMain.handle('sidecar:status', () => sidecar.status());
+  // Generic REST passthrough for Phase 13 operational platform.
+  ipcMain.handle('sidecar:request', (_e, p) => sidecar.request((p && p.method) || 'GET', p && p.route, p && p.body));
   ipcMain.handle('sidecar:analyze', (_e, p) => sidecar.analyze(p || {}));
   ipcMain.handle('sidecar:factors', (_e, p) => sidecar.factors(p || {}));
   ipcMain.handle('sidecar:risk', (_e, p) => sidecar.risk(p || {}));

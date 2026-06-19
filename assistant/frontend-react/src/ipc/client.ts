@@ -27,6 +27,15 @@ async function call<T>(fn: (b: Bridge) => Promise<T> | T): Promise<T> {
   return await fn(b);
 }
 
+// Build a `?a=1&b=2` query string from defined params (Phase 13 REST helpers).
+function qs(params?: Record<string, any>): string {
+  if (!params) return '';
+  const pairs = Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== null && v !== '')
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+  return pairs.length ? `?${pairs.join('&')}` : '';
+}
+
 export const helios = {
   hasBridge,
   config: (): Promise<AppConfig> => call((b) => b.config()),
@@ -422,6 +431,137 @@ export const helios = {
     priorities: (): Promise<any> => call((b) => b.sidecar.siPriorities()),
     runCycle: (): Promise<any> => call((b) => b.sidecar.siRunCycle()),
     dashboard: (): Promise<any> => call((b) => b.sidecar.siDashboard()),
+  },
+
+  // Phase 13 — live connectors, intelligence, research, financial hub, ops, agents.
+  // All routed through a single generic REST passthrough on the sidecar bridge.
+  connectors: {
+    list: (p?: { category?: string; kind?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/connectors${qs(p)}`)),
+    get: (id: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/connectors/${id}`)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/connectors/stats')),
+    enable: (id: string): Promise<any> => call((b) => b.sidecar.request('POST', `/api/connectors/${id}/enable`)),
+    disable: (id: string): Promise<any> => call((b) => b.sidecar.request('POST', `/api/connectors/${id}/disable`)),
+    updateConfig: (id: string, config: any): Promise<any> =>
+      call((b) => b.sidecar.request('PUT', `/api/connectors/${id}/config`, { config })),
+    storeCredential: (id: string, p: any): Promise<any> =>
+      call((b) => b.sidecar.request('POST', `/api/connectors/${id}/credential`, p)),
+    health: (id: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/connectors/${id}/health`)),
+    fetch: (id: string, p?: any): Promise<any> => call((b) => b.sidecar.request('POST', `/api/connectors/${id}/fetch`, p || {})),
+    logs: (id: string, limit?: number): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/connectors/${id}/logs${qs({ limit })}`)),
+  },
+
+  liveIntel: {
+    items: (p?: { domain?: string; source?: string; limit?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/live-intel/items${qs(p)}`)),
+    alerts: (status?: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/live-intel/alerts${qs({ status })}`)),
+    acknowledgeAlert: (id: string): Promise<any> =>
+      call((b) => b.sidecar.request('POST', `/api/live-intel/alerts/${id}/acknowledge`)),
+    signals: (p?: { domain?: string; limit?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/live-intel/signals${qs(p)}`)),
+    poll: (connectorId: string, domain?: string): Promise<any> =>
+      call((b) => b.sidecar.request('POST', `/api/live-intel/poll/${connectorId}${qs({ domain })}`)),
+    sources: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/live-intel/sources')),
+    monitors: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/live-intel/monitors')),
+    addMonitor: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/live-intel/monitors', p)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/live-intel/stats')),
+  },
+
+  researchMissions: {
+    list: (p?: { status?: string; team?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/research/missions${qs(p)}`)),
+    create: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/research/missions', p)),
+    get: (id: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/research/missions/${id}`)),
+    run: (id: string): Promise<any> => call((b) => b.sidecar.request('POST', `/api/research/missions/${id}/run`)),
+    pause: (id: string): Promise<any> => call((b) => b.sidecar.request('POST', `/api/research/missions/${id}/pause`)),
+    reports: (p?: { mission_id?: string; team?: string; limit?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/research/reports${qs(p)}`)),
+    teams: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/research/teams')),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/research/stats')),
+  },
+
+  financialHub: {
+    prices: (symbol: string, limit?: number): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/financial-hub/prices/${symbol}${qs({ limit })}`)),
+    economic: (seriesId: string, limit?: number): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/financial-hub/economic/${seriesId}${qs({ limit })}`)),
+    filings: (p?: { form?: string; limit?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/financial-hub/filings${qs(p)}`)),
+    watchlist: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/financial-hub/watchlist')),
+    addWatchlist: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/financial-hub/watchlist', p)),
+    removeWatchlist: (symbol: string): Promise<any> =>
+      call((b) => b.sidecar.request('DELETE', `/api/financial-hub/watchlist/${symbol}`)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/financial-hub/stats')),
+  },
+
+  cpaOps: {
+    updates: (p?: { category?: string; priority?: string; limit?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/cpa-ops/updates${qs(p)}`)),
+    ingest: (): Promise<any> => call((b) => b.sidecar.request('POST', '/api/cpa-ops/ingest')),
+    digest: (): Promise<any> => call((b) => b.sidecar.request('POST', '/api/cpa-ops/digest')),
+    advisories: (p?: { status?: string; advisory_type?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/cpa-ops/advisories${qs(p)}`)),
+    createAdvisory: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/cpa-ops/advisories', p)),
+    compliance: (p?: { category?: string; status?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/cpa-ops/compliance${qs(p)}`)),
+    addCompliance: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/cpa-ops/compliance', p)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/cpa-ops/stats')),
+  },
+
+  marketIntel: {
+    generateBrief: (): Promise<any> => call((b) => b.sidecar.request('POST', '/api/market-intel/brief/generate')),
+    latestBrief: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/market-intel/brief/latest')),
+    briefs: (limit?: number): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/market-intel/briefs${qs({ limit })}`)),
+    signals: (p?: { signal_type?: string; symbol?: string; status?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/market-intel/signals${qs(p)}`)),
+    detectSignals: (): Promise<any> => call((b) => b.sidecar.request('POST', '/api/market-intel/signals/detect')),
+    dismissSignal: (id: string): Promise<any> => call((b) => b.sidecar.request('POST', `/api/market-intel/signals/${id}/dismiss`)),
+    watchlistAlerts: (p?: { symbol?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/market-intel/watchlist-alerts${qs(p)}`)),
+    macro: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/market-intel/macro/latest')),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/market-intel/stats')),
+  },
+
+  fusion: {
+    run: (): Promise<any> => call((b) => b.sidecar.request('POST', '/api/fusion/run')),
+    events: (p?: { status?: string; severity?: string; limit?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/fusion/events${qs(p)}`)),
+    acknowledgeEvent: (id: string): Promise<any> => call((b) => b.sidecar.request('POST', `/api/fusion/events/${id}/acknowledge`)),
+    rules: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/fusion/rules')),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/fusion/stats')),
+  },
+
+  eventMonitor: {
+    scan: (): Promise<any> => call((b) => b.sidecar.request('POST', '/api/event-monitor/scan')),
+    checkDeadlines: (): Promise<any> => call((b) => b.sidecar.request('POST', '/api/event-monitor/check-deadlines')),
+    events: (p?: { category?: string; severity?: string; status?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/event-monitor/events${qs(p)}`)),
+    acknowledgeEvent: (id: string): Promise<any> => call((b) => b.sidecar.request('POST', `/api/event-monitor/events/${id}/acknowledge`)),
+    resolveEvent: (id: string): Promise<any> => call((b) => b.sidecar.request('POST', `/api/event-monitor/events/${id}/resolve`)),
+    deadlines: (p?: { category?: string; status?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/event-monitor/deadlines${qs(p)}`)),
+    addDeadline: (p: any): Promise<any> => call((b) => b.sidecar.request('POST', '/api/event-monitor/deadlines', p)),
+    rules: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/event-monitor/rules')),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/event-monitor/stats')),
+  },
+
+  workforceAgents: {
+    list: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/agents')),
+    run: (id: string, p?: any): Promise<any> => call((b) => b.sidecar.request('POST', `/api/agents/${id}/run`, p || { trigger: 'manual', inputs: {} })),
+    runs: (id: string, limit?: number): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/agents/${id}/runs${qs({ limit })}`)),
+    actions: (id: string, status?: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/agents/${id}/actions${qs({ status })}`)),
+    pendingApprovals: (limit?: number): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/agents/approvals/pending${qs({ limit })}`)),
+    approve: (actionId: string, approvedBy?: string): Promise<any> =>
+      call((b) => b.sidecar.request('POST', `/api/agents/actions/${actionId}/approve`, { approved_by: approvedBy || 'user' })),
+    reject: (actionId: string): Promise<any> =>
+      call((b) => b.sidecar.request('POST', `/api/agents/actions/${actionId}/reject`)),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/agents/stats/all')),
   },
 
   // main → renderer push (price alerts). No-op outside Electron.

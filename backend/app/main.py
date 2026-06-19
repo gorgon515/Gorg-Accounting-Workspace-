@@ -21,6 +21,8 @@ from .routers import (
     plugins_router, public_api_router, webhooks_router,
     reasoning_router, intelligence_router, forecasting_router, advisory_router, executive_router,
     knowledge_router, memory_router, rag_router, synthesis_router, self_improvement_router,
+    connectors_router, live_intel_router, research_router, financial_hub_router,
+    cpa_ops_router, market_intel_router, fusion_router, event_monitor_router, agents_router,
 )
 from .services.market_data import DataUnavailable
 
@@ -86,6 +88,16 @@ app.include_router(memory_router.router)
 app.include_router(rag_router.router)
 app.include_router(synthesis_router.router)
 app.include_router(self_improvement_router.router)
+# Phase 13 — live connectors, research automation, financial hub, CPA ops, market intel, agents
+app.include_router(connectors_router.router)
+app.include_router(live_intel_router.router)
+app.include_router(research_router.router)
+app.include_router(financial_hub_router.router)
+app.include_router(cpa_ops_router.router)
+app.include_router(market_intel_router.router)
+app.include_router(fusion_router.router)
+app.include_router(event_monitor_router.router)
+app.include_router(agents_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint

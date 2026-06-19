@@ -140,6 +140,9 @@ const api = {
   status,
   ensureUp,
   stop,
+  // Generic REST passthrough — used by Phase 13 (connectors, live intelligence,
+  // research, financial hub, CPA ops, market intel, fusion, events, agents).
+  request: (method, route, body) => call(method || 'GET', route, body),
   analyze: (p) => call('POST', '/quant/analyze', p),
   factors: (p) => call('POST', '/quant/factors', p),
   risk: (p) => call('POST', '/quant/risk', p),

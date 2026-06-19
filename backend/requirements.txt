@@ -15,3 +15,8 @@ cryptography>=42.0
 sentence-transformers>=2.7
 chromadb>=0.5
 rank-bm25>=0.2
+# Phase 12 — TF-IDF + LSA local embeddings (offline)
+scikit-learn>=1.4
+# Phase 13 — live connectors & data ingestion
+# (requests already included above; no additional deps needed for connectors)
+# yahoo-fin>=0.8  # optional: richer Yahoo Finance support

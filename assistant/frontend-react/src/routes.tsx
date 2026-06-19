@@ -37,8 +37,15 @@ import { KnowledgeCenter } from './views/KnowledgeCenter';
 import { RAGCenter } from './views/RAGCenter';
 import { ResearchCenter } from './views/ResearchCenter';
 import { LearningCenter } from './views/LearningCenter';
+import { ConnectorCenter } from './views/ConnectorCenter';
+import { IntelligenceCenter } from './views/IntelligenceCenter';
+import { ResearchMissions } from './views/ResearchMissions';
+import { MarketOperations } from './views/MarketOperations';
+import { CPAOperations } from './views/CPAOperations';
+import { EventMonitor } from './views/EventMonitor';
+import { SignalsDashboard } from './views/SignalsDashboard';
 
-export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Knowledge' | 'Learning' | 'System';
+export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Knowledge' | 'Operations' | 'Learning' | 'System';
 
 export interface RouteDef {
   id: string;
@@ -63,6 +70,13 @@ export const ROUTES: RouteDef[] = [
   { id: 'rag', label: 'Semantic Search', icon: '⊗', group: 'Knowledge', component: RAGCenter },
   { id: 'research', label: 'Research', icon: '⊕', group: 'Knowledge', component: ResearchCenter },
   { id: 'learning', label: 'Learning Center', icon: '∞', group: 'Knowledge', component: LearningCenter },
+  { id: 'intelligence', label: 'Intelligence Center', icon: '◎', group: 'Operations', component: IntelligenceCenter },
+  { id: 'missions', label: 'Research Missions', icon: '⊕', group: 'Operations', component: ResearchMissions },
+  { id: 'marketops', label: 'Market Operations', icon: '▥', group: 'Operations', component: MarketOperations },
+  { id: 'cpaops', label: 'CPA Operations', icon: '⊡', group: 'Operations', component: CPAOperations },
+  { id: 'events', label: 'Event Monitor', icon: '◔', group: 'Operations', component: EventMonitor },
+  { id: 'signals', label: 'Signals Dashboard', icon: '⚹', group: 'Operations', component: SignalsDashboard },
+  { id: 'connectors', label: 'Connector Center', icon: '⇆', group: 'Operations', component: ConnectorCenter },
   { id: 'markets', label: 'Markets', icon: '▤', group: 'Finance', component: Markets },
   { id: 'portfolio', label: 'Portfolio', icon: '◴', group: 'Finance', component: Portfolio },
   { id: 'accounting', label: 'Accounting', icon: '§', group: 'Finance', component: Accounting },

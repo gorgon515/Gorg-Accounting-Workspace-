@@ -113,6 +113,8 @@ contextBridge.exposeInMainWorld('aria', {
   },
   sidecar: {
     status: () => ipcRenderer.invoke('sidecar:status'),
+    // Generic REST passthrough for Phase 13 operational platform.
+    request: (method, route, body) => ipcRenderer.invoke('sidecar:request', { method, route, body }),
     analyze: (p) => ipcRenderer.invoke('sidecar:analyze', p),
     factors: (p) => ipcRenderer.invoke('sidecar:factors', p),
     risk: (p) => ipcRenderer.invoke('sidecar:risk', p),
