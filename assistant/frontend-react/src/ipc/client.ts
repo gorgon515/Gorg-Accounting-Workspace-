@@ -925,6 +925,74 @@ export const helios = {
     stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/ops-dashboard/stats')),
   },
 
+  // ── Phase 15.75 — Investment Discovery Engine ──────────────────────────────
+  discovery: {
+    universeStats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/discovery/universe/stats')),
+    universe: (p?: { sector?: string; cap_tier?: string; exchange?: string; limit?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/discovery/universe${qs(p)}`)),
+    security: (symbol: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/discovery/universe/${symbol}`)),
+    seed: (): Promise<any> => call((b) => b.sidecar.request('POST', '/api/discovery/universe/seed', {})),
+    ingest: (securities: any[]): Promise<any> => call((b) => b.sidecar.request('POST', '/api/discovery/universe/ingest', { securities })),
+    strategies: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/discovery/scan/strategies')),
+    scan: (strategy: string, limit?: number): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/discovery/scan${qs({ strategy, limit })}`)),
+    rank: (p?: { limit?: number; exclude_mega_cap?: boolean; penalize_coverage?: boolean; portfolio_overlap?: string[] }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/discovery/rank', p || {})),
+    ideas: (tier?: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/discovery/ideas${qs({ tier })}`)),
+    memo: (symbol: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/discovery/memo/${symbol}`)),
+    portfolios: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/discovery/portfolios')),
+    buildPortfolio: (p: { style: string; size?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/discovery/portfolios/build', p)),
+    daily: (): Promise<any> => call((b) => b.sidecar.request('POST', '/api/discovery/daily', {})),
+    dailyLatest: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/discovery/daily/latest')),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/discovery/stats')),
+  },
+
+  // ── Phase 15.75 — Language Academy ─────────────────────────────────────────
+  languageAcademy: {
+    languages: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/language-academy/languages')),
+    curriculum: (language: string, level?: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/language-academy/curriculum${qs({ language, level })}`)),
+    lessons: (p?: { language?: string; level?: string; topic?: string; limit?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/language-academy/lessons${qs(p)}`)),
+    lesson: (lessonId: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/language-academy/lessons/${lessonId}`)),
+    generateLesson: (p: { language: string; level: string; topic: string }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/language-academy/lessons/generate', p)),
+    vocabulary: (p: { language: string; topic?: string; level?: string; limit?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/language-academy/vocabulary${qs(p)}`)),
+    vocabTopics: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/language-academy/vocabulary/topics')),
+    review: (p: { language: string; limit?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/language-academy/vocabulary/review', p)),
+    grade: (p: { card_id: string; grade: number }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/language-academy/vocabulary/grade', p)),
+    grammar: (language: string, level?: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/language-academy/grammar${qs({ language, level })}`)),
+    grammarRule: (ruleId: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/language-academy/grammar/${ruleId}`)),
+    grammarCheck: (p: { language: string; text: string; rule_id?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/language-academy/grammar/check', p)),
+    scenarios: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/language-academy/conversation/scenarios')),
+    startConversation: (p: { language: string; scenario: string; level?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/language-academy/conversation/start', p)),
+    respond: (p: { session_id: string; text: string }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/language-academy/conversation/respond', p)),
+    listening: (p?: { language?: string; level?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/language-academy/listening${qs(p)}`)),
+    listeningExercise: (exId: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/language-academy/listening/${exId}`)),
+    gradeListening: (p: { ex_id: string; answers: any }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/language-academy/listening/grade', p)),
+    pronunciation: (p: { language: string; target: string; attempt: string }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/language-academy/pronunciation/score', p)),
+    placement: (p: { language: string; answers?: any }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/language-academy/assessment/placement', p)),
+    tests: (p?: { language?: string; level?: string; kind?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/language-academy/assessment/tests${qs(p)}`)),
+    submitTest: (p: { test_id: string; answers: any }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/language-academy/assessment/submit', p)),
+    coachToday: (language: string): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/language-academy/coach/today', { language })),
+    stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/language-academy/stats')),
+  },
+
   // main → renderer push (price alerts). No-op outside Electron.
   onAlert(cb: (a: any) => void): void {
     const b = bridge();

@@ -61,6 +61,17 @@ import { PresenceCenter } from './views/PresenceCenter';
 import { OperationsDashboard } from './views/OperationsDashboard';
 import { DevelopmentCenter } from './views/DevelopmentCenter';
 import { EvolutionCenter } from './views/EvolutionCenter';
+import { DiscoveryCenter } from './views/DiscoveryCenter';
+import { OpportunityScreener } from './views/OpportunityScreener';
+import { InvestmentPipeline } from './views/InvestmentPipeline';
+import { CandidatePortfolios } from './views/CandidatePortfolios';
+import { LanguageAcademy } from './views/LanguageAcademy';
+import { Lessons } from './views/Lessons';
+import { Vocabulary } from './views/Vocabulary';
+import { Grammar } from './views/Grammar';
+import { Assessments } from './views/Assessments';
+import { ConversationLab } from './views/ConversationLab';
+import { PronunciationLab } from './views/PronunciationLab';
 
 export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Investing' | 'Knowledge' | 'Operations' | 'Learning' | 'System' | 'Experience' | 'Platform';
 
@@ -107,8 +118,19 @@ export const ROUTES: RouteDef[] = [
   { id: 'factors', label: 'Factor Center', icon: '⊞', group: 'Investing', component: FactorCenter },
   { id: 'macro', label: 'Macro Center', icon: '◍', group: 'Investing', component: MacroCenter },
   { id: 'theses', label: 'Thesis Center', icon: '✎', group: 'Investing', component: ThesisCenter },
+  { id: 'discovery', label: 'Discovery Center', icon: '✧', group: 'Investing', component: DiscoveryCenter },
+  { id: 'screener', label: 'Opportunity Screener', icon: '⊜', group: 'Investing', component: OpportunityScreener },
+  { id: 'pipeline', label: 'Investment Pipeline', icon: '⋔', group: 'Investing', component: InvestmentPipeline },
+  { id: 'candidates', label: 'Candidate Portfolios', icon: '◰', group: 'Investing', component: CandidatePortfolios },
   { id: 'cpa', label: 'CPA Center', icon: '✓', group: 'Learning', component: CPACenter },
   { id: 'language', label: 'Language', icon: '⌘', group: 'Learning', component: Language },
+  { id: 'academy', label: 'Language Academy', icon: '✦', group: 'Learning', component: LanguageAcademy },
+  { id: 'lessons', label: 'Lessons', icon: '📘', group: 'Learning', component: Lessons },
+  { id: 'vocabulary', label: 'Vocabulary', icon: '🔤', group: 'Learning', component: Vocabulary },
+  { id: 'grammar', label: 'Grammar', icon: '§', group: 'Learning', component: Grammar },
+  { id: 'assessments', label: 'Assessments', icon: '📝', group: 'Learning', component: Assessments },
+  { id: 'convlab', label: 'Conversation Lab', icon: '💬', group: 'Learning', component: ConversationLab },
+  { id: 'pronunciation', label: 'Pronunciation Lab', icon: '🎙', group: 'Learning', component: PronunciationLab },
   { id: 'calendar', label: 'Calendar', icon: '◷', group: 'Core', component: Calendar },
   { id: 'email', label: 'Email', icon: '✉', group: 'Core', component: Email },
   { id: 'memory', label: 'Memory', icon: '◉', group: 'System', component: Memory },
