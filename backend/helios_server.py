@@ -12,6 +12,16 @@ import os
 
 def main() -> None:
     import uvicorn
+
+    # Load user-editable integration keys (~/.helios/config.json) into the
+    # environment before the app imports, so a GUI-launched bundle that did not
+    # inherit shell env vars still sees the configured API keys.
+    try:
+        from app.runtime_config import load_into_environ
+        load_into_environ()
+    except Exception:
+        pass
+
     from app.main import app
 
     port = int(os.environ.get("HELIOS_SIDECAR_PORT", "8420"))

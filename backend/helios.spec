@@ -33,6 +33,9 @@ for _pkg in (
     "anyio", "click", "h11", "websockets", "httptools", "watchfiles",
     "numpy", "scipy", "pypdf", "openpyxl", "docx",
     "cryptography", "requests", "certifi", "dotenv",
+    # Phase 16 — Robinhood brokerage client and its runtime deps. Without these
+    # the bundled sidecar's `import robin_stocks.robinhood` fails at call time.
+    "robin_stocks", "pyotp",
 ):
     _collect_all(_pkg)
 

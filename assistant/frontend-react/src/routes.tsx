@@ -76,6 +76,7 @@ import { LiveMarket } from './views/LiveMarket';
 import { MarketIdeas } from './views/MarketIdeas';
 import { RobinhoodHub } from './views/RobinhoodHub';
 import { OrderDesk } from './views/OrderDesk';
+import { Integrations } from './views/Integrations';
 
 export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Investing' | 'Knowledge' | 'Operations' | 'Learning' | 'System' | 'Experience' | 'Platform';
 
@@ -156,6 +157,7 @@ export const ROUTES: RouteDef[] = [
   { id: 'license', label: 'License', icon: '◆', group: 'System', component: LicenseCenter },
   { id: 'performance', label: 'Performance', icon: '⚡', group: 'System', component: PerformanceMonitor },
   { id: 'deployment', label: 'Deployment', icon: '⬢', group: 'System', component: DeploymentCenter },
+  { id: 'integrations', label: 'Integrations', icon: '⇆', group: 'System', component: Integrations },
   { id: 'settings', label: 'Settings', icon: '⚙', group: 'System', component: Settings },
   { id: 'hud', label: 'Executive HUD', icon: '✦', group: 'Experience', component: ExecutiveHUD },
   { id: 'voice', label: 'Voice Center', icon: '◈', group: 'Experience', component: VoiceCenter },

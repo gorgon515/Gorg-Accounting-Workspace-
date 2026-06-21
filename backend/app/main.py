@@ -13,6 +13,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from . import config
+# Merge user-editable integration keys (~/.helios/config.json) into the
+# environment at import time so every router/module sees configured API keys
+# regardless of how the process was launched (GUI double-click vs shell).
+try:
+    from .runtime_config import load_into_environ as _load_runtime_config
+    _load_runtime_config()
+except Exception:
+    pass
 from .routers import (
     accounting, accounting_intel, accounting_platform_router, execution_router, health, markets,
     n8n_router, personal, quant, quant_research, workbench,
@@ -33,6 +41,7 @@ from .routers import (
     evolution_router, stability_router, ops_dashboard_router,
     discovery_router, language_academy_router,
     tradingview_router, robinhood_router, tts_router,
+    settings_router,
 )
 from .services.market_data import DataUnavailable
 
@@ -147,6 +156,7 @@ app.include_router(language_academy_router.router)
 app.include_router(tradingview_router.router)
 app.include_router(robinhood_router.router)
 app.include_router(tts_router.router)
+app.include_router(settings_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint

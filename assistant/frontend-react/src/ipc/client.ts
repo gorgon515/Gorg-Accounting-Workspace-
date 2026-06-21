@@ -1075,6 +1075,14 @@ export const helios = {
     voiceMap: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/tts/voice-map')),
   },
 
+  // ── Phase 16 — Integration Settings (API keys) ────────────────────────────
+  settings: {
+    getKeys: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/settings/keys')),
+    setKeys: (keys: Record<string, string>): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/settings/keys', { keys })),
+    integrations: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/settings/integrations')),
+  },
+
   // main → renderer push (price alerts). No-op outside Electron.
   onAlert(cb: (a: any) => void): void {
     const b = bridge();
