@@ -23,3 +23,5 @@ scikit-learn>=1.4
 # Phase 14 — quant lab, backtesting, portfolio optimization, risk analytics
 numpy>=1.26
 scipy>=1.11
+# Phase 16 — TradingView live data, Robinhood brokerage, ElevenLabs TTS
+robin_stocks>=2.1

@@ -994,6 +994,87 @@ export const helios = {
     stats: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/language-academy/stats')),
   },
 
+  // ── Phase 16 — TradingView Live Data ──────────────────────────────────────
+  tradingview: {
+    quote: (symbol: string, session?: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/tradingview/quote/${encodeURIComponent(symbol)}${qs({ session })}`)),
+    quotesBatch: (symbols: string[]): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/tradingview/quote/batch', { symbols })),
+    price: (symbol: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/tradingview/price/${encodeURIComponent(symbol)}`)),
+    pricesBatch: (symbols: string[]): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/tradingview/price/batch', { symbols })),
+    ta: (symbol: string, interval?: string, include_indicators?: boolean): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/tradingview/ta/${encodeURIComponent(symbol)}${qs({ interval, include_indicators })}`)),
+    news: (p?: { symbol?: string; market?: string; limit?: number; offset?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/tradingview/news${qs(p)}`)),
+    newsDetail: (newsId: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/tradingview/news/${encodeURIComponent(newsId)}`)),
+    ideas: (symbol: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/tradingview/ideas/${encodeURIComponent(symbol)}`)),
+    hotIdeas: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/tradingview/ideas/hot')),
+    editorsPicks: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/tradingview/ideas/editors-picks')),
+    calendar: (country?: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/tradingview/calendar${qs({ country })}`)),
+    search: (q: string, market?: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/tradingview/search${qs({ q, market })}`)),
+    screen: (p: { asset_type?: string; market?: string; filters?: any; sort_by?: string; sort_order?: string; limit?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/tradingview/screen', p)),
+    market: (market?: string, type?: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/tradingview/market${qs({ market, type })}`)),
+    economyIndicators: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/tradingview/economy/indicators')),
+    screenerPresets: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/tradingview/screener/presets')),
+    screenerFilters: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/tradingview/screener/filters')),
+    enrich: (symbol: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/tradingview/enrich/${encodeURIComponent(symbol)}`)),
+  },
+
+  // ── Phase 16 — Robinhood Agentic Brokerage ────────────────────────────────
+  robinhood: {
+    accounts: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/robinhood/accounts')),
+    portfolio: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/robinhood/portfolio')),
+    positions: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/robinhood/positions')),
+    optionPositions: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/robinhood/positions/options')),
+    orders: (p?: { symbol?: string; state?: string }): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/robinhood/orders${qs(p)}`)),
+    order: (orderId: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/robinhood/orders/${orderId}`)),
+    cancelOrder: (orderId: string): Promise<any> => call((b) => b.sidecar.request('DELETE', `/api/robinhood/orders/${orderId}`)),
+    quotes: (symbols: string[]): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/robinhood/quotes${qs({ symbols: symbols.join(',') })}`)),
+    fundamentals: (symbols: string[]): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/robinhood/fundamentals${qs({ symbols: symbols.join(',') })}`)),
+    historicals: (symbol: string, interval?: string, span?: string): Promise<any> =>
+      call((b) => b.sidecar.request('GET', `/api/robinhood/historicals/${symbol}${qs({ interval, span })}`)),
+    watchlists: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/robinhood/watchlists')),
+    watchlist: (name: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/robinhood/watchlists/${name}`)),
+    addToWatchlist: (symbol: string, name: string): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/robinhood/watchlists/add', { symbol, name })),
+    removeFromWatchlist: (symbol: string, name: string): Promise<any> =>
+      call((b) => b.sidecar.request('DELETE', '/api/robinhood/watchlists/remove', { symbol, name })),
+    earnings: (symbol: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/robinhood/earnings/${symbol}`)),
+    reviewOrder: (p: { symbol: string; side: string; order_type: string; quantity?: number; dollar_amount?: number; limit_price?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/robinhood/orders/review', p)),
+    placeOrder: (p: { symbol: string; side: string; order_type: string; quantity?: number; limit_price?: number; approval_confirmed: boolean }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/robinhood/orders/place', p)),
+    search: (q: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/robinhood/search${qs({ q })}`)),
+  },
+
+  // ── Phase 16 — ElevenLabs TTS ─────────────────────────────────────────────
+  tts: {
+    synthesize: (p: { text: string; voice_id?: string; language?: string; model?: string; stability?: number; similarity_boost?: number; speed?: number }): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/tts/synthesize', p)),
+    pronounce: (word: string, language: string): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/tts/pronounce', { word, language })),
+    lesson: (text: string, language: string): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/tts/lesson', { text, language })),
+    briefing: (text: string): Promise<any> =>
+      call((b) => b.sidecar.request('POST', '/api/tts/briefing', { text })),
+    voices: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/tts/voices')),
+    models: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/tts/models')),
+    quota: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/tts/quota')),
+    voiceMap: (): Promise<any> => call((b) => b.sidecar.request('GET', '/api/tts/voice-map')),
+  },
+
   // main → renderer push (price alerts). No-op outside Electron.
   onAlert(cb: (a: any) => void): void {
     const b = bridge();

@@ -32,6 +32,7 @@ from .routers import (
     migrations_router, plugin_upgrades_router, feedback_router,
     evolution_router, stability_router, ops_dashboard_router,
     discovery_router, language_academy_router,
+    tradingview_router, robinhood_router, tts_router,
 )
 from .services.market_data import DataUnavailable
 
@@ -142,6 +143,10 @@ app.include_router(ops_dashboard_router.router)
 # Phase 15.75 — investment discovery engine & language academy
 app.include_router(discovery_router.router)
 app.include_router(language_academy_router.router)
+# Phase 16 — TradingView live data, Robinhood agentic trading, ElevenLabs TTS
+app.include_router(tradingview_router.router)
+app.include_router(robinhood_router.router)
+app.include_router(tts_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint

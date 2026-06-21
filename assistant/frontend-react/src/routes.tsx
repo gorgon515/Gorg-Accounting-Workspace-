@@ -72,6 +72,10 @@ import { Grammar } from './views/Grammar';
 import { Assessments } from './views/Assessments';
 import { ConversationLab } from './views/ConversationLab';
 import { PronunciationLab } from './views/PronunciationLab';
+import { LiveMarket } from './views/LiveMarket';
+import { MarketIdeas } from './views/MarketIdeas';
+import { RobinhoodHub } from './views/RobinhoodHub';
+import { OrderDesk } from './views/OrderDesk';
 
 export type RouteGroup = 'Core' | 'Strategy' | 'Finance' | 'Investing' | 'Knowledge' | 'Operations' | 'Learning' | 'System' | 'Experience' | 'Platform';
 
@@ -122,6 +126,10 @@ export const ROUTES: RouteDef[] = [
   { id: 'screener', label: 'Opportunity Screener', icon: '⊜', group: 'Investing', component: OpportunityScreener },
   { id: 'pipeline', label: 'Investment Pipeline', icon: '⋔', group: 'Investing', component: InvestmentPipeline },
   { id: 'candidates', label: 'Candidate Portfolios', icon: '◰', group: 'Investing', component: CandidatePortfolios },
+  { id: 'livemarkets', label: 'Live Markets', icon: '⟡', group: 'Investing', component: LiveMarket },
+  { id: 'mktideas', label: 'Market Ideas', icon: '✎', group: 'Investing', component: MarketIdeas },
+  { id: 'robinhood', label: 'Robinhood Hub', icon: '◎', group: 'Investing', component: RobinhoodHub },
+  { id: 'orderdesk', label: 'Order Desk', icon: '⊡', group: 'Investing', component: OrderDesk },
   { id: 'cpa', label: 'CPA Center', icon: '✓', group: 'Learning', component: CPACenter },
   { id: 'language', label: 'Language', icon: '⌘', group: 'Learning', component: Language },
   { id: 'academy', label: 'Language Academy', icon: '✦', group: 'Learning', component: LanguageAcademy },
