@@ -31,6 +31,7 @@ from .routers import (
     runtime_router, feature_flags_router, release_channels_router,
     migrations_router, plugin_upgrades_router, feedback_router,
     evolution_router, stability_router, ops_dashboard_router,
+    discovery_router, language_academy_router,
 )
 from .services.market_data import DataUnavailable
 
@@ -138,6 +139,9 @@ app.include_router(feedback_router.router)
 app.include_router(evolution_router.router)
 app.include_router(stability_router.router)
 app.include_router(ops_dashboard_router.router)
+# Phase 15.75 — investment discovery engine & language academy
+app.include_router(discovery_router.router)
+app.include_router(language_academy_router.router)
 
 
 def main() -> None:  # pragma: no cover - convenience entrypoint

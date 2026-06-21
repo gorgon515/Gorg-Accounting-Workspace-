@@ -986,6 +986,7 @@ export const helios = {
       call((b) => b.sidecar.request('POST', '/api/language-academy/assessment/placement', p)),
     tests: (p?: { language?: string; level?: string; kind?: string }): Promise<any> =>
       call((b) => b.sidecar.request('GET', `/api/language-academy/assessment/tests${qs(p)}`)),
+    test: (testId: string): Promise<any> => call((b) => b.sidecar.request('GET', `/api/language-academy/assessment/tests/${testId}`)),
     submitTest: (p: { test_id: string; answers: any }): Promise<any> =>
       call((b) => b.sidecar.request('POST', '/api/language-academy/assessment/submit', p)),
     coachToday: (language: string): Promise<any> =>

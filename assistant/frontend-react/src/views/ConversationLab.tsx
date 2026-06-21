@@ -35,7 +35,7 @@ export function ConversationLab() {
     setText(''); setBusy(true);
     try {
       const r = await helios.languageAcademy.respond({ session_id: session.session_id ?? session.id, text: mine });
-      setTurns((t) => [...t, { role: 'assistant', text: r.reply ?? r.text ?? r.message, feedback: r.feedback, corrections: r.corrections }]);
+      setTurns((t) => [...t, { role: 'assistant', text: r.ai_response ?? r.reply ?? r.text ?? r.message, feedback: r.feedback, corrections: r.corrections }]);
     } finally { setBusy(false); }
   }
 
@@ -91,7 +91,12 @@ export function ConversationLab() {
                         ))}
                       </div>
                     )}
-                    {t.feedback && <p className="text-[10px] text-warmgray mt-1">{typeof t.feedback === 'string' ? t.feedback : t.feedback.note}</p>}
+                    {t.feedback && (
+                      <p className="text-[10px] text-warmgray mt-1">
+                        {typeof t.feedback === 'string' ? t.feedback
+                          : [t.feedback.score != null ? `score ${t.feedback.score}` : '', ...(t.feedback.notes ?? [])].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>

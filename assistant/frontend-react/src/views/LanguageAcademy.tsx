@@ -30,9 +30,9 @@ export function LanguageAcademy() {
       <div className="grid gap-3">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <MetricCard label="Languages" value={s.languages ?? (langs.length || '—')} accent />
-          <MetricCard label="Lessons" value={s.lessons ?? '—'} sub="generated catalog" />
-          <MetricCard label="Vocabulary" value={s.vocabulary ?? s.vocab_entries ?? '—'} sub="entries" />
-          <MetricCard label="Grammar rules" value={s.grammar_rules ?? s.grammar ?? '—'} />
+          <MetricCard label="Lessons" value={s.lessons?.catalog_size ?? s.lessons ?? '—'} sub="generated catalog" />
+          <MetricCard label="Vocabulary" value={s.vocabulary?.total_entries ?? s.vocabulary ?? '—'} sub="entries" />
+          <MetricCard label="Grammar rules" value={s.grammar_rules ?? s.grammar?.total ?? '—'} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
