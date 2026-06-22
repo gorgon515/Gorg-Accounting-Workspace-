@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Page } from './_page';
 import { useAsync } from '../hooks/useAsync';
 import { helios } from '../ipc/client';
-import { Panel, Button, EmptyState, Loading } from '../components';
+import { Panel, Button, Loading } from '../components';
 import { cls } from '../lib/format';
 
 // Integrations — enter and persist the live-data / brokerage / TTS API keys.
@@ -19,7 +19,6 @@ const FIELDS: { key: string; label: string; group: string; secret: boolean; plac
 const GROUPS = ['TradingView', 'ElevenLabs', 'Robinhood'];
 
 export function Integrations() {
-  if (!helios.hasBridge()) return <EmptyState message="Open in the desktop app to configure integrations." />;
   const keys = useAsync(() => helios.settings.getKeys(), []);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);

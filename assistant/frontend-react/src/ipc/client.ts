@@ -1,9 +1,11 @@
 // Typed, safe wrapper over the Electron preload bridge (window.aria).
 //
-// The same React bundle must (a) run inside Electron where window.aria exists,
-// and (b) build/run in a plain browser where it does not. Every call therefore
-// goes through `call()`, which rejects clearly when the bridge is absent so the
-// useAsync hook can render an "offline" state instead of crashing.
+// Works in two modes:
+//   1. Electron desktop app — window.aria is injected by the preload script and
+//      all IPC goes through ipcRenderer → sidecar HTTP.
+//   2. Plain browser / web — a direct-fetch fallback calls the sidecar at
+//      http://127.0.0.1:8420 (or $HELIOS_SIDECAR_URL) without any Electron layer.
+// Both modes expose the same `b.sidecar.request(method, route, body)` surface.
 
 import type {
   AgentActivity, AgentRosterItem, AnalyzeResult, AppConfig, AscTopic, CpaStatus,
@@ -13,18 +15,49 @@ import type {
 
 type Bridge = any;
 
-function bridge(): Bridge | undefined {
-  return (globalThis as any).aria;
+const _SIDECAR: string =
+  (globalThis as any).HELIOS_SIDECAR_URL ?? 'http://127.0.0.1:8420';
+
+async function _directFetch(method: string, route: string, body?: any): Promise<any> {
+  const opts: RequestInit = { method };
+  if (body !== undefined) {
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(`${_SIDECAR}${route}`, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((data as any)?.detail || (data as any)?.error || `HTTP ${r.status}`);
+  return data;
 }
 
+// Minimal bridge that mirrors the preload shape using plain fetch.
+const _directBridge: Bridge = {
+  sidecar: new Proxy(
+    {
+      request: (method: string, route: string, body?: any) =>
+        _directFetch(method, route, body),
+      status: () => _directFetch('GET', '/api/health'),
+    } as any,
+    {
+      get(target: any, prop: string) {
+        if (prop in target) return target[prop];
+        return (..._: any[]) => Promise.resolve(null);
+      },
+    },
+  ),
+};
+
+function bridge(): Bridge {
+  return (globalThis as any).aria ?? _directBridge;
+}
+
+// Always true — Electron bridge or direct-HTTP fallback are both available.
 export function hasBridge(): boolean {
-  return typeof bridge() !== 'undefined';
+  return true;
 }
 
 async function call<T>(fn: (b: Bridge) => Promise<T> | T): Promise<T> {
-  const b = bridge();
-  if (!b) throw new Error('HELIOS bridge unavailable — open inside the desktop app.');
-  return await fn(b);
+  return await fn(bridge());
 }
 
 // Build a `?a=1&b=2` query string from defined params (Phase 13 REST helpers).
