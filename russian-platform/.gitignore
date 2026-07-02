@@ -1,0 +1,13 @@
+# Backend
+backend/rli.db
+backend/*.db
+backend/.env
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/tsconfig.tsbuildinfo

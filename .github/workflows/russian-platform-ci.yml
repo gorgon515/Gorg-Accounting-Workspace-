@@ -1,0 +1,47 @@
+name: russian-platform-ci
+
+on:
+  push:
+    paths:
+      - "russian-platform/**"
+      - ".github/workflows/russian-platform-ci.yml"
+  pull_request:
+    paths:
+      - "russian-platform/**"
+      - ".github/workflows/russian-platform-ci.yml"
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: russian-platform/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Test
+        run: pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: russian-platform/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: russian-platform/frontend/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: Typecheck & build
+        run: npm run build
