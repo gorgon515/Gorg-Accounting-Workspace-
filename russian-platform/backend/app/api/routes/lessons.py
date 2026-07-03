@@ -7,8 +7,18 @@ from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.models import Card, Course, LearningEvent, Lesson, LessonCompletion, Lexeme, User
-from app.services.gamification import award_xp, evaluate_achievements, touch_streak
-from app.services.lesson_gate import grade_mastery_test, is_lesson_unlocked, passed_lesson_ids
+from app.services.gamification import (
+    award_xp,
+    evaluate_achievements,
+    serialize_achievements,
+    touch_streak,
+)
+from app.services.lesson_gate import (
+    compute_unlock_map,
+    grade_mastery_test,
+    is_lesson_unlocked,
+    passed_lesson_ids,
+)
 
 router = APIRouter(prefix="/lessons", tags=["lessons"])
 
@@ -16,6 +26,7 @@ router = APIRouter(prefix="/lessons", tags=["lessons"])
 @router.get("/courses")
 def list_courses(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     passed = passed_lesson_ids(db, user.id)
+    unlock_map = compute_unlock_map(db, user.id)
     courses = db.scalars(
         select(Course).options(selectinload(Course.lessons)).order_by(Course.order_index)
     ).all()
@@ -30,7 +41,7 @@ def list_courses(db: Session = Depends(get_db), user: User = Depends(get_current
                     "order_index": lesson.order_index,
                     "objectives": lesson.objectives,
                     "passed": lesson.id in passed,
-                    "unlocked": is_lesson_unlocked(db, user.id, lesson),
+                    "unlocked": unlock_map.get(lesson.id, False),
                 }
             )
         result.append(
@@ -161,5 +172,5 @@ def complete_lesson(
         "threshold": lesson.mastery_threshold,
         "results": results,
         "new_srs_cards": new_cards,
-        "achievements": [{"slug": a.slug, "title": a.title, "icon": a.icon} for a in fresh],
+        "achievements": serialize_achievements(fresh),
     }

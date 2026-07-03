@@ -4,14 +4,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../App';
 import { t } from '../lib/i18n';
+import { speak } from '../lib/speech';
 import type { ReviewCard } from '../types';
-
-function speak(text: string) {
-  const u = new SpeechSynthesisUtterance(text.replace(/́/g, ''));
-  u.lang = 'ru-RU';
-  u.rate = 0.85;
-  window.speechSynthesis.speak(u);
-}
 
 export default function Review() {
   const [queue, setQueue] = useState<ReviewCard[]>([]);

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { api } from '../api/client';
-import type { Dashboard as DashboardData } from '../types';
+import { useAuth } from '../App';
+import type { Dashboard as DashboardData, ForecastDay, Quest } from '../types';
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -16,14 +17,32 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [quests, setQuests] = useState<Quest[]>([]);
+  const [forecast, setForecast] = useState<ForecastDay[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const { refreshUser } = useAuth();
 
-  useEffect(() => {
+  const load = useCallback(() => {
     api.get<DashboardData>('/analytics/dashboard').then(setData).catch((e) => setError(e.message));
+    api.get<Quest[]>('/gamification/quests').then(setQuests).catch(() => {});
+    api
+      .get<{ forecast: ForecastDay[] }>('/reviews/forecast?days=14')
+      .then((r) => setForecast(r.forecast))
+      .catch(() => {});
   }, []);
+
+  useEffect(load, [load]);
+
+  const claimQuest = async (slug: string) => {
+    await api.post(`/gamification/quests/${slug}/claim`);
+    load();
+    refreshUser();
+  };
 
   if (error) return <div className="card text-red-600">{error}</div>;
   if (!data) return <div className="text-slate-400">Загрузка…</div>;
+
+  const maxDue = Math.max(1, ...forecast.map((d) => d.due));
 
   const retention = data.vocabulary.predicted_retention;
 
@@ -94,6 +113,62 @@ export default function Dashboard() {
               ))}
             </ul>
           )}
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="card">
+          <h2 className="font-semibold">Daily quests · Задания дня</h2>
+          <div className="mt-3 space-y-2">
+            {quests.map((quest) => (
+              <div key={quest.slug} className="flex items-center gap-3 text-sm">
+                <span aria-hidden>{quest.icon}</span>
+                <div className="flex-1">
+                  <div className="font-medium">{quest.title}</div>
+                  <div className="text-xs text-slate-400">
+                    {quest.description} · {quest.progress}/{quest.target}
+                  </div>
+                  <div className="mt-1 h-1.5 rounded-full bg-slate-100">
+                    <div
+                      className="h-1.5 rounded-full bg-brand-500"
+                      style={{ width: `${(quest.progress / quest.target) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                {quest.claimed ? (
+                  <span className="badge bg-emerald-100 text-emerald-700">✓</span>
+                ) : quest.complete ? (
+                  <button
+                    className="btn-primary px-3 py-1 text-xs"
+                    onClick={() => claimQuest(quest.slug)}
+                  >
+                    +{quest.xp} XP
+                  </button>
+                ) : (
+                  <span className="text-xs text-slate-300">{quest.xp} XP</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <h2 className="font-semibold">Review forecast · Прогноз повторений</h2>
+          <p className="mt-1 text-xs text-slate-400">Due cards per day, next 2 weeks</p>
+          <div className="mt-3 flex h-24 items-end gap-1" role="img"
+               aria-label="Review forecast bar chart">
+            {forecast.map((day) => (
+              <div key={day.date} className="group relative flex-1">
+                <div
+                  className="rounded-t bg-brand-200 transition-colors group-hover:bg-brand-500"
+                  style={{ height: `${Math.max(4, (day.due / maxDue) * 88)}px` }}
+                />
+                <div className="pointer-events-none absolute -top-6 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-white group-hover:block">
+                  {day.date.slice(5)}: {day.due}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

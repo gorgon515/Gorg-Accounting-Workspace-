@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -9,6 +7,7 @@ from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models import GrammarMastery, GrammarTopic, LearningEvent, User
 from app.services.gamification import touch_streak
+from app.services.text_utils import answer_matches
 
 router = APIRouter(prefix="/grammar", tags=["grammar"])
 
@@ -26,6 +25,9 @@ def list_topics(
     topics = db.scalars(
         select(GrammarTopic).order_by(GrammarTopic.order_index)
     ).all()
+    # Prerequisite-based readiness: a topic is "ready" when every
+    # prerequisite has demonstrated mastery >= 0.6. Advisory, not blocking.
+    mastery_by_slug = {t.slug: mastery.get(t.id, 0.0) for t in topics}
     return [
         {
             "slug": t.slug,
@@ -37,6 +39,9 @@ def list_topics(
             "drill_count": len(t.drills),
             "prerequisites": t.prerequisites,
             "mastery": round(mastery.get(t.id, 0.0), 3),
+            "ready": all(
+                mastery_by_slug.get(p, 0.0) >= 0.6 for p in t.prerequisites
+            ),
         }
         for t in topics
     ]
@@ -96,15 +101,12 @@ def submit_drills(
         record = GrammarMastery(user_id=user.id, topic_id=topic.id)
         db.add(record)
 
-    def norm(s: str) -> str:
-        return s.strip().lower().replace("ё", "е")
-
     results = []
     for d in topic.drills:
         submitted = payload.answers.get(d["id"])
         if submitted is None:
             continue
-        ok = norm(submitted) in [norm(d["answer"]), *[norm(a) for a in d["accept"]]]
+        ok = answer_matches(submitted, d["answer"], d.get("accept"))
         record.record(ok)
         results.append(
             {

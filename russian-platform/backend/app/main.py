@@ -13,8 +13,10 @@ from app.api.routes import (
     analytics,
     auth,
     conversation,
+    gamification,
     grammar,
     lessons,
+    library,
     practice,
     reviews,
     vocabulary,
@@ -31,6 +33,14 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if not settings.debug and (
+        settings.secret_key == "dev-secret-change-in-production"
+        or len(settings.secret_key) < 32
+    ):
+        logger.warning(
+            "RLP_SECRET_KEY is missing or shorter than 32 bytes. Set a strong "
+            "secret before exposing this server to real users."
+        )
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
         seed_all(db)
@@ -55,7 +65,7 @@ app.add_middleware(
 )
 
 for module in (auth, vocabulary, grammar, lessons, reviews, conversation,
-               practice, analytics):
+               practice, analytics, library, gamification):
     app.include_router(module.router, prefix=settings.api_v1_prefix)
 
 

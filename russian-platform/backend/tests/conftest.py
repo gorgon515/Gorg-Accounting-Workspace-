@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # session via dependency override.
 _tmpdb = os.path.join(tempfile.mkdtemp(prefix="rli-test-"), "lifespan.db")
 os.environ["RLP_DATABASE_URL"] = f"sqlite:///{_tmpdb}"
-os.environ["RLP_SECRET_KEY"] = "test-secret"
+os.environ["RLP_SECRET_KEY"] = "test-secret-key-0123456789abcdef-32b"
 
 import pytest
 from fastapi.testclient import TestClient

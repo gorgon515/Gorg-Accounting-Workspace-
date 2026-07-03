@@ -16,7 +16,7 @@ from app.models import (
 )
 
 
-def level_for_xp(xp: int) -> int:
+def xp_progress(xp: int) -> dict:
     """Level curve: each level costs 100 * level XP (triangular growth).
     Level 1 at 0 XP, level 2 at 100, level 3 at 300, level 4 at 600 ..."""
     level, cost, remaining = 1, 100, xp
@@ -24,16 +24,29 @@ def level_for_xp(xp: int) -> int:
         remaining -= cost
         level += 1
         cost = 100 * level
-    return level
-
-
-def xp_progress(xp: int) -> dict:
-    level, cost, remaining = 1, 100, xp
-    while remaining >= cost:
-        remaining -= cost
-        level += 1
-        cost = 100 * level
     return {"level": level, "xp_in_level": remaining, "xp_for_next": cost}
+
+
+def level_for_xp(xp: int) -> int:
+    return xp_progress(xp)["level"]
+
+
+def serialize_achievements(achievements: list[Achievement]) -> list[dict]:
+    return [
+        {"slug": a.slug, "title": a.title, "icon": a.icon, "rarity": rarity_of(a)}
+        for a in achievements
+    ]
+
+
+def rarity_of(achievement: Achievement) -> str:
+    """Rarity from XP reward — a stable proxy for how hard the criterion is."""
+    if achievement.xp_reward >= 300:
+        return "legendary"
+    if achievement.xp_reward >= 150:
+        return "epic"
+    if achievement.xp_reward >= 75:
+        return "rare"
+    return "common"
 
 
 def award_xp(user: User, amount: int) -> None:

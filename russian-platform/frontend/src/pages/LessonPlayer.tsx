@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
 import { api } from '../api/client';
+import { speak } from '../lib/speech';
 
 interface LessonData {
   slug: string;
@@ -20,13 +21,6 @@ interface CompletionResult {
   results: { id: string; correct: boolean; expected: string; submitted: string }[];
   new_srs_cards: number;
   achievements: { slug: string; title: string; icon: string }[];
-}
-
-function speak(text: string) {
-  const u = new SpeechSynthesisUtterance(text.replace(/́/g, ''));
-  u.lang = 'ru-RU';
-  u.rate = 0.85;
-  window.speechSynthesis.speak(u);
 }
 
 export default function LessonPlayer() {

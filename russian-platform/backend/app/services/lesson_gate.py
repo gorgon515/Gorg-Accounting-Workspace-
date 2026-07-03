@@ -3,6 +3,10 @@
 Lessons unlock strictly in order within a course; a lesson is unlocked
 when every earlier lesson in the course has a passing completion. Courses
 unlock when the previous course's lessons are all passed.
+
+The unlock state for ALL lessons is computed in one pass over two queries
+(Phase 2 audit fix: the previous per-lesson check issued O(n²) queries
+when listing courses).
 """
 from __future__ import annotations
 
@@ -10,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Course, Lesson, LessonCompletion
+from app.services.text_utils import answer_matches, normalize_answer
 
 
 def passed_lesson_ids(db: Session, user_id: int) -> set[int]:
@@ -23,29 +28,30 @@ def passed_lesson_ids(db: Session, user_id: int) -> set[int]:
     )
 
 
-def is_lesson_unlocked(db: Session, user_id: int, lesson: Lesson) -> bool:
+def compute_unlock_map(db: Session, user_id: int) -> dict[int, bool]:
+    """lesson_id -> unlocked, for every lesson, in curriculum order.
+
+    A lesson is unlocked iff every lesson before it (course order, then
+    lesson order) has been passed. Two queries total, regardless of size.
+    """
     passed = passed_lesson_ids(db, user_id)
-    earlier = db.scalars(
-        select(Lesson.id).where(
-            Lesson.course_id == lesson.course_id,
-            Lesson.order_index < lesson.order_index,
-        )
-    )
-    if not all(lid in passed for lid in earlier):
-        return False
-    # All previous courses must be fully passed.
-    course = db.get(Course, lesson.course_id)
-    prev_courses = db.scalars(
-        select(Course).where(
-            Course.language_id == course.language_id,
-            Course.order_index < course.order_index,
-        )
-    )
-    for prev in prev_courses:
-        for lid in db.scalars(select(Lesson.id).where(Lesson.course_id == prev.id)):
-            if lid not in passed:
-                return False
-    return True
+    ordered = db.execute(
+        select(Lesson.id)
+        .join(Course, Lesson.course_id == Course.id)
+        .order_by(Course.order_index, Lesson.order_index)
+    ).scalars()
+
+    unlock_map: dict[int, bool] = {}
+    all_previous_passed = True
+    for lesson_id in ordered:
+        unlock_map[lesson_id] = all_previous_passed
+        if lesson_id not in passed:
+            all_previous_passed = False
+    return unlock_map
+
+
+def is_lesson_unlocked(db: Session, user_id: int, lesson: Lesson) -> bool:
+    return compute_unlock_map(db, user_id).get(lesson.id, False)
 
 
 def grade_mastery_test(lesson: Lesson, answers: dict[str, str]) -> tuple[float, list]:
@@ -65,11 +71,15 @@ def grade_mastery_test(lesson: Lesson, answers: dict[str, str]) -> tuple[float, 
     results = []
     correct = 0
     for q in questions:
-        submitted = (answers.get(q["id"]) or "").strip().lower().replace("ё", "е")
-        accepted = [q["answer"], *q.get("accept", [])]
-        ok = submitted in [a.strip().lower().replace("ё", "е") for a in accepted]
+        submitted = answers.get(q["id"]) or ""
+        ok = answer_matches(submitted, q["answer"], q.get("accept"))
         correct += ok
         results.append(
-            {"id": q["id"], "correct": ok, "expected": q["answer"], "submitted": submitted}
+            {
+                "id": q["id"],
+                "correct": ok,
+                "expected": q["answer"],
+                "submitted": normalize_answer(submitted),
+            }
         )
     return correct / len(questions), results

@@ -1,3 +1,5 @@
+import difflib
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
@@ -21,10 +23,13 @@ def _lexeme_dict(lexeme: Lexeme, include_details: bool = False) -> dict:
         "frequency_rank": lexeme.frequency_rank,
         "register": lexeme.register,
         "domain": lexeme.domain,
+        "topic": lexeme.topic,
         "translation": lexeme.translation,
     }
     if include_details:
         data.update(
+            difficulty=lexeme.difficulty,
+            etymology=lexeme.etymology,
             literal_translation=lexeme.literal_translation,
             meanings=lexeme.meanings,
             root=lexeme.root,
@@ -55,6 +60,7 @@ def list_vocabulary(
     cefr: str | None = None,
     pos: str | None = None,
     domain: str | None = None,
+    topic: str | None = None,
     limit: int = Query(50, le=200),
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -76,13 +82,67 @@ def list_vocabulary(
         stmt = stmt.where(Lexeme.part_of_speech == pos)
     if domain:
         stmt = stmt.where(Lexeme.domain == domain)
+    if topic:
+        stmt = stmt.where(Lexeme.topic == topic)
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     rows = db.scalars(
         stmt.order_by(Lexeme.frequency_rank.asc().nulls_last())
         .limit(limit)
         .offset(offset)
     ).all()
-    return {"total": total, "items": [_lexeme_dict(l) for l in rows]}
+
+    # Fuzzy fallback: exact search found nothing → suggest close matches
+    # (typos, missing soft signs, wrong vowel): "кнега" → книга.
+    fuzzy = []
+    if q and total == 0 and not offset:
+        needle = q.lower().replace("ё", "е")
+        candidates = db.execute(select(Lexeme.id, Lexeme.lemma, Lexeme.translation)).all()
+        scored: list[tuple[float, int]] = []
+        for lex_id, lemma, translation in candidates:
+            score = max(
+                difflib.SequenceMatcher(a=needle, b=lemma.replace("ё", "е")).ratio(),
+                difflib.SequenceMatcher(a=needle, b=translation.lower()).ratio(),
+            )
+            if score >= 0.72:
+                scored.append((score, lex_id))
+        scored.sort(reverse=True)
+        if scored:
+            ids = [lex_id for _, lex_id in scored[:5]]
+            found = {l.id: l for l in db.scalars(select(Lexeme).where(Lexeme.id.in_(ids)))}
+            fuzzy = [_lexeme_dict(found[i]) for i in ids if i in found]
+
+    return {"total": total, "items": [_lexeme_dict(l) for l in rows], "fuzzy": fuzzy}
+
+
+@router.get("/topics")
+def list_topics(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Available thematic groups with counts, for dictionary filtering."""
+    rows = db.execute(
+        select(Lexeme.topic, func.count(Lexeme.id))
+        .group_by(Lexeme.topic)
+        .order_by(func.count(Lexeme.id).desc())
+    ).all()
+    return [{"topic": topic, "count": count} for topic, count in rows]
+
+
+@router.get("/verb-pairs")
+def verb_pairs(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Aspect-pair browser: imperfective verbs with their perfective partners."""
+    verbs = db.scalars(
+        select(Lexeme)
+        .where(Lexeme.part_of_speech == "verb", Lexeme.aspect_partner.is_not(None))
+        .order_by(Lexeme.frequency_rank.asc().nulls_last())
+    ).all()
+    return [
+        {
+            "id": v.id,
+            "imperfective": v.stressed if v.aspect == "imperfective" else v.aspect_partner,
+            "perfective": v.aspect_partner if v.aspect == "imperfective" else v.stressed,
+            "translation": v.translation,
+            "cefr_level": v.cefr_level,
+        }
+        for v in verbs
+    ]
 
 
 @router.get("/language/{code}")

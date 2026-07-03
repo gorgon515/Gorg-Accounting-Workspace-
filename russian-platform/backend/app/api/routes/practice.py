@@ -1,12 +1,22 @@
 """Adaptive practice: quizzes, cloze drills, pronunciation, dictation,
 and AI-generated stories."""
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
-from app.models import LearningEvent, PronunciationAttempt, User, WritingSubmission
+from app.models import (
+    Card,
+    LearningEvent,
+    Lexeme,
+    PronunciationAttempt,
+    User,
+    WritingSubmission,
+)
 from app.services.cefr import estimate_cefr
 from app.services.content_gen import build_cloze_drill, build_quiz, generate_story
 from app.services.gamification import touch_streak
@@ -42,10 +52,6 @@ def get_story(
 ):
     provider = get_llm_provider()
     cefr = estimate_cefr(db, user.id)
-    from sqlalchemy import select
-
-    from app.models import Card, Lexeme
-
     known = list(
         db.scalars(
             select(Lexeme.lemma)
@@ -114,8 +120,6 @@ def submit_writing(
     corrections: list = []
     quality: float | None = None
     if provider.is_generative:
-        import json
-
         raw = provider.complete(
             "You are a Russian writing tutor. Review the learner's text. Reply "
             'with pure JSON: {"quality_score": 0..1, "corrections": '

@@ -9,7 +9,8 @@ dialogue scripts) — natively supported by both SQLite and PostgreSQL.
 | Table | Purpose | Notable columns |
 |---|---|---|
 | `languages` | supported target languages | `metadata_json` (alphabet, phonology) |
-| `lexemes` | dictionary entries | stress/IPA/translit, CEFR, frequency rank, register, domain, morphology (`inflections`, `aspect`, `government`), mnemonics, `audio` refs |
+| `lexemes` | dictionary entries | stress/IPA/translit, CEFR, frequency rank, register, domain, `topic`, `difficulty`, `etymology`, morphology (`inflections`, `aspect`, `government`), mnemonics, `audio` refs |
+| `texts` | graded library texts | sentence-aligned `{ru, en, audio_url}` transcript structure, kind, CEFR, word count |
 | `example_sentences` | per-lexeme examples with stress marks | `audio_url` |
 | `lexeme_relations` | synonyms/antonyms/family/collocations/false friends | `relation_type`, `target_lemma` |
 | `grammar_topics` | grammar encyclopedia nodes | `content` (markdown sections), `drills` (auto-graded), `prerequisites` |
@@ -31,6 +32,10 @@ dialogue scripts) — natively supported by both SQLite and PostgreSQL.
 | `pronunciation_attempts` | scores + per-word feedback (audio in object storage) |
 | `writing_submissions` | prompts, texts, corrections, quality scores |
 | `user_achievements` | earned badges |
+| `bookmarks` | reading position per user+text |
+
+Daily-quest claims live under `users.preferences["quests_claimed"]`
+(today-only record; quests are recomputed from `learning_events`).
 
 ## Design rules
 

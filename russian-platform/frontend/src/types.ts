@@ -8,6 +8,25 @@ export interface User {
   streak_days: number;
   daily_goal_minutes: number;
   ui_immersion_ratio: number;
+  preferences: Record<string, unknown>;
+}
+
+export interface Quest {
+  slug: string;
+  title: string;
+  title_native: string;
+  description: string;
+  target: number;
+  xp: number;
+  icon: string;
+  progress: number;
+  complete: boolean;
+  claimed: boolean;
+}
+
+export interface ForecastDay {
+  date: string;
+  due: number;
 }
 
 export interface LexemeSummary {

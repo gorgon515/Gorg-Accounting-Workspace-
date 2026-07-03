@@ -18,8 +18,61 @@ from app.models import (
 from app.services.conversation_engine import ConversationEngine
 from app.services.gamification import award_xp, evaluate_achievements, touch_streak
 from app.services.llm import get_llm_provider
+from app.services.tutor import MODES, PERSONALITIES, TutorEngine, offline_practice_plan
 
 router = APIRouter(prefix="/conversation", tags=["conversation"])
+
+
+@router.get("/tutor/plan")
+def tutor_plan(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Personalized practice plan from the learner's real weaknesses.
+    Works fully offline — this is the tutor's deterministic core."""
+    return offline_practice_plan(db, user.id)
+
+
+class TutorMessage(BaseModel):
+    text: str
+    mode: str = "free"
+    personality: str = "warm"
+    history: list[dict] = []
+
+
+@router.post("/tutor")
+def tutor_chat(
+    payload: TutorMessage,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Free-form tutoring chat (Socratic, storytelling, debate, ...).
+    Requires a generative LLM provider; offline callers get 409 with
+    guidance toward /tutor/plan and the scripted scenarios."""
+    if payload.mode not in MODES:
+        raise HTTPException(422, f"mode must be one of {sorted(MODES)}")
+    if payload.personality not in PERSONALITIES:
+        raise HTTPException(422, f"personality must be one of {sorted(PERSONALITIES)}")
+    engine = TutorEngine(get_llm_provider())
+    if not engine.is_generative:
+        raise HTTPException(
+            409,
+            "The free-form tutor needs a generative LLM provider "
+            "(RLP_LLM_PROVIDER=anthropic). Offline, use /conversation/tutor/plan "
+            "and the scripted scenarios.",
+        )
+    reply = engine.reply(
+        db, user.id, payload.mode, payload.personality, payload.history, payload.text
+    )
+    award_xp(user, get_settings().xp_per_conversation_turn)
+    touch_streak(user)
+    db.add(
+        LearningEvent(
+            user_id=user.id,
+            event_type="conversation_turn",
+            skill="speaking",
+            payload={"tutor_mode": payload.mode},
+        )
+    )
+    db.commit()
+    return reply
 
 
 @router.get("/scenarios")

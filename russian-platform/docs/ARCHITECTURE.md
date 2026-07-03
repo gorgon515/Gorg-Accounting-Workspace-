@@ -19,13 +19,18 @@ gracefully to a deterministic offline implementation.
 │  ┌─────────────┐ ┌──────────────┐ ┌────────────────────┐ │
 │  │ API routes  │→│ Services     │→│ Provider layer     │ │
 │  │ auth        │ │ srs_engine   │ │ LLMProvider        │ │
-│  │ vocabulary  │ │ cefr         │ │  · AnthropicProvider│ │
-│  │ grammar     │ │ lesson_gate  │ │  · OfflineProvider │ │
-│  │ lessons     │ │ conversation │ │ STTProvider        │ │
-│  │ reviews     │ │ content_gen  │ │  · WhisperSTT      │ │
-│  │ conversation│ │ gamification │ │ TTSProvider        │ │
-│  │ practice    │ │ speech       │ │                    │ │
-│  │ analytics   │ └──────────────┘ └────────────────────┘ │
+│  │ vocabulary  │ │ srs_planner  │ │  · AnthropicProvider│ │
+│  │ grammar     │ │ cefr         │ │  · OfflineProvider │ │
+│  │ lessons     │ │ lesson_gate  │ │ STTProvider        │ │
+│  │ reviews     │ │ conversation │ │  · WhisperSTT      │ │
+│  │ conversation│ │ tutor        │ │ TTSProvider        │ │
+│  │ practice    │ │ content_gen  │ │                    │ │
+│  │ analytics   │ │ gamification │ │                    │ │
+│  │ library     │ │ speech       │ │                    │ │
+│  │ gamification│ │ morphology   │ │                    │ │
+│  │             │ │ vocab_factory│ │                    │ │
+│  │             │ │ text_utils   │ │                    │ │
+│  │             │ └──────────────┘ └────────────────────┘ │
 └──────────────────────┬───────────────────────────────────┘
                        │ SQLAlchemy 2.0
 ┌──────────────────────┴───────────────────────────────────┐
@@ -89,6 +94,19 @@ thresholds) with grammar mastery so neither can inflate the estimate alone.
 - Auth: JWT bearer tokens (HS256), 7-day expiry, OAuth2 password flow.
 - All content endpoints require auth; per-user resources check ownership.
 - Answer keys never leave the server.
+
+### 7. Morphology engine as the only language-specific code (Phase 2)
+`services/morphology.py` is deliberately the single module that knows
+Russian *rules* (declension, conjugation, IPA). Everything else consumes
+its output as data via `services/vocab_factory.py`. Adding a language
+means adding content + optionally a sibling morphology module — no
+changes elsewhere.
+
+### 8. Planning layer above the memory model (Phase 2)
+`srs_planner.py` separates *when memory decays* (srs_engine, pure math)
+from *when reviewing is wise* (adaptive retention, daily load balancing,
+forecasting). The engine stays deterministic and unit-testable; the
+planner owns all DB-aware heuristics.
 
 ## Scaling path (see ROADMAP)
 - SQLite → PostgreSQL is a config change (`RLP_DATABASE_URL`).

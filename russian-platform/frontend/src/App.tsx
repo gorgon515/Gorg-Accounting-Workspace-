@@ -1,19 +1,31 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import {
+  Suspense,
+  createContext,
+  lazy,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 
 import { api, getToken, setToken } from './api/client';
 import { t } from './lib/i18n';
-import Alphabet from './pages/Alphabet';
-import Conversation from './pages/Conversation';
 import Dashboard from './pages/Dashboard';
-import Grammar from './pages/Grammar';
-import GrammarTopicPage from './pages/GrammarTopic';
-import LessonPlayer from './pages/LessonPlayer';
-import Lessons from './pages/Lessons';
 import Login from './pages/Login';
-import Review from './pages/Review';
-import Vocabulary from './pages/Vocabulary';
 import type { User } from './types';
+
+// Route-level code splitting: only the dashboard ships in the main bundle.
+const Alphabet = lazy(() => import('./pages/Alphabet'));
+const Conversation = lazy(() => import('./pages/Conversation'));
+const Grammar = lazy(() => import('./pages/Grammar'));
+const GrammarTopicPage = lazy(() => import('./pages/GrammarTopic'));
+const LessonPlayer = lazy(() => import('./pages/LessonPlayer'));
+const Lessons = lazy(() => import('./pages/Lessons'));
+const Library = lazy(() => import('./pages/Library'));
+const Review = lazy(() => import('./pages/Review'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Vocabulary = lazy(() => import('./pages/Vocabulary'));
 
 interface AuthContextValue {
   user: User | null;
@@ -33,10 +45,12 @@ const NAV: { to: string; key: Parameters<typeof t>[0]; icon: string }[] = [
   { to: '/', key: 'dashboard', icon: '📊' },
   { to: '/lessons', key: 'lessons', icon: '🎓' },
   { to: '/review', key: 'review', icon: '🔁' },
+  { to: '/library', key: 'library', icon: '📚' },
   { to: '/vocabulary', key: 'vocabulary', icon: '📖' },
   { to: '/grammar', key: 'grammar', icon: '🧩' },
   { to: '/conversation', key: 'conversation', icon: '💬' },
   { to: '/alphabet', key: 'alphabet', icon: '🔤' },
+  { to: '/settings', key: 'settings', icon: '⚙️' },
 ];
 
 export default function App() {
@@ -77,10 +91,20 @@ export default function App() {
   }
 
   const ratio = user.ui_immersion_ratio;
+  const preferences = user.preferences ?? {};
+  const rootClasses = [
+    'flex min-h-screen bg-slate-50',
+    preferences.high_contrast ? 'high-contrast' : '',
+    preferences.dyslexia_font ? 'dyslexia-font' : '',
+    preferences.reduced_motion ? 'reduced-motion' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const fontScale = Number(preferences.font_scale ?? 1);
 
   return (
     <AuthContext.Provider value={{ user, refreshUser, logout }}>
-      <div className="flex min-h-screen bg-slate-50">
+      <div className={rootClasses} style={{ fontSize: `${fontScale}rem` }}>
         <aside className="flex w-60 flex-col border-r border-slate-200 bg-white">
           <div className="border-b border-slate-100 p-4">
             <div className="text-lg font-bold text-brand-700">Русский Институт</div>
@@ -116,18 +140,22 @@ export default function App() {
           </div>
         </aside>
         <main className="flex-1 overflow-y-auto p-6" key={location.pathname}>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/lessons" element={<Lessons />} />
-            <Route path="/lessons/:slug" element={<LessonPlayer />} />
-            <Route path="/review" element={<Review />} />
-            <Route path="/vocabulary" element={<Vocabulary />} />
-            <Route path="/grammar" element={<Grammar />} />
-            <Route path="/grammar/:slug" element={<GrammarTopicPage />} />
-            <Route path="/conversation" element={<Conversation />} />
-            <Route path="/alphabet" element={<Alphabet />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Suspense fallback={<div className="text-slate-400">Загрузка…</div>}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/lessons" element={<Lessons />} />
+              <Route path="/lessons/:slug" element={<LessonPlayer />} />
+              <Route path="/review" element={<Review />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/vocabulary" element={<Vocabulary />} />
+              <Route path="/grammar" element={<Grammar />} />
+              <Route path="/grammar/:slug" element={<GrammarTopicPage />} />
+              <Route path="/conversation" element={<Conversation />} />
+              <Route path="/alphabet" element={<Alphabet />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </AuthContext.Provider>

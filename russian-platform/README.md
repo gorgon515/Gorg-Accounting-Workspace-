@@ -6,35 +6,44 @@ strengths of SRS systems (Anki/FSRS), structured courses (Assimil/Babbel),
 comprehensible input (LingQ/Refold), speaking practice (Pimsleur/iTalki),
 and AI conversation partners.
 
-**Status: Phase 1 complete** — see [docs/PHASE_1_REPORT.md](docs/PHASE_1_REPORT.md)
-and the multi-year plan in [docs/ROADMAP.md](docs/ROADMAP.md).
+**Status: Phase 2 complete** — see [docs/PHASE_2_REPORT.md](docs/PHASE_2_REPORT.md),
+[docs/PHASE_1_REPORT.md](docs/PHASE_1_REPORT.md), and the multi-year plan
+in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## What works today
 
-- **Cyrillic → first conversations**: two full courses (A0 Foundations,
-  A1 Survival Russian) with strict mastery gating — lessons unlock only
-  after passing the previous mastery test.
-- **Rich vocabulary database**: 95 hand-curated core entries, each with
-  stress marks, IPA, transliteration, frequency rank, morphology
-  (declensions/conjugations/aspect pairs), register, mnemonics, example
-  sentences, common-mistake warnings, and cultural notes.
-- **Grammar encyclopedia**: full A0→C1 curriculum catalog (36 topics) with
-  12 fully interactive topics (explanations + auto-graded drills) and
-  per-topic mastery tracking.
-- **Adaptive SRS**: FSRS-style two-component memory model (stability +
-  difficulty + retrievability), forgetting-curve prediction, target-retention
-  scheduling. Lesson vocabulary auto-enrolls into the review queue.
-- **AI conversation partner**: 4 scripted roleplay scenarios (café, taxi,
-  hotel, meeting someone) that work fully offline; plugging in an Anthropic
-  API key upgrades the partner to free-form LLM roleplay with corrections.
-  Browser speech recognition + synthesis for voice conversations.
-- **Pronunciation feedback**: transcript-based scoring with per-word
-  verdicts (browser Web Speech / Whisper-service pluggable).
-- **Analytics dashboard**: CEFR estimate, known words, predicted retention,
-  review accuracy, weak grammar topics, study time, achievements.
-- **Gamification**: XP, levels, streaks, 10 achievements.
-- **Immersion mode foundation**: every UI string exists in EN+RU and flips
-  to Russian progressively as the learner's immersion ratio rises.
+- **593-entry vocabulary database**: hand-curated core + a compact curated
+  wordlist expanded by a rule-based **morphology engine** (transliteration,
+  approximate IPA, declension, conjugation, irregular overrides). Every
+  entry: stress marks, morphology tables, topic, difficulty, register,
+  usage/cultural/etymology notes.
+- **Complete grammar curriculum**: 40 interactive topics A0→C2 with
+  explanations, auto-graded drills, mastery tracking, and a
+  prerequisite-based readiness graph.
+- **55 lessons across 4 courses** with strict mastery gating: curated A0/A1
+  courses plus data-driven A2/B1 courses generated from the wordlist
+  (bidirectional translation exercises, grammar checkpoints).
+- **Intelligent SRS**: FSRS-style memory model + adaptive target retention
+  from the learner's accuracy, review load balancing across days, and a
+  due-forecast chart.
+- **Reading/listening library**: 8 graded texts (stories, dialogues, a
+  fairy tale, news) with clickable dictionary words, one-tap SRS
+  enrollment, sentence TTS with speed control, loop, shadowing, and graded
+  dictation modes, and persistent bookmarks.
+- **AI tutor & conversation partner**: 4 scripted scenarios offline; with
+  an Anthropic key, a full tutor with 6 modes (Socratic, storytelling,
+  debate, ...), personality settings, and persistent learner-profile
+  memory that targets weak words and grammar. Offline, the tutor still
+  produces personalized practice plans.
+- **Pronunciation & dictation scoring**: word-alignment feedback (browser
+  Web Speech / Whisper-service pluggable).
+- **Deep analytics**: CEFR estimate, retention prediction, activity
+  heatmap, learning velocity, per-skill strengths, fluency-date projection.
+- **Gamification**: XP, levels, streaks, daily quests with claimable
+  rewards, achievement collection with rarity tiers.
+- **Immersion & accessibility**: UI transitions to Russian at 25/50/75/100%
+  presets; font scaling, high contrast, dyslexia-friendly font, reduced
+  motion, keyboard-visible focus.
 
 ## Quickstart
 
@@ -44,7 +53,7 @@ Backend (Python 3.11+):
 cd backend
 pip install -e ".[dev]"
 uvicorn app.main:app --reload      # http://localhost:8000, docs at /docs
-pytest                              # 56 tests
+pytest --cov=app                    # 119 tests, 94% coverage
 ```
 
 Frontend (Node 20+):

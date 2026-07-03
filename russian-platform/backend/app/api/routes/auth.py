@@ -34,6 +34,7 @@ class UserResponse(BaseModel):
     streak_days: int
     daily_goal_minutes: int
     ui_immersion_ratio: float
+    preferences: dict
 
 
 def _user_response(user: User) -> UserResponse:
@@ -47,6 +48,7 @@ def _user_response(user: User) -> UserResponse:
         streak_days=user.streak_days,
         daily_goal_minutes=user.daily_goal_minutes,
         ui_immersion_ratio=user.ui_immersion_ratio,
+        preferences=user.preferences or {},
     )
 
 
@@ -74,4 +76,31 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 
 @router.get("/me", response_model=UserResponse)
 def me(user: User = Depends(get_current_user)):
+    return _user_response(user)
+
+
+class ProfileUpdate(BaseModel):
+    display_name: str | None = Field(default=None, min_length=1, max_length=64)
+    daily_goal_minutes: int | None = Field(default=None, ge=5, le=480)
+    ui_immersion_ratio: float | None = Field(default=None, ge=0.0, le=1.0)
+    # Accessibility & UI preferences, merged key-by-key:
+    # font_scale, high_contrast, dyslexia_font, reduced_motion, captions, ...
+    preferences: dict | None = None
+
+
+@router.patch("/me", response_model=UserResponse)
+def update_me(
+    payload: ProfileUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    if payload.display_name is not None:
+        user.display_name = payload.display_name
+    if payload.daily_goal_minutes is not None:
+        user.daily_goal_minutes = payload.daily_goal_minutes
+    if payload.ui_immersion_ratio is not None:
+        user.ui_immersion_ratio = payload.ui_immersion_ratio
+    if payload.preferences is not None:
+        user.preferences = {**(user.preferences or {}), **payload.preferences}
+    db.commit()
     return _user_response(user)

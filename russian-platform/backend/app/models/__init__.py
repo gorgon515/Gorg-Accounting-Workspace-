@@ -10,12 +10,14 @@ from app.models.gamification import Achievement, UserAchievement
 from app.models.grammar import GrammarMastery, GrammarTopic
 from app.models.language import Language
 from app.models.lesson import Course, Lesson, LessonCompletion
+from app.models.library import Bookmark, Text
 from app.models.srs import Card, ReviewLog
 from app.models.user import User
 from app.models.vocabulary import ExampleSentence, Lexeme, LexemeRelation
 
 __all__ = [
     "Achievement",
+    "Bookmark",
     "Card",
     "ConversationSession",
     "ConversationTurn",
@@ -32,6 +34,7 @@ __all__ = [
     "PronunciationAttempt",
     "ReviewLog",
     "Scenario",
+    "Text",
     "User",
     "UserAchievement",
     "WritingSubmission",

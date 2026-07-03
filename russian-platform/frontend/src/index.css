@@ -6,6 +6,48 @@
   html {
     @apply text-slate-800;
   }
+
+  /* Visible focus for keyboard navigation everywhere. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-1;
+  }
+}
+
+/* Accessibility modes, toggled from Settings (classes on the app root). */
+.high-contrast {
+  @apply bg-white text-black;
+}
+.high-contrast .card {
+  @apply border-2 border-black;
+}
+.high-contrast .text-slate-400,
+.high-contrast .text-slate-500 {
+  color: #1f2937; /* darken low-contrast secondary text */
+}
+
+.dyslexia-font {
+  font-family: Verdana, 'Comic Sans MS', system-ui, sans-serif;
+  letter-spacing: 0.03em;
+  word-spacing: 0.1em;
+  line-height: 1.7;
+}
+
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @layer components {

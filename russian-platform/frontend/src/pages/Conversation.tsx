@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { api } from '../api/client';
+import { getSpeechRecognition, recognizeOnce, speak } from '../lib/speech';
 import type { PartnerReply, Scenario } from '../types';
 
 interface Turn {
@@ -10,37 +11,21 @@ interface Turn {
   corrections?: PartnerReply['corrections'];
 }
 
-function speak(text: string) {
-  const u = new SpeechSynthesisUtterance(text.replace(/́/g, ''));
-  u.lang = 'ru-RU';
-  u.rate = 0.9;
-  window.speechSynthesis.speak(u);
-}
-
 /** Browser speech recognition (Web Speech API) where available. */
 function useSpeechInput(onResult: (text: string) => void) {
-  const recognitionRef = useRef<any>(null);
   const [listening, setListening] = useState(false);
-  const Recognition =
-    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const supported = getSpeechRecognition() !== null;
 
   const start = () => {
-    if (!Recognition) return;
-    const recognition = new Recognition();
-    recognition.lang = 'ru-RU';
-    recognition.interimResults = false;
-    recognition.onresult = (event: any) => {
-      onResult(event.results[0][0].transcript);
-      setListening(false);
-    };
-    recognition.onend = () => setListening(false);
-    recognition.onerror = () => setListening(false);
-    recognitionRef.current = recognition;
-    recognition.start();
+    if (!supported || listening) return;
     setListening(true);
+    recognizeOnce().then((transcript) => {
+      if (transcript) onResult(transcript);
+      setListening(false);
+    });
   };
 
-  return { supported: Boolean(Recognition), listening, start };
+  return { supported, listening, start };
 }
 
 export default function Conversation() {

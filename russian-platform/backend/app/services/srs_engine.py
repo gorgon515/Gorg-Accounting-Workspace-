@@ -108,8 +108,13 @@ def schedule(
     rating: int,
     elapsed_days: float,
     now: datetime | None = None,
+    target_retention: float | None = None,
 ) -> SchedulingResult:
-    """Compute the next memory state and due date for one review."""
+    """Compute the next memory state and due date for one review.
+
+    `target_retention` overrides the configured default — the planner
+    passes a per-user adaptive value (services/srs_planner.py).
+    """
     if rating not in (AGAIN, HARD, GOOD, EASY):
         raise ValueError(f"rating must be 1..4, got {rating}")
     settings = get_settings()
@@ -130,7 +135,9 @@ def schedule(
             new_s = _stability_after_success(stability, new_d, r, rating)
             new_state = "review"
 
-    interval = interval_for_retention(new_s, settings.srs_target_retention)
+    interval = interval_for_retention(
+        new_s, target_retention or settings.srs_target_retention
+    )
     if new_state in ("learning", "relearning"):
         interval = min(interval, 1.0 / 144.0)  # ~10 minutes, same session
     interval = min(interval, float(settings.srs_max_interval_days))

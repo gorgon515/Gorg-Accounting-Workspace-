@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -10,9 +10,33 @@ from app.core.config import get_settings
 from app.core.database import get_db
 from app.models import Card, LearningEvent, Lexeme, ReviewLog, User
 from app.services import srs_engine
-from app.services.gamification import award_xp, evaluate_achievements, touch_streak
+from app.services.gamification import (
+    award_xp,
+    evaluate_achievements,
+    serialize_achievements,
+    touch_streak,
+)
+from app.services.srs_planner import (
+    adaptive_target_retention,
+    balance_due_date,
+    forecast,
+)
+from app.services.text_utils import ensure_utc
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
+
+
+@router.get("/forecast")
+def review_forecast(
+    days: int = Query(30, ge=1, le=90),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Daily due-card forecast plus the learner's adaptive retention target."""
+    return {
+        "forecast": forecast(db, user.id, days),
+        "target_retention": adaptive_target_retention(db, user.id),
+    }
 
 
 @router.get("/queue")
@@ -82,9 +106,7 @@ def submit_review(
 
     now = datetime.now(timezone.utc)
     last = card.last_reviewed_at
-    if last is not None and last.tzinfo is None:
-        last = last.replace(tzinfo=timezone.utc)
-    elapsed = (now - last).total_seconds() / 86400.0 if last else 0.0
+    elapsed = (now - ensure_utc(last)).total_seconds() / 86400.0 if last else 0.0
 
     result = srs_engine.schedule(
         stability=card.stability,
@@ -93,6 +115,7 @@ def submit_review(
         rating=payload.rating,
         elapsed_days=elapsed,
         now=now,
+        target_retention=adaptive_target_retention(db, user.id),
     )
 
     db.add(
@@ -113,7 +136,7 @@ def submit_review(
     card.stability = result.stability
     card.difficulty = result.difficulty
     card.state = result.state
-    card.due_at = result.due_at
+    card.due_at = balance_due_date(db, user.id, result.due_at)
     card.last_reviewed_at = now
     card.reps += 1
 
@@ -136,5 +159,5 @@ def submit_review(
         "difficulty": round(card.difficulty, 2),
         "interval_days": round(result.interval_days, 2),
         "due_at": card.due_at.isoformat(),
-        "achievements": [{"slug": a.slug, "title": a.title, "icon": a.icon} for a in fresh],
+        "achievements": serialize_achievements(fresh),
     }

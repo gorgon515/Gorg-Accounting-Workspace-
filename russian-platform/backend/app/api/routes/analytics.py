@@ -12,6 +12,7 @@ from app.models import (
     GrammarMastery,
     GrammarTopic,
     LearningEvent,
+    PronunciationAttempt,
     ReviewLog,
     User,
     UserAchievement,
@@ -19,8 +20,115 @@ from app.models import (
 from app.services.cefr import estimate_cefr
 from app.services.gamification import xp_progress
 from app.services.srs_engine import retrievability
+from app.services.text_utils import ensure_utc
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
+
+
+@router.get("/trends")
+def trends(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Heatmap, learning velocity, per-skill strengths, and a fluency
+    projection — the Phase 2 deep-analytics layer."""
+    now = datetime.now(timezone.utc)
+
+    # Activity heatmap: events per day, last 13 weeks.
+    start = now - timedelta(days=91)
+    heat_rows = db.execute(
+        select(
+            func.date(LearningEvent.created_at), func.count(LearningEvent.id)
+        )
+        .where(LearningEvent.user_id == user.id, LearningEvent.created_at >= start)
+        .group_by(func.date(LearningEvent.created_at))
+    ).all()
+    heatmap = {str(day): count for day, count in heat_rows}
+
+    # Learning velocity: cards first reviewed per ISO week, last 6 weeks.
+    week_counts: dict[str, int] = {}
+    first_reviews = db.execute(
+        select(func.min(ReviewLog.reviewed_at))
+        .where(ReviewLog.user_id == user.id)
+        .group_by(ReviewLog.card_id)
+    ).scalars().all()
+    for reviewed in first_reviews:
+        if reviewed is None:
+            continue
+        reviewed = ensure_utc(reviewed)
+        if (now - reviewed).days > 42:
+            continue
+        key = reviewed.strftime("%G-W%V")
+        week_counts[key] = week_counts.get(key, 0) + 1
+    velocity = sorted(
+        [{"week": week, "new_words": count} for week, count in week_counts.items()],
+        key=lambda item: item["week"],
+    )
+
+    # Per-skill scores from each skill's own evidence.
+    cefr = estimate_cefr(db, user.id)
+    week_ago = now - timedelta(days=7)
+    again = db.scalar(
+        select(func.count(ReviewLog.id)).where(
+            ReviewLog.user_id == user.id,
+            ReviewLog.reviewed_at >= week_ago,
+            ReviewLog.rating == 1,
+        )
+    ) or 0
+    total_reviews = db.scalar(
+        select(func.count(ReviewLog.id)).where(
+            ReviewLog.user_id == user.id, ReviewLog.reviewed_at >= week_ago
+        )
+    ) or 0
+    grammar_avg = db.scalar(
+        select(func.avg(GrammarMastery.mastery)).where(
+            GrammarMastery.user_id == user.id
+        )
+    )
+    speaking_avg = db.scalar(
+        select(func.avg(PronunciationAttempt.overall_score)).where(
+            PronunciationAttempt.user_id == user.id
+        )
+    )
+    listening_scores = [
+        e.payload.get("score")
+        for e in db.scalars(
+            select(LearningEvent).where(
+                LearningEvent.user_id == user.id,
+                LearningEvent.event_type == "listening",
+            )
+        )
+        if e.payload.get("score") is not None
+    ]
+    skills = {
+        "vocabulary": round(1 - again / total_reviews, 3) if total_reviews else None,
+        "grammar": round(float(grammar_avg), 3) if grammar_avg is not None else None,
+        "speaking": round(float(speaking_avg) / 100, 3) if speaking_avg is not None else None,
+        "listening": round(sum(listening_scores) / len(listening_scores) / 100, 3)
+        if listening_scores else None,
+    }
+    rated = {k: v for k, v in skills.items() if v is not None}
+    strongest = max(rated, key=rated.get) if rated else None
+    weakest = min(rated, key=rated.get) if rated else None
+
+    # Fluency projection: extrapolate recent word velocity to B2 vocabulary.
+    recent_velocity = sum(v["new_words"] for v in velocity[-4:]) / max(len(velocity[-4:]), 1)
+    fluency_estimate = None
+    if recent_velocity > 0:
+        remaining = max(0, 4000 - cefr["known_words"])  # B2 threshold
+        weeks_left = remaining / recent_velocity
+        fluency_estimate = {
+            "target_level": "B2",
+            "words_remaining": remaining,
+            "words_per_week": round(recent_velocity, 1),
+            "estimated_date": (now + timedelta(weeks=weeks_left)).date().isoformat(),
+        }
+
+    return {
+        "heatmap": heatmap,
+        "velocity": velocity,
+        "skills": skills,
+        "strongest_skill": strongest,
+        "weakest_skill": weakest,
+        "fluency_estimate": fluency_estimate,
+    }
 
 
 @router.get("/dashboard")
@@ -54,9 +162,8 @@ def dashboard(db: Session = Depends(get_db), user: User = Depends(get_current_us
     for stability, last in rows:
         if last is None:
             continue
-        if last.tzinfo is None:
-            last = last.replace(tzinfo=timezone.utc)
-        retentions.append(retrievability(stability, (now - last).total_seconds() / 86400))
+        elapsed_days = (now - ensure_utc(last)).total_seconds() / 86400
+        retentions.append(retrievability(stability, elapsed_days))
     avg_retention = round(sum(retentions) / len(retentions), 3) if retentions else None
 
     # Review accuracy trend, last 7 days

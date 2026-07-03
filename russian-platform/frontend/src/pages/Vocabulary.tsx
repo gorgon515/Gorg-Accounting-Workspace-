@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { api } from '../api/client';
+import { speak } from '../lib/speech';
 import type { LexemeDetail, LexemeSummary } from '../types';
 
 export default function Vocabulary() {
@@ -28,13 +29,6 @@ export default function Vocabulary() {
 
   const openDetail = (id: number) =>
     api.get<LexemeDetail>(`/vocabulary/${id}`).then(setDetail).catch(() => {});
-
-  const speak = (text: string) => {
-    const u = new SpeechSynthesisUtterance(text.replace(/́/g, ''));
-    u.lang = 'ru-RU';
-    u.rate = 0.85;
-    window.speechSynthesis.speak(u);
-  };
 
   return (
     <div className="space-y-4">

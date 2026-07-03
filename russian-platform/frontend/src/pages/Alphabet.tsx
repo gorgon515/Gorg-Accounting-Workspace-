@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { api } from '../api/client';
+import { speak } from '../lib/speech';
 import type { AlphabetLetter } from '../types';
 
 interface LanguageInfo {
@@ -22,13 +23,6 @@ export default function Alphabet() {
   useEffect(() => {
     api.get<LanguageInfo>('/vocabulary/language/ru').then(setInfo).catch(() => {});
   }, []);
-
-  const speak = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ru-RU';
-    utterance.rate = 0.8;
-    window.speechSynthesis.speak(utterance);
-  };
 
   if (!info) return <div className="text-slate-400">Загрузка…</div>;
 

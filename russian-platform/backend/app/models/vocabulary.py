@@ -30,6 +30,11 @@ class Lexeme(Base):
     # formal | neutral | informal | slang | vulgar | academic | technical
     domain: Mapped[str] = mapped_column(String(32), default="general", index=True)
     # general | business | medical | legal | finance | tech | ...
+    topic: Mapped[str] = mapped_column(String(32), default="general", index=True)
+    # thematic grouping for lessons/filtering: food, family, travel, ...
+    difficulty: Mapped[float] = mapped_column(Float, default=1.0)
+    # 1.0 (A1 core) .. 6.0 (C2 rare); drives quiz/lesson composition
+    etymology: Mapped[str | None] = mapped_column(Text)
 
     # Meaning
     translation: Mapped[str] = mapped_column(String(256))  # natural translation
