@@ -1,0 +1,749 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Русский Институт</title>
+<style>
+:root{
+  --bg:#F7F6F1; --panel:#FFFFFF; --panel2:#EFEDE6; --ink:#1D2436; --muted:#6B7286;
+  --line:#DDDAD0; --accent:#2B4BC7; --accent-ink:#FFFFFF; --accent-soft:#E4E9FB;
+  --good:#2E7D52; --good-soft:#E2F1E8; --bad:#BF4238; --bad-soft:#F9E6E3;
+  --warn:#9A6A12; --warn-soft:#F6EDD8; --shadow:0 1px 3px rgba(29,36,54,.08);
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#111624; --panel:#1B2233; --panel2:#232B40; --ink:#E9EBF4; --muted:#8B93AC;
+  --line:#2C3550; --accent:#8FA5FF; --accent-ink:#0E1430; --accent-soft:#242F55;
+  --good:#5FBE8C; --good-soft:#1B3A2C; --bad:#F0917F; --bad-soft:#46231E;
+  --warn:#E4B45E; --warn-soft:#3D311B; --shadow:0 1px 3px rgba(0,0,0,.4);
+}}
+:root[data-theme="dark"]{
+  --bg:#111624; --panel:#1B2233; --panel2:#232B40; --ink:#E9EBF4; --muted:#8B93AC;
+  --line:#2C3550; --accent:#8FA5FF; --accent-ink:#0E1430; --accent-soft:#242F55;
+  --good:#5FBE8C; --good-soft:#1B3A2C; --bad:#F0917F; --bad-soft:#46231E;
+  --warn:#E4B45E; --warn-soft:#3D311B; --shadow:0 1px 3px rgba(0,0,0,.4);
+}
+:root[data-theme="light"]{
+  --bg:#F7F6F1; --panel:#FFFFFF; --panel2:#EFEDE6; --ink:#1D2436; --muted:#6B7286;
+  --line:#DDDAD0; --accent:#2B4BC7; --accent-ink:#FFFFFF; --accent-soft:#E4E9FB;
+  --good:#2E7D52; --good-soft:#E2F1E8; --bad:#BF4238; --bad-soft:#F9E6E3;
+  --warn:#9A6A12; --warn-soft:#F6EDD8; --shadow:0 1px 3px rgba(29,36,54,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);
+  font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+.serif{font-family:Georgia,'Times New Roman',serif}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.86em}
+#app{max-width:760px;margin:0 auto;padding:0 16px 90px}
+header{padding:22px 0 10px}
+header h1{font-family:Georgia,serif;font-size:26px;margin:0;letter-spacing:.2px}
+header .sub{color:var(--muted);font-size:13px;margin-top:2px}
+nav{display:flex;flex-wrap:wrap;gap:6px;padding:12px 0;position:sticky;top:0;
+  background:var(--bg);z-index:20;border-bottom:1px solid var(--line)}
+nav button{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  padding:7px 13px;border-radius:6px;font-size:14px;cursor:pointer}
+nav button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+nav button:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px}
+main{padding-top:18px}
+h2{font-family:Georgia,serif;font-size:21px;margin:6px 0 14px;text-wrap:balance}
+h3{font-size:16px;margin:18px 0 8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grow{flex:1}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  padding:9px 16px;border-radius:6px;font-size:15px;cursor:pointer}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:default}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;
+  background:var(--panel2);color:var(--muted)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.muted{color:var(--muted)}.small{font-size:13px}.center{text-align:center}
+input[type=text],input[type=search],textarea,select{width:100%;padding:10px 12px;
+  border:1px solid var(--line);border-radius:6px;background:var(--panel);
+  color:var(--ink);font-size:16px;font-family:inherit}
+textarea{min-height:110px;resize:vertical}
+.q{margin:12px 0}
+.q label{display:block;font-size:14px;margin-bottom:5px}
+.q input{max-width:420px}
+.q.ok input{border-color:var(--good)} .q.no input{border-color:var(--bad)}
+.feedback{font-size:13px;margin-top:4px}
+.stat{display:flex;flex-direction:column;gap:2px;min-width:96px}
+.stat b{font-size:24px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td,th{padding:5px 9px;border-bottom:1px solid var(--line);text-align:left}
+.tablewrap{overflow-x:auto}
+.flash{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:34px 20px;text-align:center;box-shadow:var(--shadow)}
+.flash .word{font-family:Georgia,serif;font-size:46px;line-height:1.15;cursor:pointer}
+.flash .ipa{color:var(--muted);margin-top:6px;font-size:15px}
+.answer{border-top:1px solid var(--line);margin-top:20px;padding-top:16px}
+.answer .tr{font-size:22px;color:var(--accent);font-family:Georgia,serif}
+.grade{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.grade button{padding:11px 4px;border-radius:6px;border:1px solid var(--line);
+  cursor:pointer;font-size:14px;background:var(--panel)}
+.grade .g1{color:var(--bad);border-color:var(--bad)}
+.grade .g2{color:var(--warn);border-color:var(--warn)}
+.grade .g3{color:var(--good);border-color:var(--good)}
+.grade .g4{color:var(--accent);border-color:var(--accent)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;justify-content:space-between;gap:10px;align-items:center;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:11px 14px;cursor:pointer;text-align:left;width:100%;color:var(--ink);font-size:15px}
+.item:hover{border-color:var(--accent)}
+.gridA{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:6px}
+.letter{background:var(--panel);border:1px solid var(--line);border-radius:6px;
+  padding:8px 2px;text-align:center;cursor:pointer;color:var(--ink)}
+.letter b{font-size:20px;font-family:Georgia,serif;display:block}
+.letter span{font-size:10px;color:var(--muted)}
+.letter.vowel{background:var(--accent-soft)}
+.letter.sign{background:var(--warn-soft)}
+.chat{display:flex;flex-direction:column;gap:9px;min-height:200px}
+.msg{max-width:85%;padding:9px 13px;border-radius:12px;font-size:15px}
+.msg.p{background:var(--panel2);align-self:flex-start;border-bottom-left-radius:3px}
+.msg.u{background:var(--accent);color:var(--accent-ink);align-self:flex-end;border-bottom-right-radius:3px}
+.msg .en{font-size:12px;opacity:.75;margin-top:3px}
+.msg .fix{background:var(--warn-soft);color:var(--warn);border-radius:6px;
+  padding:5px 8px;font-size:12.5px;margin-top:6px}
+.hint{background:var(--accent-soft);color:var(--accent);border:none;border-radius:99px;
+  padding:6px 12px;font-size:13px;cursor:pointer}
+.sentence{font-family:Georgia,serif;font-size:23px;line-height:1.5}
+.sentence .w{cursor:pointer;border-radius:4px}
+.sentence .w.known:hover{background:var(--accent-soft)}
+.sentence .w.hl{background:var(--warn-soft)}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,11px);gap:3px;overflow-x:auto;padding:4px 0}
+.heat i{width:11px;height:11px;border-radius:2px;background:var(--panel2)}
+.heat i.h1{background:var(--accent-soft)} .heat i.h2{background:var(--accent);opacity:.55}
+.heat i.h3{background:var(--accent)}
+.bar{height:7px;border-radius:99px;background:var(--panel2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(10,14,26,.5);display:flex;
+  align-items:flex-end;justify-content:center;z-index:50;padding:14px}
+@media(min-width:640px){.modal{align-items:center}}
+.modal .box{background:var(--panel);border-radius:12px;max-width:560px;width:100%;
+  max-height:82vh;overflow-y:auto;padding:20px}
+.modal .box h3{margin-top:0;font-family:Georgia,serif;font-size:26px}
+.note{border-radius:6px;padding:9px 12px;font-size:13.5px;margin:8px 0}
+.note.blue{background:var(--accent-soft)} .note.amber{background:var(--warn-soft)}
+.note.green{background:var(--good-soft)}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;
+  padding:0 5px;font-size:12px;background:var(--panel2)}
+@media (prefers-reduced-motion: no-preference){
+  .flash,.card,.msg{animation:in .18s ease-out}
+  @keyframes in{from{opacity:.4;transform:translateY(3px)}to{opacity:1;transform:none}}
+}
+.skip{position:absolute;left:-9999px}.skip:focus{left:10px;top:10px;z-index:99;
+  background:var(--accent);color:var(--accent-ink);padding:8px 14px;border-radius:6px}
+</style>
+
+<a class="skip" href="#main">К содержанию</a>
+<div id="app">
+  <header>
+    <h1>Русский Институт</h1>
+    <div class="sub">Pocket edition — учится всё, работает без интернета, прогресс хранится в этом браузере.</div>
+  </header>
+  <nav id="nav" aria-label="Разделы"></nav>
+  <main id="main" tabindex="-1"></main>
+</div>
+
+<script type="application/json" id="db">__CONTENT__</script>
+<script>
+"use strict";
+const DB = JSON.parse(document.getElementById("db").textContent);
+const WORDS = DB.words, BYLEMMA = {}; WORDS.forEach(w=>BYLEMMA[w.l]=w);
+const LEVELS = ["A0","A1","A2","B1","B2","C1","C2"];
+
+/* ---------- state ---------- */
+const KEY="ruslan.v1";
+let S; try{ S = JSON.parse(localStorage.getItem(KEY)||"{}"); }catch(e){ S={}; }
+S.cards ||= {}; S.lessons ||= {}; S.grammar ||= {}; S.days ||= {};
+S.settings ||= {rate:0.85}; S.reads ||= {}; S.scen ||= {};
+S.stats ||= {reviews:0, again:0};
+const save = ()=>localStorage.setItem(KEY, JSON.stringify(S));
+const today = ()=> new Date().toISOString().slice(0,10);
+function logDay(kind){ const d=today(); S.days[d] ||= {}; S.days[d][kind]=(S.days[d][kind]||0)+1; save(); }
+
+/* ---------- utils ---------- */
+const strip = t => t.replace(/́/g,"");
+const norm = t => strip(String(t)).toLowerCase().replace(/ё/g,"е").replace(/[.!?,«»"]/g,"").trim().replace(/\s+/g," ");
+const match = (sub, ans, acc) => [ans,...(acc||[])].some(a=>norm(a)===norm(sub));
+function speak(t, rate){ try{ speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(strip(t)); u.lang="ru-RU";
+  u.rate=rate??S.settings.rate; speechSynthesis.speak(u);}catch(e){} }
+const esc = t => String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const el = id => document.getElementById(id);
+function md(t){ // bold + tables + paragraphs
+  return t.split(/\n\n/).map(p=>{
+    if(p.trim().startsWith("|")){
+      const rows=p.trim().split("\n").filter(r=>!/^\|[\s\-|]+\|$/.test(r));
+      return '<div class="tablewrap"><table>'+rows.map((r,i)=>'<tr>'+
+        r.split("|").filter(c=>c.trim()!=="").map(c=>`<${i?'td':'th'}>${inline(c.trim())}</${i?'td':'th'}>`).join("")+'</tr>').join("")+'</table></div>';
+    }
+    return `<p>${inline(p)}</p>`;
+  }).join("");
+  function inline(x){ return esc(x).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>"); }
+}
+
+/* ---------- SRS engine (port of backend srs_engine) ---------- */
+const LN09 = Math.log(0.9);
+function schedule(c, r){
+  const now = Date.now(), day = 864e5;
+  const elapsed = c.last ? (now-c.last)/day : 0;
+  let s=c.S||0, d=c.D||5, state=c.st||"new", ret=0;
+  if(state==="new"||s<=0){ s=[0.4,1.2,3,7][r-1]; d=[8,6.5,5,3.5][r-1];
+    state = r===1?"learning":"review";
+  } else {
+    ret = Math.exp(LN09*elapsed/s);
+    d = Math.min(10,Math.max(1,(d+[1.2,.5,-.1,-.6][r-1])+.05*(5-d)));
+    if(r===1){ s=Math.max(.1,Math.min(.5*Math.pow(d,-.4)*Math.pow(s+1,.3)*Math.exp(.8*(1-ret)), s));
+      state="relearning"; c.lapses=(c.lapses||0)+1;
+    } else {
+      const g=Math.exp(.9)*(11-d)/10*Math.pow(s,-.12)*(Math.exp(1.6*(1-ret))-1)
+        *(r===2?.6:1)*(r===4?1.4:1);
+      s=s*(1+Math.max(g,.02)); state="review";
+    }
+  }
+  let iv = s*Math.log(0.9)/LN09; // target retention 0.9 → iv = s
+  if(state==="learning"||state==="relearning") iv=1/144;
+  iv=Math.min(Math.max(iv,1/144),365);
+  Object.assign(c,{S:s,D:d,st:state,due:now+iv*day,last:now,reps:(c.reps||0)+1});
+  return c;
+}
+function dueCards(){ const now=Date.now();
+  return Object.entries(S.cards).filter(([l,c])=>c.due<=now && BYLEMMA[l]).map(([l])=>l); }
+function newAvailable(){
+  const introduced=new Set(Object.keys(S.cards));
+  const order=[...WORDS].sort((a,b)=>LEVELS.indexOf(a.cefr)-LEVELS.indexOf(b.cefr));
+  return order.filter(w=>!introduced.has(w.l)).map(w=>w.l);
+}
+function introducedToday(){ return (S.days[today()]||{}).intro||0; }
+
+/* ---------- router ---------- */
+const TABS=[["today","Сегодня"],["cards","Карточки"],["lessons","Уроки"],
+  ["grammar","Грамматика"],["dict","Словарь"],["read","Читать"],
+  ["speak","Говорить"],["train","Тренажёр"],["abc","Алфавит"]];
+let TAB="today";
+function nav(){ el("nav").innerHTML=TABS.map(([k,n])=>
+  `<button class="${TAB===k?'on':''}" onclick="go('${k}')">${n}</button>`).join(""); }
+window.go = k => { TAB=k; nav(); render(); el("main").focus({preventScroll:true}); window.scrollTo(0,0); };
+function render(){ VIEWS[TAB](); }
+
+/* ---------- views ---------- */
+const VIEWS={};
+const M=()=>el("main");
+
+/* Today */
+VIEWS.today = ()=>{
+  const due=dueCards().length, learned=Object.values(S.cards).filter(c=>c.st!=="new").length;
+  const passed=Object.values(S.lessons).filter(x=>x.passed).length;
+  const days=Object.keys(S.days).sort();
+  let streak=0; for(let i=0;;i++){ const d=new Date(Date.now()-i*864e5).toISOString().slice(0,10);
+    if(S.days[d]) streak++; else if(i>0) break; else if(!S.days[d]&&i===0){ if(days.length===0) break; continue; } }
+  const acc = S.stats.reviews? Math.round(100*(1-S.stats.again/S.stats.reviews)) : null;
+  const weeks=[...Array(84)].map((_,i)=>{ const d=new Date(Date.now()-(83-i)*864e5).toISOString().slice(0,10);
+    const n=Object.values(S.days[d]||{}).reduce((a,b)=>a+b,0);
+    return `<i class="${n>=15?'h3':n>=6?'h2':n>=1?'h1':''}" title="${d}: ${n}"></i>`; }).join("");
+  M().innerHTML=`
+  <div class="card"><div class="row">
+    <div class="stat"><b>${due}</b><span>карточек ждут</span></div>
+    <div class="stat"><b>${learned}</b><span>слов в памяти</span></div>
+    <div class="stat"><b>${passed}</b><span>уроков пройдено</span></div>
+    <div class="stat"><b>🔥 ${streak}</b><span>дней подряд</span></div>
+    ${acc!==null?`<div class="stat"><b>${acc}%</b><span>точность</span></div>`:""}
+  </div></div>
+  <div class="card"><h3 style="margin-top:0">План на сегодня</h3>
+    <div class="row">
+      <button class="btn pri" onclick="go('cards')">${due?`Повторить ${due}`:"Учить новые слова"}</button>
+      <button class="btn" onclick="go('lessons')">Урок</button>
+      <button class="btn" onclick="go('read')">Читать</button>
+      <button class="btn" onclick="go('speak')">Говорить</button>
+    </div>
+    <p class="small muted">Подсказка: в карточках работают клавиши — <kbd>пробел</kbd> открыть, <kbd>1</kbd>–<kbd>4</kbd> оценить.</p>
+  </div>
+  <div class="card"><h3 style="margin-top:0">Активность — 12 недель</h3>
+    <div class="heat">${weeks}</div></div>
+  <div class="card small muted">В словаре ${WORDS.length} слов · ${DB.grammar.length} тем грамматики ·
+    ${DB.texts.length} текстов · ${DB.scenarios.length} диалогов. Прогресс хранится локально в браузере.</div>`;
+};
+
+/* Flashcards */
+let flipped=false, currentCard=null;
+VIEWS.cards = ()=>{
+  const due=dueCards();
+  let lemma=due[0];
+  if(!lemma){
+    const fresh=newAvailable();
+    if(fresh.length && introducedToday()<10){ lemma=fresh[0];
+      S.cards[lemma]={st:"new",S:0,D:5,due:Date.now(),reps:0};
+      S.days[today()] ||= {}; S.days[today()].intro=(S.days[today()].intro||0)+1; save();
+    }
+  }
+  currentCard=lemma; flipped=false;
+  if(!lemma){ M().innerHTML=`<h2>Карточки</h2><div class="card center">
+    <div style="font-size:44px">🎉</div><p><b>Всё повторено!</b></p>
+    <p class="muted small">Новые слова появятся из уроков — или возвращайтесь завтра
+    (${newAvailable().length} слов в очереди, до 10 новых в день).</p>
+    <button class="btn pri" onclick="forceNew()">+ Ещё 5 новых сейчас</button></div>`;
+    return; }
+  const w=BYLEMMA[lemma], isNew=S.cards[lemma].st==="new";
+  M().innerHTML=`<h2>Карточки <span class="pill acc">${dueCards().length||1} в очереди</span>
+    ${isNew?'<span class="pill warn">новое слово</span>':''}</h2>
+  <div class="flash">
+    <div class="word" onclick="speak('${esc(w.s)}')" title="Нажмите — озвучить">${esc(w.s)} <span style="font-size:18px">🔊</span></div>
+    <div class="ipa mono">${esc(w.ipa)} · ${esc(w.tr)}</div>
+    <div id="ans"></div>
+  </div>
+  <div id="gr" class="center" style="margin-top:14px">
+    <button class="btn pri" onclick="flip()">Показать ответ <span class="muted">(пробел)</span></button>
+  </div>`;
+  if(isNew) speak(w.s);
+};
+window.forceNew = ()=>{ const fresh=newAvailable().slice(0,5);
+  fresh.forEach(l=>S.cards[l]={st:"new",S:0,D:5,due:Date.now(),reps:0}); save(); render(); };
+window.flip = ()=>{
+  if(!currentCard) return; flipped=true;
+  const w=BYLEMMA[currentCard];
+  el("ans").innerHTML=`<div class="answer">
+    <div class="tr">${esc(w.t)}</div>
+    <div class="small muted">${esc(w.pos)}${w.g?` · ${w.g}.`:''}${w.asp?` · ${esc(w.asp)}`:''}${w.ap?` ↔ ${esc(w.ap)}`:''}</div>
+    ${w.mn?`<div class="note amber">💡 ${esc(w.mn)}</div>`:''}
+    ${w.ex?`<div class="small" style="margin-top:8px">${w.ex.slice(0,2).map(e=>`«${esc(e[0])}» — ${esc(e[1])}`).join("<br>")}</div>`:''}
+  </div>`;
+  el("gr").innerHTML=`<div class="grade">
+    <button class="g1" onclick="grade(1)">Забыл<br><span class="small">1</span></button>
+    <button class="g2" onclick="grade(2)">Трудно<br><span class="small">2</span></button>
+    <button class="g3" onclick="grade(3)">Хорошо<br><span class="small">3</span></button>
+    <button class="g4" onclick="grade(4)">Легко<br><span class="small">4</span></button></div>`;
+};
+window.grade = r =>{
+  if(!currentCard) return;
+  schedule(S.cards[currentCard], r);
+  S.stats.reviews++; if(r===1) S.stats.again++;
+  logDay("reviews"); save(); VIEWS.cards();
+};
+document.addEventListener("keydown",e=>{
+  if(TAB!=="cards"||["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName)) return;
+  if(!flipped&&(e.key===" "||e.key==="Enter")){ e.preventDefault(); flip(); }
+  else if(flipped&&["1","2","3","4"].includes(e.key)){ e.preventDefault(); grade(+e.key); }
+});
+
+/* Lessons */
+let openLesson=null;
+VIEWS.lessons = ()=>{
+  if(openLesson) return renderLesson(openLesson);
+  const html=DB.courses.map((c,ci)=>{
+    const prevDone = ci===0 || DB.courses[ci-1].lessons.filter(l=>S.lessons[l.slug]?.passed).length
+        >= Math.ceil(DB.courses[ci-1].lessons.length*0.6);
+    const done=c.lessons.filter(l=>S.lessons[l.slug]?.passed).length;
+    return `<div class="card">
+      <div class="row"><b class="grow">${esc(c.title)}</b>
+        <span class="pill good">${esc(c.cefr_level)}</span>
+        <span class="pill">${done}/${c.lessons.length}</span></div>
+      <div class="bar" style="margin:8px 0"><i style="width:${100*done/c.lessons.length}%"></i></div>
+      <p class="small muted">${esc(c.description)}</p>
+      <div class="list">${c.lessons.map((l,li)=>{
+        const passed=S.lessons[l.slug]?.passed;
+        const unlocked = prevDone && (li===0 || S.lessons[c.lessons[li-1].slug]?.passed);
+        return `<button class="item" ${unlocked?`onclick="openL('${l.slug}')"`:"disabled"}>
+          <span>${l.order_index}. ${esc(l.title)}</span>
+          <span>${passed?'<span class="pill good">✓</span>':unlocked?'<span class="pill acc">начать</span>':'🔒'}</span>
+        </button>`;}).join("")}</div></div>`;
+  }).join("");
+  M().innerHTML=`<h2>Уроки</h2>${html}
+  <div class="card small muted">Это 12 базовых уроков из полной платформы (там их 320).
+  Тренажёр и грамматика дают дополнительную практику по всем ${WORDS.length} словам.</div>`;
+};
+window.openL = slug => { openLesson=slug; render(); };
+function findLesson(slug){ for(const c of DB.courses){ const l=c.lessons.find(x=>x.slug===slug); if(l) return l; } }
+function renderLesson(slug){
+  const l=findLesson(slug);
+  const blocks=l.blocks.map((b,bi)=>{
+    if(b.type==="vocabulary"){ const ws=b.lemmas.map(x=>BYLEMMA[x]).filter(Boolean);
+      return `<div class="card"><h3 style="margin-top:0">Новые слова</h3><div class="list">${
+        ws.map(w=>`<div class="item" onclick="speak('${esc(w.s)}')" role="button" tabindex="0">
+        <span><b class="serif">${esc(w.s)}</b> <span class="muted small">${esc(w.tr)}</span></span>
+        <span class="muted">${esc(w.t)} 🔊</span></div>`).join("")}</div></div>`; }
+    if(b.type==="grammar_ref") return `<div class="note blue">📘 Грамматика урока:
+      <a href="#" style="color:var(--accent)" onclick="openGram('${b.slug}');return false">${b.slug.replace(/-/g," ")}</a></div>`;
+    if(b.type==="dialogue") return `<div class="card"><h3 style="margin-top:0">💬 ${esc(b.title)}</h3>${
+      b.lines.map(x=>`<p style="margin:7px 0"><span class="muted small">${esc(x.speaker)}:</span>
+      <span class="serif" style="cursor:pointer" onclick="speak('${esc(x.text)}')">${esc(x.text)}</span><br>
+      <span class="muted small">${esc(x.translation)}</span></p>`).join("")}</div>`;
+    if(b.type==="reading") return `<div class="card"><h3 style="margin-top:0">📖 ${esc(b.title)}</h3>
+      <p class="serif" style="font-size:19px">${esc(b.text)}</p>
+      <button class="btn small" onclick="speak('${esc(b.text)}')">🔊 Слушать</button>
+      <p class="muted small">${esc(b.translation)}</p></div>`;
+    if(b.type==="culture") return `<div class="note amber"><b>🏛 ${esc(b.title)}.</b> ${esc(b.body)}</div>`;
+    if(b.type==="exercise"||b.type==="mastery_test"){
+      return `<div class="card"><h3 style="margin-top:0">${b.type==="exercise"?"✏️ Практика":"🏆 Зачёт"}</h3>${
+        b.questions.map(q=>`<div class="q" id="q-${bi}-${q.id}">
+          <label for="in-${bi}-${q.id}">${esc(q.prompt)}</label>
+          <input type="text" id="in-${bi}-${q.id}" lang="ru" autocomplete="off">
+          <div class="feedback"></div></div>`).join("")}</div>`; }
+    return "";
+  }).join("");
+  M().innerHTML=`<button class="btn small" onclick="openLesson=null;render()">← Все уроки</button>
+  <h2 style="margin-top:12px">${esc(l.title)}</h2>
+  <p class="small muted">${l.objectives.map(esc).join(" · ")}</p>
+  ${blocks}
+  <button class="btn pri" style="width:100%" onclick="gradeLesson('${slug}')">Проверить урок</button>
+  <div id="lres"></div>`;
+}
+window.gradeLesson = slug =>{
+  const l=findLesson(slug); let total=0, ok=0;
+  l.blocks.forEach((b,bi)=>{ if(b.type!=="exercise"&&b.type!=="mastery_test") return;
+    b.questions.forEach(q=>{ total++;
+      const box=el(`q-${bi}-${q.id}`), val=box.querySelector("input").value;
+      const good=match(val,q.answer,q.accept);
+      box.className="q "+(good?"ok":"no");
+      box.querySelector(".feedback").innerHTML=good?"":
+        `<span style="color:var(--bad)">Правильно: <b>${esc(q.answer)}</b></span>`;
+      if(good) ok++; });});
+  const score= total? ok/total : 1, passed= score>=(l.mastery_threshold||0.8);
+  if(passed && !(S.lessons[slug]?.passed)){
+    (l.new_lemmas||[]).forEach(x=>{ if(BYLEMMA[x] && !S.cards[x])
+      S.cards[x]={st:"new",S:0,D:5,due:Date.now(),reps:0}; });
+  }
+  S.lessons[slug]={passed: passed||S.lessons[slug]?.passed, score:Math.max(score,S.lessons[slug]?.score||0)};
+  logDay("lessons"); save();
+  el("lres").innerHTML=`<div class="card ${passed?'':''}" style="border-color:var(--${passed?'good':'bad'})">
+    <b>${passed?"🎉 Урок пройден!":"Пока не пройден"}</b> — ${Math.round(score*100)}%
+    (нужно ${Math.round((l.mastery_threshold||0.8)*100)}%).
+    ${passed&&l.new_lemmas?.length?`<div class="small muted">${l.new_lemmas.length} слов добавлено в карточки.</div>`:""}
+    ${passed?`<div class="row" style="margin-top:8px"><button class="btn pri" onclick="openLesson=null;render()">Дальше →</button>
+    <button class="btn" onclick="go('cards')">Повторить слова</button></div>`:""}</div>`;
+  el("lres").scrollIntoView({behavior:"smooth"});
+};
+
+/* Grammar */
+let openTopic=null;
+VIEWS.grammar = ()=>{
+  if(openTopic) return renderTopic(openTopic);
+  const groups=LEVELS.map(lv=>({lv, ts:DB.grammar.filter(t=>t.cefr_level===lv)})).filter(g=>g.ts.length);
+  M().innerHTML=`<h2>Грамматика <span class="pill">${DB.grammar.length} тем</span></h2>`+
+    groups.map(g=>`<h3><span class="pill good">${g.lv}</span></h3><div class="list" style="margin-bottom:14px">${
+      g.ts.map(t=>{ const m=S.grammar[t.slug]||0;
+        return `<button class="item" onclick="openGram('${t.slug}')">
+          <span><b>${esc(t.title)}</b><br><span class="muted small">${esc(t.summary)}</span></span>
+          ${m>0?`<span class="pill ${m>=.7?'good':'warn'}">${Math.round(m*100)}%</span>`:""}
+        </button>`;}).join("")}</div>`).join("");
+};
+window.openGram = slug => { openTopic=slug; TAB="grammar"; nav(); renderTopic(slug); window.scrollTo(0,0); };
+function renderTopic(slug){
+  const t=DB.grammar.find(x=>x.slug===slug);
+  M().innerHTML=`<button class="btn small" onclick="openTopic=null;render()">← Грамматика</button>
+  <h2 style="margin-top:12px">${esc(t.title)} <span class="pill good">${t.cefr_level}</span></h2>
+  <div class="muted small">${esc(t.title_native)}</div>
+  ${t.content.map(s=>`<div class="card"><h3 style="margin-top:0">${esc(s.title)}</h3>${md(s.body)}</div>`).join("")}
+  ${t.drills.length?`<div class="card"><h3 style="margin-top:0">✏️ Задания</h3>${
+    t.drills.map(d=>`<div class="q" id="gd-${d.id}"><label for="gi-${d.id}">${esc(d.prompt)}</label>
+      <input type="text" id="gi-${d.id}" lang="ru" autocomplete="off"><div class="feedback"></div></div>`).join("")}
+    <button class="btn pri" onclick="gradeTopic('${slug}')">Проверить</button>
+    <span id="gres" class="small" style="margin-left:10px"></span></div>`:""}`;
+}
+window.gradeTopic = slug =>{
+  const t=DB.grammar.find(x=>x.slug===slug); let ok=0, n=0;
+  t.drills.forEach(d=>{ const box=el("gd-"+d.id); if(!box) return; n++;
+    const good=match(box.querySelector("input").value, d.answer, d.accept);
+    box.className="q "+(good?"ok":"no");
+    box.querySelector(".feedback").innerHTML=good?"":
+      `<span style="color:var(--bad)">Правильно: <b>${esc(d.answer)}</b>${d.explanation?` — ${esc(d.explanation)}`:""}</span>`;
+    if(good) ok++; });
+  const prev=S.grammar[slug]||0;
+  S.grammar[slug]= Math.max(0,Math.min(1, prev*0.6 + (ok/Math.max(n,1))*0.4 ));
+  logDay("grammar"); save();
+  el("gres").textContent=`${ok}/${n} · освоение ${Math.round(S.grammar[slug]*100)}%`;
+};
+
+/* Dictionary */
+VIEWS.dict = ()=>{
+  M().innerHTML=`<h2>Словарь <span class="pill">${WORDS.length} слов</span></h2>
+  <input type="search" id="ds" placeholder="живу, книгу, water, kniga…" aria-label="Поиск"
+    oninput="dsearch(this.value)" autocomplete="off">
+  <p class="small muted">Ищет по русскому, английскому и транслиту; понимает склонённые формы и опечатки.</p>
+  <div id="dres" class="list" style="margin-top:10px"></div>`;
+  dsearch(""); el("ds").focus();
+};
+window.dsearch = q =>{
+  q=q.trim().toLowerCase().replace(/ё/g,"е");
+  let hits=[], note="";
+  if(!q){ hits=WORDS.slice(0,25); }
+  else{
+    hits=WORDS.filter(w=>w.l.replace(/ё/g,"е").includes(q)||w.t.toLowerCase().includes(q)||w.tr.toLowerCase().includes(q)).slice(0,25);
+    if(!hits.length && DB.forms[q]){ hits=[BYLEMMA[DB.forms[q]]]; note=`«${q}» — форма слова:`; }
+    if(!hits.length){ // fuzzy: dice bigrams
+      const bg=s=>{const r=new Set();for(let i=0;i<s.length-1;i++)r.add(s.slice(i,i+2));return r;};
+      const qb=bg(q);
+      hits=WORDS.map(w=>{ const wb=bg(w.l.replace(/ё/g,"е"));
+        let inter=0; qb.forEach(x=>{if(wb.has(x))inter++;});
+        return [2*inter/((qb.size+wb.size)||1), w];})
+        .filter(x=>x[0]>0.5).sort((a,b)=>b[0]-a[0]).slice(0,5).map(x=>x[1]);
+      if(hits.length) note="Возможно, вы имели в виду:";
+    }
+  }
+  el("dres").innerHTML=(note?`<div class="small muted">${note}</div>`:"")+
+    hits.map(w=>`<button class="item" onclick="wordModal('${esc(w.l)}')">
+      <span><b class="serif" style="font-size:17px">${esc(w.s)}</b>
+        <span class="muted small"> ${esc(w.tr)}</span></span>
+      <span class="row"><span class="muted small">${esc(w.t)}</span>
+        <span class="pill good">${w.cefr}</span></span></button>`).join("")
+    ||`<div class="card center muted">Ничего не найдено</div>`;
+};
+window.wordModal = lemma =>{
+  const w=BYLEMMA[lemma]; if(!w) return;
+  const inf=w.inf||{};
+  const tbl=(name,o)=>o?`<h3>${name}</h3><div class="tablewrap"><table>${
+    Object.entries(o).map(([k,v])=>`<tr><td class="muted">${esc(k)}</td><td class="serif">${esc(v)}</td></tr>`).join("")}</table></div>`:"";
+  const div=document.createElement("div"); div.className="modal";
+  div.onclick=e=>{ if(e.target===div) div.remove(); };
+  div.innerHTML=`<div class="box" role="dialog" aria-modal="true">
+    <div class="row"><h3 class="grow">${esc(w.s)}</h3>
+      <button class="btn small" onclick="speak('${esc(w.s)}')">🔊</button>
+      <button class="btn small" onclick="this.closest('.modal').remove()">✕</button></div>
+    <div class="mono muted">${esc(w.ipa)} · ${esc(w.tr)}</div>
+    <p><b>${esc(w.t)}</b>${w.lit?` <span class="muted small">букв. «${esc(w.lit)}»</span>`:""}</p>
+    <div class="row small"><span class="pill">${esc(w.pos)}</span>
+      <span class="pill good">${w.cefr}</span><span class="pill">${esc(w.topic)}</span>
+      ${w.g?`<span class="pill">${w.g}.</span>`:""}
+      ${w.reg?`<span class="pill warn">${esc(w.reg)}</span>`:""}
+      ${w.asp?`<span class="pill acc">${esc(w.asp)}${w.ap?" ↔ "+esc(w.ap):""}</span>`:""}</div>
+    ${w.mn?`<div class="note amber">💡 ${esc(w.mn)}</div>`:""}
+    ${w.un?`<div class="note blue">ℹ️ ${esc(w.un)}</div>`:""}
+    ${w.cn?`<div class="note green">🏛 ${esc(w.cn)}</div>`:""}
+    ${w.et?`<div class="note blue">🌱 ${esc(w.et)}</div>`:""}
+    ${w.cm?`<div class="note" style="background:var(--bad-soft)">⚠️ ${w.cm.map(esc).join(" · ")}</div>`:""}
+    ${tbl("Склонение",inf.declension)}${tbl("Настоящее время",inf.present)}
+    ${tbl("Прошедшее",inf.past)}${tbl("Будущее",inf.future)}${tbl("Формы",inf.forms)}
+    ${w.ex?`<h3>Примеры</h3>${w.ex.map(e=>`<p class="small">
+      <span class="serif" style="font-size:15px;cursor:pointer" onclick="speak('${esc(e[0])}')">${esc(e[0])} 🔊</span><br>
+      <span class="muted">${esc(e[1])}</span></p>`).join("")}`:""}
+    ${!S.cards[w.l]?`<button class="btn pri" onclick="S.cards['${esc(w.l)}']={st:'new',S:0,D:5,due:Date.now(),reps:0};save();this.textContent='✓ В карточках';this.disabled=true">+ Учить это слово</button>`
+      :`<span class="pill good">✓ уже в карточках</span>`}
+  </div>`;
+  document.body.appendChild(div);
+};
+
+/* Reader */
+let openText=null;
+VIEWS.read = ()=>{
+  if(openText) return renderText(openText);
+  M().innerHTML=`<h2>Библиотека</h2><div class="list">${DB.texts.map(t=>{
+    const pos=S.reads[t.slug]||0;
+    return `<button class="item" onclick="openText='${t.slug}';render()">
+      <span><b>${esc(t.title)}</b> <span class="muted small">${esc(t.title_translation)}</span><br>
+      <span class="muted small">${esc(t.summary)}</span></span>
+      <span class="row"><span class="pill good">${t.cefr_level}</span>
+      ${pos>0?`<span class="pill acc">🔖 ${pos+1}</span>`:""}</span></button>`;}).join("")}</div>`;
+};
+let dictMode=false;
+function renderText(slug){
+  const t=DB.texts.find(x=>x.slug===slug);
+  const i=Math.min(S.reads[slug]||0, t.sentences.length-1);
+  const s=t.sentences[i];
+  const words=strip(s.ru).split(/\s+/).map(w=>{
+    const clean=w.toLowerCase().replace(/[^а-яё-]/g,"").replace(/ё/g,"е");
+    const lemma = BYLEMMA[clean] ? clean : DB.forms[clean];
+    return lemma?`<span class="w known" role="button" tabindex="0"
+        onclick="wordModal('${esc(lemma)}')"
+        onkeydown="if(event.key==='Enter')wordModal('${esc(lemma)}')"
+        style="text-decoration:underline dotted var(--muted)">${esc(w)}</span>`
+      :`<span class="w">${esc(w)}</span>`; }).join(" ");
+  M().innerHTML=`<button class="btn small" onclick="openText=null;dictMode=false;render()">← Библиотека</button>
+  <h2 style="margin-top:12px">${esc(t.title)} <span class="pill good">${t.cefr_level}</span></h2>
+  <div class="card">
+    <div class="row small muted" style="justify-content:space-between">
+      <span>Предложение ${i+1} / ${t.sentences.length}</span>
+      <span class="row">
+        ${[["1×",1],["0.8×",.8],["0.6×",.6],["0.4×",.4]].map(([n,r])=>
+          `<button class="btn small ${Math.abs(S.settings.rate-r)<.01?'pri':''}"
+           onclick="S.settings.rate=${r};save();renderText('${slug}')">${n}</button>`).join("")}
+      </span></div>
+    <p class="sentence" style="margin:16px 0">${dictMode? "🎧 Слушайте и пишите…" : words}</p>
+    ${dictMode? `<input type="text" id="dict-in" lang="ru" placeholder="Что вы услышали?"
+        onkeydown="if(event.key==='Enter')checkDict('${slug}',${i})">
+      <div class="row" style="margin-top:8px">
+        <button class="btn" onclick="speak('${esc(s.ru)}')">🔊 Ещё раз</button>
+        <button class="btn pri" onclick="checkDict('${slug}',${i})">Проверить</button>
+        <button class="btn" onclick="dictMode=false;renderText('${slug}')">Показать текст</button></div>
+      <div id="dictres"></div>`
+    : `<p class="muted">${esc(s.en)}</p>
+      <div class="row">
+        <button class="btn" onclick="speak('${esc(s.ru)}')">🔊</button>
+        <button class="btn" onclick="speak('${esc(s.ru)}',0.55)">🐢</button>
+        <button class="btn" onclick="dictMode=true;renderText('${slug}');speak('${esc(s.ru)}')">✍️ Диктант</button>
+      </div>
+      <p class="small muted" style="margin-bottom:0">Нажмите на подчёркнутое слово — откроется словарь. Кнопка ✍️ — напишите предложение на слух.</p>`}
+  </div>
+  <div class="row" style="justify-content:space-between">
+    <button class="btn" ${i===0?"disabled":""} onclick="S.reads['${slug}']=${i-1};save();dictMode=false;render()">← Назад</button>
+    <button class="btn pri" ${i>=t.sentences.length-1?"disabled":""}
+      onclick="S.reads['${slug}']=${i+1};save();dictMode=false;logDay('read');render()">Дальше →</button>
+  </div>`;
+  if(!dictMode) speakLater(s.ru);
+}
+let speakT=null; function speakLater(t){ clearTimeout(speakT); speakT=setTimeout(()=>speak(t),250); }
+window.checkDict = (slug,i)=>{
+  const t=DB.texts.find(x=>x.slug===slug), target=t.sentences[i].ru;
+  const a=norm(el("dict-in").value).split(" ").filter(Boolean);
+  const b=norm(target).split(" ").filter(Boolean);
+  let hit=0; const bb=[...b]; a.forEach(w=>{ const j=bb.indexOf(w); if(j>-1){hit++; bb.splice(j,1);} });
+  const score=Math.round(100*hit/Math.max(b.length,1));
+  logDay("listen");
+  el("dictres").innerHTML=`<div class="note ${score>=90?'green':'amber'}" style="margin-top:10px">
+    <b>${score}%</b> — оригинал: <span class="serif">${esc(target)}</span></div>`;
+};
+
+/* Speak (scenarios) */
+let openScen=null, scenNode=0, chatLog=[];
+VIEWS.speak = ()=>{
+  if(openScen) return renderChat();
+  M().innerHTML=`<h2>Диалоги</h2>
+  <p class="small muted">Собеседник по сценарию: отвечайте по-русски, подсказки помогут. Реплики озвучиваются.</p>
+  <div class="list">${DB.scenarios.map(s=>`<button class="item" onclick="startScen('${s.slug}')">
+    <span><b>${esc(s.title)}</b><br><span class="muted small">${esc(s.description)}</span></span>
+    <span class="pill good">${s.cefr_level}</span></button>`).join("")}</div>`;
+};
+window.startScen = slug =>{
+  openScen=slug; scenNode=0; chatLog=[];
+  const s=DB.scenarios.find(x=>x.slug===slug), n=s.script[0];
+  chatLog.push({role:"p", text:n.partner, en:n.translation});
+  speak(n.partner); renderChat();
+};
+function renderChat(){
+  const s=DB.scenarios.find(x=>x.slug===openScen);
+  const n=s.script[Math.min(scenNode,s.script.length-1)];
+  const done=scenNode<0;
+  M().innerHTML=`<button class="btn small" onclick="openScen=null;render()">← Диалоги</button>
+  <h2 style="margin-top:12px">${esc(s.title)}</h2>
+  ${s.goals?.length?`<div class="small muted" style="margin-bottom:8px">Цели: ${s.goals.map(esc).join(" · ")}</div>`:""}
+  <div class="card"><div class="chat">${chatLog.map(m=>`
+    <div class="msg ${m.role}">
+      <span ${m.role==='p'?`style="cursor:pointer" onclick="speak('${esc(m.text)}')"`:''}>${esc(m.text)}</span>
+      ${m.en?`<div class="en">${esc(m.en)}</div>`:""}
+      ${m.fix?`<div class="fix">✏️ ${esc(m.fix)}</div>`:""}
+    </div>`).join("")}
+    ${done?`<div class="note green center"><b>🎉 Диалог завершён!</b><br>
+      <button class="btn pri" style="margin-top:8px" onclick="startScen('${s.slug}')">Ещё раз</button></div>`:""}
+  </div></div>
+  ${!done?`<div class="row" style="margin:8px 0">${(n.hints||[]).map(h=>
+      `<button class="hint" onclick="say('${esc(h)}')">💡 ${esc(h)}</button>`).join("")}</div>
+    <div class="row"><input type="text" id="chat-in" class="grow" lang="ru"
+      placeholder="Напишите по-русски…" onkeydown="if(event.key==='Enter')say(this.value)">
+    <button class="btn pri" onclick="say(el('chat-in').value)">➤</button></div>`:""}`;
+  const box=el("chat-in"); if(box) box.focus();
+}
+window.say = text =>{
+  text=text.trim(); if(!text||openScen===null||scenNode<0) return;
+  const s=DB.scenarios.find(x=>x.slug===openScen);
+  const n=s.script[Math.min(scenNode,s.script.length-1)];
+  chatLog.push({role:"u", text});
+  const t=norm(text);
+  let branch=null, matched=false;
+  for(const b of (n.expects||[])){ if((b.keywords||[]).some(k=>t.includes(norm(k)))){ branch=b; matched=true; break; } }
+  if(!branch && n.expects?.length) branch=n.expects[0];
+  let fix=null;
+  if(!matched && branch) fix=(branch.model_answer?`Лучше сказать: «${strip(branch.model_answer)}». `:"")+(branch.feedback||"");
+  const next= branch? branch.next : scenNode+1;
+  logDay("speak");
+  if(next<0 || next>=s.script.length){
+    scenNode=-1;
+    chatLog.push({role:"p", text:"Отли́чно! Мы зако́нчили диало́г.", en:"Excellent! We finished the dialogue.", fix});
+    speak("Отлично! Мы закончили диалог.");
+  } else {
+    scenNode=next; const nn=s.script[next];
+    chatLog.push({role:"p", text:nn.partner, en:nn.translation, fix});
+    speak(nn.partner);
+  }
+  renderChat();
+};
+
+/* Trainer */
+let trainQ=null, trainMode="cases", trainScore={ok:0,n:0};
+VIEWS.train = ()=>{
+  M().innerHTML=`<h2>Тренажёр</h2>
+  <div class="row" style="margin-bottom:12px">${[["cases","Падежи"],["verbs","Глаголы"],["stress","Ударение"]].map(([k,n])=>
+    `<button class="btn ${trainMode===k?'pri':''}" onclick="trainMode='${k}';trainScore={ok:0,n:0};nextTrain()">${n}</button>`).join("")}
+    <span class="grow"></span><span class="pill" id="tscore"></span></div>
+  <div id="tbody"></div>`;
+  nextTrain();
+};
+const CASE_RU={gen_sg:"родительный (ед.)",dat_sg:"дательный (ед.)",acc_sg:"винительный (ед.)",
+  ins_sg:"творительный (ед.)",pre_sg:"предложный (ед.)",nom_pl:"именительный (мн.)"};
+window.nextTrain = ()=>{
+  el("tscore").textContent = trainScore.n? `${trainScore.ok}/${trainScore.n}` : "";
+  const rand=a=>a[Math.floor(Math.random()*a.length)];
+  if(trainMode==="cases"){
+    const nouns=WORDS.filter(w=>w.pos==="noun"&&w.inf?.declension&&Object.keys(w.inf.declension).length>=5);
+    const w=rand(nouns); const keys=Object.keys(w.inf.declension).filter(k=>CASE_RU[k]);
+    const k=rand(keys);
+    trainQ={a:strip(w.inf.declension[k]), prompt:`«${w.s}» → ${CASE_RU[k]}:`, hint:w.t};
+  } else if(trainMode==="verbs"){
+    const verbs=WORDS.filter(w=>w.pos==="verb"&&w.inf?.present);
+    const w=rand(verbs); const p=rand(Object.keys(w.inf.present));
+    trainQ={a:strip(w.inf.present[p]), prompt:`${p} + ${w.s} («${w.t}») →`, hint:""};
+  } else {
+    const c=WORDS.filter(w=>(strip(w.s).match(/[аеёиоуыэюя]/gi)||[]).length>=2 && w.s.includes("́"));
+    const w=rand(c); const plain=strip(w.s);
+    const total=(plain.match(/[аеёиоуыэюя]/gi)||[]).length;
+    // Stressed syllable index = vowels before the combining accent mark.
+    const accent=w.s.indexOf("́");
+    const sy=(strip(w.s.slice(0,accent)).match(/[аеёиоуыэюя]/gi)||[]).length;
+    trainQ={a:String(sy), prompt:`Какой слог ударный в «${plain}» («${w.t}»)? 1–${total}`, hint:""};
+  }
+  el("tbody").innerHTML=`<div class="card"><div class="q">
+    <label for="tin" style="font-size:17px">${esc(trainQ.prompt)}</label>
+    ${trainQ.hint?`<div class="small muted" style="margin-bottom:6px">${esc(trainQ.hint)}</div>`:""}
+    <input type="text" id="tin" lang="ru" autocomplete="off"
+      onkeydown="if(event.key==='Enter')checkTrain()">
+    <div class="feedback" id="tfb"></div></div>
+    <div class="row"><button class="btn pri" onclick="checkTrain()">Проверить</button>
+    <button class="btn" onclick="nextTrain()">Пропустить →</button></div></div>`;
+  el("tin").focus();
+};
+window.checkTrain = ()=>{
+  const v=el("tin").value; if(!v.trim()) return;
+  const good=norm(v)===norm(trainQ.a);
+  trainScore.n++; if(good) trainScore.ok++;
+  logDay("train");
+  el("tfb").innerHTML= good? `<span style="color:var(--good)">✓ Верно!</span>`
+    : `<span style="color:var(--bad)">Правильно: <b>${esc(trainQ.a)}</b></span>`;
+  el("tscore").textContent=`${trainScore.ok}/${trainScore.n}`;
+  setTimeout(nextTrain, good?600:1800);
+};
+
+/* Alphabet */
+VIEWS.abc = ()=>{
+  M().innerHTML=`<h2>Алфавит <span class="pill">33 буквы</span></h2>
+  <div class="gridA">${DB.alphabet.map((a,i)=>`
+    <button class="letter ${a.type==='vowel'?'vowel':a.type==='sign'?'sign':''}"
+      onclick="letterModal(${i})"><b>${a.letter.split(" ")[0]}</b><span>${esc(a.translit)}</span></button>`).join("")}
+  </div>
+  <div class="row small muted" style="margin:10px 0 18px">
+    <span><i style="display:inline-block;width:10px;height:10px;background:var(--accent-soft);border-radius:2px"></i> гласные</span>
+    <span><i style="display:inline-block;width:10px;height:10px;background:var(--warn-soft);border-radius:2px"></i> знаки</span></div>
+  <h3>Правила произношения</h3>
+  ${DB.rules.map(r=>`<div class="card"><b>${esc(r.rule)}</b><p class="small muted" style="margin:4px 0 0">${esc(r.detail)}</p></div>`).join("")}`;
+};
+window.letterModal = i =>{
+  const a=DB.alphabet[i];
+  const div=document.createElement("div"); div.className="modal";
+  div.onclick=e=>{ if(e.target===div) div.remove(); };
+  div.innerHTML=`<div class="box" role="dialog" aria-modal="true">
+    <div class="row"><h3 class="grow serif" style="font-size:44px">${a.letter}</h3>
+      <button class="btn small" onclick="speak('${a.letter.split(" ")[0]}',0.7)">🔊</button>
+      <button class="btn small" onclick="this.closest('.modal').remove()">✕</button></div>
+    <div class="mono muted">«${esc(a.name)}» · ${esc(a.ipa)} · ${esc(a.type)}</div>
+    <p>${esc(a.note)}</p>
+    <div class="note blue">Пример: <b class="serif" style="cursor:pointer"
+      onclick="speak('${esc(a.example.word)}')">${esc(a.example.word)} 🔊</b> — ${esc(a.example.translation)}</div>
+  </div>`;
+  document.body.appendChild(div);
+};
+
+/* boot */
+nav(); render();
+</script>
