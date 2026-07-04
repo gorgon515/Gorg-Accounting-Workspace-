@@ -7,6 +7,7 @@ from app.models import (
     Course,
     ExampleSentence,
     GrammarTopic,
+    InflectionForm,
     Language,
     Lesson,
     Lexeme,
@@ -14,6 +15,7 @@ from app.models import (
     Scenario,
     Text,
 )
+from app.services.morphology import strip_stress
 from app.seed.achievements import ACHIEVEMENTS
 from app.seed.alphabet import ALPHABET, PRONUNCIATION_RULES
 from app.seed.library import TEXTS
@@ -69,6 +71,21 @@ def seed_all(db: Session) -> None:
                     note=note,
                 )
             )
+        # Reverse form index for declined/conjugated lookup (Dictionary 2.0).
+        seen_forms = {lexeme.lemma}
+        for table_name, forms in (lexeme.inflections or {}).items():
+            if not isinstance(forms, dict):
+                continue
+            for slot, form in forms.items():
+                plain = strip_stress(str(form)).lower()
+                if plain and plain not in seen_forms:
+                    seen_forms.add(plain)
+                    db.add(
+                        InflectionForm(
+                            lexeme_id=lexeme.id, form=plain,
+                            table_name=table_name, slot=str(slot),
+                        )
+                    )
 
     def merged_topics() -> list[dict]:
         """Catalog topics + Phase 2 content fills + C2 tier."""

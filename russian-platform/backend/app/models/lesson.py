@@ -18,6 +18,14 @@ class Course(Base):
     cefr_level: Mapped[str] = mapped_column(String(4), index=True)
     order_index: Mapped[int] = mapped_column(Integer)
     description: Mapped[str] = mapped_column(Text)
+    # Track grouping for the курс catalog UI: core | skills | grammar |
+    # sentences | listening | phonetics
+    track: Mapped[str] = mapped_column(String(24), default="core", index=True)
+    # Gating: this course unlocks when `prerequisite_slug` is at least
+    # `min_completion` passed. Null = always unlocked. Lessons unlock
+    # sequentially *within* a course (see services/lesson_gate.py).
+    prerequisite_slug: Mapped[str | None] = mapped_column(String(64))
+    min_completion: Mapped[float] = mapped_column(Float, default=0.6)
 
     lessons: Mapped[list["Lesson"]] = relationship(
         back_populates="course", order_by="Lesson.order_index"

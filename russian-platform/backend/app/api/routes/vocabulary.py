@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
-from app.models import Language, Lexeme, LexemeRelation, User
+from app.models import InflectionForm, Language, Lexeme, LexemeRelation, User
 
 router = APIRouter(prefix="/vocabulary", tags=["vocabulary"])
 
@@ -68,14 +68,20 @@ def list_vocabulary(
 ):
     stmt = select(Lexeme)
     if q:
-        pattern = f"%{q.lower()}%"
-        stmt = stmt.where(
-            or_(
-                func.lower(Lexeme.lemma).like(pattern),
-                func.lower(Lexeme.translation).like(pattern),
-                func.lower(Lexeme.transliteration).like(pattern),
+        # Wildcards: * matches any run of characters (lemma search only,
+        # e.g. "по*ать" or "*ость").
+        if "*" in q:
+            pattern = q.lower().replace("*", "%")
+            stmt = stmt.where(func.lower(Lexeme.lemma).like(pattern))
+        else:
+            pattern = f"%{q.lower()}%"
+            stmt = stmt.where(
+                or_(
+                    func.lower(Lexeme.lemma).like(pattern),
+                    func.lower(Lexeme.translation).like(pattern),
+                    func.lower(Lexeme.transliteration).like(pattern),
+                )
             )
-        )
     if cefr:
         stmt = stmt.where(Lexeme.cefr_level == cefr)
     if pos:
@@ -91,10 +97,27 @@ def list_vocabulary(
         .offset(offset)
     ).all()
 
+    # Inflected-form lookup: "живу" → жить, "книгу" → книга. Runs when the
+    # literal search found nothing (Dictionary 2.0).
+    form_matches = []
+    if q and total == 0 and not offset and "*" not in q:
+        needle_form = q.strip().lower().replace("ё", "е")
+        hits = db.execute(
+            select(InflectionForm, Lexeme)
+            .join(Lexeme, InflectionForm.lexeme_id == Lexeme.id)
+            .where(InflectionForm.form == needle_form)
+            .limit(5)
+        ).all()
+        form_matches = [
+            {**_lexeme_dict(lexeme), "matched_form": inflection.form,
+             "form_slot": f"{inflection.table_name}.{inflection.slot}"}
+            for inflection, lexeme in hits
+        ]
+
     # Fuzzy fallback: exact search found nothing → suggest close matches
     # (typos, missing soft signs, wrong vowel): "кнега" → книга.
     fuzzy = []
-    if q and total == 0 and not offset:
+    if q and total == 0 and not offset and not form_matches and "*" not in q:
         needle = q.lower().replace("ё", "е")
         candidates = db.execute(select(Lexeme.id, Lexeme.lemma, Lexeme.translation)).all()
         scored: list[tuple[float, int]] = []
@@ -111,7 +134,12 @@ def list_vocabulary(
             found = {l.id: l for l in db.scalars(select(Lexeme).where(Lexeme.id.in_(ids)))}
             fuzzy = [_lexeme_dict(found[i]) for i in ids if i in found]
 
-    return {"total": total, "items": [_lexeme_dict(l) for l in rows], "fuzzy": fuzzy}
+    return {
+        "total": total,
+        "items": [_lexeme_dict(l) for l in rows],
+        "form_matches": form_matches,
+        "fuzzy": fuzzy,
+    }
 
 
 @router.get("/topics")
@@ -123,6 +151,46 @@ def list_topics(db: Session = Depends(get_db), user: User = Depends(get_current_
         .order_by(func.count(Lexeme.id).desc())
     ).all()
     return [{"topic": topic, "count": count} for topic, count in rows]
+
+
+@router.get("/{lexeme_id}/family")
+def word_family(
+    lexeme_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Word-family tree: same-root lexemes plus explicit relations."""
+    lexeme = db.get(Lexeme, lexeme_id)
+    if lexeme is None:
+        raise HTTPException(404, "Lexeme not found")
+    same_root = []
+    if lexeme.root:
+        same_root = [
+            _lexeme_dict(l)
+            for l in db.scalars(
+                select(Lexeme).where(Lexeme.root == lexeme.root,
+                                     Lexeme.id != lexeme.id)
+            )
+        ]
+    relations = db.scalars(
+        select(LexemeRelation).where(LexemeRelation.lexeme_id == lexeme.id)
+    ).all()
+    # Resolve relation targets that exist in the dictionary for linking.
+    targets = {r.target_lemma for r in relations}
+    resolved = {
+        l.lemma: l.id
+        for l in db.scalars(select(Lexeme).where(Lexeme.lemma.in_(targets)))
+    }
+    return {
+        "lemma": lexeme.lemma,
+        "root": lexeme.root,
+        "same_root": same_root,
+        "relations": [
+            {"type": r.relation_type, "target": r.target_lemma,
+             "note": r.note, "target_id": resolved.get(r.target_lemma)}
+            for r in relations
+        ],
+    }
 
 
 @router.get("/verb-pairs")

@@ -1,3 +1,5 @@
+import { enqueue } from '../lib/offline';
+
 const BASE = '/api/v1';
 const TOKEN_KEY = 'rli_token';
 
@@ -42,10 +44,29 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+/** Paths whose POSTs are queued for later sync when offline. */
+const OFFLINE_QUEUEABLE = /^\/reviews\/\d+$/;
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
-  post: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) }),
+  post: async <T>(path: string, body?: unknown): Promise<T> => {
+    try {
+      return await request<T>(path, {
+        method: 'POST',
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+    } catch (error) {
+      // Network failure on a queueable write → persist and report queued.
+      if (
+        OFFLINE_QUEUEABLE.test(path) &&
+        (error instanceof TypeError || !navigator.onLine)
+      ) {
+        enqueue(path, body);
+        return { queued: true } as T;
+      }
+      throw error;
+    }
+  },
   put: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
   patch: <T>(path: string, body?: unknown) =>

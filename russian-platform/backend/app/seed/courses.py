@@ -53,6 +53,8 @@ COURSES = [
         "title": "Foundations: Read & Greet",
         "cefr_level": "A0",
         "order_index": 1,
+        "track": "core",
+        "prerequisite_slug": None,
         "description": "From zero to reading Cyrillic, greeting people, and "
                        "introducing yourself. No prior knowledge assumed.",
         "lessons": [
@@ -199,6 +201,8 @@ COURSES = [
         "title": "Survival Russian",
         "cefr_level": "A1",
         "order_index": 2,
+        "track": "core",
+        "prerequisite_slug": "a0-foundations",
         "description": "Live a day in Russian: say where you live and work, "
                        "order food, count, and handle simple conversations.",
         "lessons": [

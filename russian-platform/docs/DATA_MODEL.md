@@ -4,6 +4,39 @@ All tables use SQLAlchemy 2.0 typed mappings (`app/models/`). JSON columns
 hold per-entity flexible structures (inflection tables, lesson blocks,
 dialogue scripts) — natively supported by both SQLite and PostgreSQL.
 
+## ER overview
+
+```mermaid
+erDiagram
+    languages ||--o{ lexemes : has
+    languages ||--o{ grammar_topics : has
+    languages ||--o{ courses : has
+    languages ||--o{ scenarios : has
+    languages ||--o{ texts : has
+    lexemes ||--o{ example_sentences : has
+    lexemes ||--o{ lexeme_relations : has
+    lexemes ||--o{ inflection_forms : "indexed by"
+    courses ||--o{ lessons : contains
+    users ||--o{ cards : owns
+    lexemes ||--o{ cards : "learned as"
+    cards ||--o{ review_logs : logs
+    users ||--o{ lesson_completions : records
+    lessons ||--o{ lesson_completions : "graded by"
+    users ||--o{ grammar_mastery : tracks
+    grammar_topics ||--o{ grammar_mastery : "measured by"
+    users ||--o{ conversation_sessions : holds
+    scenarios ||--o{ conversation_sessions : stages
+    conversation_sessions ||--o{ conversation_turns : contains
+    users ||--o{ learning_events : streams
+    users ||--o{ pronunciation_attempts : records
+    users ||--o{ writing_submissions : submits
+    users ||--o{ exam_results : takes
+    users ||--o{ bookmarks : keeps
+    texts ||--o{ bookmarks : "position in"
+    users ||--o{ user_achievements : earns
+    achievements ||--o{ user_achievements : "granted as"
+```
+
 ## Content (per language)
 
 | Table | Purpose | Notable columns |

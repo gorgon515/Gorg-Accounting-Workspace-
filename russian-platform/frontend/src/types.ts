@@ -87,6 +87,8 @@ export interface CourseInfo {
   title: string;
   cefr_level: string;
   description: string;
+  track: string;
+  prerequisite_slug: string | null;
   lessons: {
     slug: string;
     title: string;

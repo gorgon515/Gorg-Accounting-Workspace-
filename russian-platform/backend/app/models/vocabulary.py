@@ -80,6 +80,20 @@ class ExampleSentence(Base):
     lexeme: Mapped[Lexeme] = relationship(back_populates="examples")
 
 
+class InflectionForm(Base):
+    """Reverse index: every inflected form → its lexeme, so learners can
+    look up «живу» and land on жить. Populated at seed time from the
+    morphology tables (see seed/runner.py)."""
+
+    __tablename__ = "inflection_forms"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    lexeme_id: Mapped[int] = mapped_column(ForeignKey("lexemes.id"), index=True)
+    form: Mapped[str] = mapped_column(String(128), index=True)  # stress-stripped
+    table_name: Mapped[str] = mapped_column(String(24))  # declension | present | ...
+    slot: Mapped[str] = mapped_column(String(16))  # gen_sg | я | f | ...
+
+
 class LexemeRelation(Base):
     """Synonyms, antonyms, word-family links, collocations, false friends."""
 

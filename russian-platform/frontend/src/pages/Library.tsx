@@ -1,7 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { api } from '../api/client';
-import { recognizeOnce, speak, speakAsync, stopSpeaking } from '../lib/speech';
+import {
+  SPEED_PRESETS,
+  getSavedRate,
+  recognizeOnce,
+  saveRate,
+  speak,
+  speakAsync,
+  speakKaraoke,
+  stopSpeaking,
+  stripStress,
+} from '../lib/speech';
 
 interface TextSummary {
   slug: string;
@@ -58,8 +68,15 @@ export default function Library() {
   const [text, setText] = useState<TextDetail | null>(null);
   const [current, setCurrent] = useState(0);
   const [mode, setMode] = useState<Mode>('read');
-  const [rate, setRate] = useState(0.85);
+  const [rate, setRateState] = useState(getSavedRate());
   const [looping, setLooping] = useState(false);
+  const [karaokeWord, setKaraokeWord] = useState(-1);
+  const [abRange, setAbRange] = useState<[number, number] | null>(null);
+
+  const setRate = (value: number) => {
+    setRateState(value);
+    saveRate(value);
+  };
   const [popup, setPopup] = useState<{ word: string; entry: GlossaryEntry } | null>(null);
   const [dictationInput, setDictationInput] = useState('');
   const [dictationResult, setDictationResult] = useState<DictationResult | null>(null);
@@ -109,10 +126,36 @@ export default function Library() {
     if (!text || looping) return;
     loopRef.current = true;
     setLooping(true);
+    // A/B repeat: loop the selected sentence range; otherwise the current one.
+    const [from, to] = abRange ?? [current, current];
     while (loopRef.current) {
-      await speakAsync(text.sentences[current].ru, rate);
+      for (let i = from; i <= to && loopRef.current; i++) {
+        setCurrent(i);
+        await speakAsync(text.sentences[i].ru, rate);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
       await new Promise((resolve) => setTimeout(resolve, 700));
     }
+  };
+
+  const playKaraoke = async () => {
+    if (!text) return;
+    const plain = stripStress(text.sentences[current].ru);
+    const words = plain.split(/\s+/);
+    const offsets: number[] = [];
+    let cursor = 0;
+    for (const word of words) {
+      offsets.push(plain.indexOf(word, cursor));
+      cursor = plain.indexOf(word, cursor) + word.length;
+    }
+    await speakKaraoke(plain, rate, (charIndex) => {
+      let index = 0;
+      for (let i = 0; i < offsets.length; i++) {
+        if (charIndex >= offsets[i]) index = i;
+      }
+      setKaraokeWord(index);
+    });
+    setKaraokeWord(-1);
   };
 
   const shadow = async () => {
@@ -215,19 +258,19 @@ export default function Library() {
             {m === 'read' ? '📖 Read' : m === 'shadow' ? '🗣️ Shadow' : '✍️ Dictation'}
           </button>
         ))}
-        <label className="ml-auto flex items-center gap-2 text-xs text-slate-500">
-          Speed
-          <input
-            type="range"
-            min="0.5"
-            max="1.2"
-            step="0.05"
-            value={rate}
-            onChange={(e) => setRate(Number(e.target.value))}
-            aria-label="Playback speed"
-          />
-          {rate.toFixed(2)}×
-        </label>
+        <div className="ml-auto flex items-center gap-1" role="group" aria-label="Playback speed">
+          {SPEED_PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              className={`badge ${Math.abs(rate - preset.rate) < 0.01
+                ? 'bg-brand-600 text-white'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              onClick={() => setRate(preset.rate)}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="card">
@@ -236,17 +279,30 @@ export default function Library() {
             Sentence {current + 1} / {text.sentences.length}
           </span>
           <div className="flex gap-2">
-            <button className="btn-secondary px-2 py-1" onClick={() => speak(sentence.ru, rate)}>
+            <button className="btn-secondary px-2 py-1" onClick={playKaraoke}
+                    title="Play with word highlighting">
               🔊
             </button>
-            <button className="btn-secondary px-2 py-1" onClick={() => speak(sentence.ru, 0.6)}>
+            <button className="btn-secondary px-2 py-1" onClick={() => speak(sentence.ru, 0.6)}
+                    title="Slow playback">
               🐢
             </button>
             <button
               className={`btn-secondary px-2 py-1 ${looping ? 'border-red-400 text-red-600' : ''}`}
               onClick={looping ? stopLoop : startLoop}
+              title={abRange ? `Loop sentences ${abRange[0] + 1}–${abRange[1] + 1}` : 'Loop sentence'}
             >
               {looping ? '⏹ Stop' : '🔁 Loop'}
+            </button>
+            <button
+              className={`btn-secondary px-2 py-1 ${abRange ? 'border-brand-400 text-brand-700' : ''}`}
+              onClick={() => {
+                if (abRange) setAbRange(null);
+                else setAbRange([current, Math.min(current + 2, text.sentences.length - 1)]);
+              }}
+              title="A/B repeat: loop this sentence and the next two"
+            >
+              {abRange ? `A·B ${abRange[0] + 1}–${abRange[1] + 1}` : 'A·B'}
             </button>
           </div>
         </div>
@@ -256,10 +312,13 @@ export default function Library() {
             {words.map((word, index) => {
               const key = stripWord(word);
               const entry = text.glossary[key];
+              const highlighted = index === karaokeWord;
               return (
                 <span key={index}>
                   <button
-                    className={entry ? 'rounded hover:bg-brand-50 hover:text-brand-700' : ''}
+                    className={`rounded transition-colors ${
+                      highlighted ? 'bg-amber-200' : ''
+                    } ${entry ? 'hover:bg-brand-50 hover:text-brand-700' : ''}`}
                     onClick={() => entry && setPopup({ word: key, entry })}
                     disabled={!entry}
                   >

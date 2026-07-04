@@ -50,6 +50,8 @@ def list_courses(db: Session = Depends(get_db), user: User = Depends(get_current
                 "title": course.title,
                 "cefr_level": course.cefr_level,
                 "description": course.description,
+                "track": course.track,
+                "prerequisite_slug": course.prerequisite_slug,
                 "lessons": lessons,
             }
         )
@@ -87,10 +89,13 @@ def get_lesson(
     def strip_answers(block: dict) -> dict:
         if block.get("type") not in ("exercise", "mastery_test"):
             return block
+        # Keep presentation fields (e.g. `speak` for dictation questions);
+        # only the answer key stays server-side.
         return {
             **block,
             "questions": [
-                {"id": q["id"], "prompt": q["prompt"]} for q in block["questions"]
+                {k: v for k, v in q.items() if k not in ("answer", "accept")}
+                for q in block["questions"]
             ],
         }
 

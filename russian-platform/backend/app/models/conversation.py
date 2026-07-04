@@ -24,6 +24,8 @@ class Scenario(Base):
     persona_prompt: Mapped[str] = mapped_column(Text)  # LLM system prompt
     script: Mapped[list] = mapped_column(JSON, default=list)  # offline dialogue tree
     key_vocabulary: Mapped[list] = mapped_column(JSON, default=list)
+    goals: Mapped[list] = mapped_column(JSON, default=list)  # learner objectives
+    grammar_focus: Mapped[list] = mapped_column(JSON, default=list)  # topic slugs
 
 
 class ConversationSession(Base):

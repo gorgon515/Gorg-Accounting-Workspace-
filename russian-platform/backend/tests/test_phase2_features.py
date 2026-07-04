@@ -247,22 +247,26 @@ class TestProfileSettings:
 
 # ------------------------------------------------------------- generated курс
 class TestGeneratedCourses:
-    def test_courses_present_and_ordered(self, client, auth_headers):
+    def test_catalog_size_and_ordering(self, client, auth_headers):
         courses = client.get("/api/v1/lessons/courses", headers=auth_headers).json()
         slugs = [c["slug"] for c in courses]
-        assert slugs == ["a0-foundations", "a1-survival", "a2-everyday",
-                         "b1-wider-world"]
+        assert slugs[0] == "a0-foundations"
+        assert slugs[1] == "a1-survival"
+        assert len(courses) >= 14  # Phase 3 multi-track catalog
         total_lessons = sum(len(c["lessons"]) for c in courses)
-        assert total_lessons >= 50
+        assert total_lessons >= 300  # Phase 3 acceptance criterion
 
-    def test_generated_lessons_have_valid_answer_keys(self):
+    def test_vocab_lessons_have_valid_answer_keys(self):
         from app.seed.course_builder import build_generated_courses
         from app.seed.wordlist import W
         from app.services.morphology import strip_stress
 
         lemmas = {strip_stress(w[0]) for w in W}
-        for course in build_generated_courses():
-            for lesson in course["lessons"]:
+        courses = {c["slug"]: c for c in build_generated_courses()}
+        for slug in ("a2-everyday", "b1-wider-world"):
+            for lesson in courses[slug]["lessons"]:
+                if "-review-" in lesson["slug"]:
+                    continue  # checkpoints resample earlier questions
                 assert lesson["new_lemmas"]
                 assert set(lesson["new_lemmas"]) <= lemmas
                 for block in lesson["blocks"]:
@@ -270,3 +274,37 @@ class TestGeneratedCourses:
                         assert block["questions"]
                         for q in block["questions"]:
                             assert q["answer"] in lemmas
+
+    def test_every_generated_lesson_is_gradeable(self):
+        """No placeholder lessons: every lesson in every family carries at
+        least one machine-checkable question with a non-empty answer."""
+        from app.seed.course_builder import build_generated_courses
+
+        for course in build_generated_courses():
+            assert course["lessons"], course["slug"]
+            for lesson in course["lessons"]:
+                questions = [q for b in lesson["blocks"]
+                             if b["type"] in ("exercise", "mastery_test")
+                             for q in b["questions"]]
+                assert questions, lesson["slug"]
+                for q in questions:
+                    assert q["answer"].strip(), (lesson["slug"], q["id"])
+
+    def test_case_drill_answers_match_morphology(self):
+        from app.seed.course_builder import build_generated_courses
+
+        courses = {c["slug"]: c for c in build_generated_courses()}
+        first = courses["case-workshop"]["lessons"][0]
+        questions = first["blocks"][-1]["questions"]
+        assert len(questions) >= 4
+        # answers are declined forms, not lemmas
+        assert any(q["answer"].endswith(("а", "у", "е", "ой", "ы", "и"))
+                   for q in questions)
+
+    def test_dictation_lessons_carry_speak_field(self):
+        from app.seed.course_builder import build_generated_courses
+
+        courses = {c["slug"]: c for c in build_generated_courses()}
+        lesson = courses["listening-path"]["lessons"][0]
+        for q in lesson["blocks"][-1]["questions"]:
+            assert q["speak"]  # frontend TTS source

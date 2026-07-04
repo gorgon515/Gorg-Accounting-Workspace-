@@ -29,24 +29,45 @@ def passed_lesson_ids(db: Session, user_id: int) -> set[int]:
 
 
 def compute_unlock_map(db: Session, user_id: int) -> dict[int, bool]:
-    """lesson_id -> unlocked, for every lesson, in curriculum order.
+    """lesson_id -> unlocked, for every lesson. Two queries total.
 
-    A lesson is unlocked iff every lesson before it (course order, then
-    lesson order) has been passed. Two queries total, regardless of size.
+    Phase 3 rule (the Phase 2 global-linear rule can't scale to 300+
+    lessons): lessons unlock sequentially *within* their course, and a
+    course unlocks when its `prerequisite_slug` course is at least
+    `min_completion` passed (no prerequisite = always open).
     """
     passed = passed_lesson_ids(db, user_id)
-    ordered = db.execute(
-        select(Lesson.id)
+    rows = db.execute(
+        select(
+            Lesson.id,
+            Course.slug,
+            Course.prerequisite_slug,
+            Course.min_completion,
+        )
         .join(Course, Lesson.course_id == Course.id)
         .order_by(Course.order_index, Lesson.order_index)
-    ).scalars()
+    ).all()
+
+    total_by_course: dict[str, int] = {}
+    passed_by_course: dict[str, int] = {}
+    for lesson_id, course_slug, _prereq, _min in rows:
+        total_by_course[course_slug] = total_by_course.get(course_slug, 0) + 1
+        if lesson_id in passed:
+            passed_by_course[course_slug] = passed_by_course.get(course_slug, 0) + 1
+
+    def course_open(prereq: str | None, min_completion: float) -> bool:
+        if prereq is None or prereq not in total_by_course:
+            return True
+        ratio = passed_by_course.get(prereq, 0) / total_by_course[prereq]
+        return ratio >= min_completion
 
     unlock_map: dict[int, bool] = {}
-    all_previous_passed = True
-    for lesson_id in ordered:
-        unlock_map[lesson_id] = all_previous_passed
+    previous_passed_in_course: dict[str, bool] = {}
+    for lesson_id, course_slug, prereq, min_completion in rows:
+        sequential_ok = previous_passed_in_course.get(course_slug, True)
+        unlock_map[lesson_id] = sequential_ok and course_open(prereq, min_completion)
         if lesson_id not in passed:
-            all_previous_passed = False
+            previous_passed_in_course[course_slug] = False
     return unlock_map
 
 

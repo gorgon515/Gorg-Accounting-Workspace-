@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -12,6 +13,7 @@ from app.models import (
     ConversationSession,
     ConversationTurn,
     LearningEvent,
+    Lexeme,
     Scenario,
     User,
 )
@@ -89,9 +91,72 @@ def list_scenarios(
             "cefr_level": s.cefr_level,
             "description": s.description,
             "key_vocabulary": s.key_vocabulary,
+            "goals": s.goals,
+            "grammar_focus": s.grammar_focus,
         }
         for s in scenarios
     ]
+
+
+@router.get("/sessions/{session_id}/report")
+def session_report(
+    session_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """End-of-session debrief: full transcript, every correction received,
+    vocabulary diversity, and goal/scenario context."""
+    session = db.scalar(
+        select(ConversationSession)
+        .options(selectinload(ConversationSession.turns))
+        .where(ConversationSession.id == session_id)
+    )
+    if session is None or session.user_id != user.id:
+        raise HTTPException(404, "Session not found")
+    scenario = db.get(Scenario, session.scenario_id)
+
+    user_turns = [t for t in session.turns if t.role == "user"]
+    tokens = [
+        tok
+        for t in user_turns
+        for tok in re.findall(r"[а-яёА-ЯЁ-]+", t.text.lower().replace("ё", "е"))
+    ]
+    unique_tokens = set(tokens)
+    known = set(
+        db.scalars(select(Lexeme.lemma).where(Lexeme.lemma.in_(unique_tokens)))
+    )
+    corrections = [
+        {"turn_index": t.turn_index, "corrections": t.corrections}
+        for t in session.turns
+        if t.role == "partner" and t.corrections
+    ]
+    key_used = [w for w in (scenario.key_vocabulary or [])
+                if w.lower().replace("ё", "е") in unique_tokens]
+
+    return {
+        "scenario": {"slug": scenario.slug, "title": scenario.title,
+                     "goals": scenario.goals,
+                     "grammar_focus": scenario.grammar_focus},
+        "completed": session.ended_at is not None,
+        "transcript": [
+            {"role": t.role, "text": t.text, "translation": t.translation,
+             "corrections": t.corrections}
+            for t in session.turns
+        ],
+        "metrics": {
+            "user_turns": len(user_turns),
+            "words_spoken": len(tokens),
+            "unique_words": len(unique_tokens),
+            "vocabulary_diversity": round(len(unique_tokens) / len(tokens), 3)
+            if tokens else 0.0,
+            "dictionary_words_used": len(known),
+            "corrections_received": sum(len(c["corrections"]) for c in corrections),
+            "key_vocabulary_used": key_used,
+            "key_vocabulary_missed": [w for w in (scenario.key_vocabulary or [])
+                                      if w not in key_used],
+        },
+        "mistake_review": corrections,
+    }
 
 
 @router.post("/sessions/{scenario_slug}", status_code=201)

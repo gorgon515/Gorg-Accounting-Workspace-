@@ -6,6 +6,7 @@ the first language (id/code "ru").
 """
 from app.models.analytics import LearningEvent, PronunciationAttempt, WritingSubmission
 from app.models.conversation import ConversationSession, ConversationTurn, Scenario
+from app.models.exam import ExamResult
 from app.models.gamification import Achievement, UserAchievement
 from app.models.grammar import GrammarMastery, GrammarTopic
 from app.models.language import Language
@@ -13,7 +14,12 @@ from app.models.lesson import Course, Lesson, LessonCompletion
 from app.models.library import Bookmark, Text
 from app.models.srs import Card, ReviewLog
 from app.models.user import User
-from app.models.vocabulary import ExampleSentence, Lexeme, LexemeRelation
+from app.models.vocabulary import (
+    ExampleSentence,
+    InflectionForm,
+    Lexeme,
+    LexemeRelation,
+)
 
 __all__ = [
     "Achievement",
@@ -22,9 +28,11 @@ __all__ = [
     "ConversationSession",
     "ConversationTurn",
     "Course",
+    "ExamResult",
     "ExampleSentence",
     "GrammarMastery",
     "GrammarTopic",
+    "InflectionForm",
     "Language",
     "LearningEvent",
     "Lesson",

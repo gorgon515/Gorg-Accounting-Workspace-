@@ -1,0 +1,18 @@
+{
+  "name": "Russian Language Institute",
+  "short_name": "Русский",
+  "description": "AI-powered Russian language learning: lessons, SRS, conversation, exams.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#232e6b",
+  "theme_color": "#3a53e0",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%233a53e0'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='serif'%3E%D0%AF%3C/text%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

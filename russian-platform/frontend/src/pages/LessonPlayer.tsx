@@ -174,13 +174,25 @@ export default function LessonPlayer() {
               <div key={index} className={`card ${isTest ? 'border-violet-300' : ''}`}>
                 <h2 className="font-semibold">{isTest ? '🏆 Mastery test' : '✏️ Practice'}</h2>
                 <div className="mt-3 space-y-3">
-                  {(block.questions as { id: string; prompt: string }[]).map((q) => {
+                  {(block.questions as { id: string; prompt: string; speak?: string }[]).map((q) => {
                     const verdict = verdictFor(q.id);
                     return (
                       <div key={q.id}>
-                        <label className="text-sm" htmlFor={q.id}>
-                          {q.prompt}
-                        </label>
+                        <div className="flex items-center gap-2">
+                          {q.speak && (
+                            <button
+                              type="button"
+                              className="btn-secondary px-2 py-1"
+                              onClick={() => speak(q.speak!)}
+                              title="Listen"
+                            >
+                              🔊
+                            </button>
+                          )}
+                          <label className="text-sm" htmlFor={q.id}>
+                            {q.prompt}
+                          </label>
+                        </div>
                         <input
                           id={q.id}
                           className={`input mt-1 ${

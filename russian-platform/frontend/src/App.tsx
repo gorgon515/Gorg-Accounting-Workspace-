@@ -18,14 +18,17 @@ import type { User } from './types';
 // Route-level code splitting: only the dashboard ships in the main bundle.
 const Alphabet = lazy(() => import('./pages/Alphabet'));
 const Conversation = lazy(() => import('./pages/Conversation'));
+const Exams = lazy(() => import('./pages/Exams'));
 const Grammar = lazy(() => import('./pages/Grammar'));
 const GrammarTopicPage = lazy(() => import('./pages/GrammarTopic'));
 const LessonPlayer = lazy(() => import('./pages/LessonPlayer'));
 const Lessons = lazy(() => import('./pages/Lessons'));
 const Library = lazy(() => import('./pages/Library'));
+const Progress = lazy(() => import('./pages/Progress'));
 const Review = lazy(() => import('./pages/Review'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Vocabulary = lazy(() => import('./pages/Vocabulary'));
+const Writing = lazy(() => import('./pages/Writing'));
 
 interface AuthContextValue {
   user: User | null;
@@ -46,9 +49,12 @@ const NAV: { to: string; key: Parameters<typeof t>[0]; icon: string }[] = [
   { to: '/lessons', key: 'lessons', icon: '🎓' },
   { to: '/review', key: 'review', icon: '🔁' },
   { to: '/library', key: 'library', icon: '📚' },
+  { to: '/writing', key: 'writing', icon: '✍️' },
   { to: '/vocabulary', key: 'vocabulary', icon: '📖' },
   { to: '/grammar', key: 'grammar', icon: '🧩' },
   { to: '/conversation', key: 'conversation', icon: '💬' },
+  { to: '/exams', key: 'exams', icon: '📝' },
+  { to: '/progress', key: 'progress', icon: '📈' },
   { to: '/alphabet', key: 'alphabet', icon: '🔤' },
   { to: '/settings', key: 'settings', icon: '⚙️' },
 ];
@@ -147,10 +153,13 @@ export default function App() {
               <Route path="/lessons/:slug" element={<LessonPlayer />} />
               <Route path="/review" element={<Review />} />
               <Route path="/library" element={<Library />} />
+              <Route path="/writing" element={<Writing />} />
               <Route path="/vocabulary" element={<Vocabulary />} />
               <Route path="/grammar" element={<Grammar />} />
               <Route path="/grammar/:slug" element={<GrammarTopicPage />} />
               <Route path="/conversation" element={<Conversation />} />
+              <Route path="/exams" element={<Exams />} />
+              <Route path="/progress" element={<Progress />} />
               <Route path="/alphabet" element={<Alphabet />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/" replace />} />

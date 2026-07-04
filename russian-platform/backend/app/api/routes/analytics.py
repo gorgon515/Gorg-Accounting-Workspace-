@@ -12,6 +12,7 @@ from app.models import (
     GrammarMastery,
     GrammarTopic,
     LearningEvent,
+    Lexeme,
     PronunciationAttempt,
     ReviewLog,
     User,
@@ -23,6 +24,126 @@ from app.services.srs_engine import retrievability
 from app.services.text_utils import ensure_utc
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
+
+
+@router.get("/report")
+def periodic_report(
+    period: str = "week",
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Error-intelligence report: what went wrong recently, and exactly
+    what to do about it. `period` = week | month."""
+    if period not in ("week", "month"):
+        period = "week"
+    days = 7 if period == "week" else 30
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(days=days)
+
+    # Forgotten words: cards that lapsed in the period.
+    lapsed = db.execute(
+        select(Lexeme.lemma, Lexeme.stressed, Lexeme.translation,
+               func.count(ReviewLog.id))
+        .join(Card, Card.lexeme_id == Lexeme.id)
+        .join(ReviewLog, ReviewLog.card_id == Card.id)
+        .where(ReviewLog.user_id == user.id, ReviewLog.rating == 1,
+               ReviewLog.reviewed_at >= since)
+        .group_by(Lexeme.id)
+        .order_by(func.count(ReviewLog.id).desc())
+        .limit(10)
+    ).all()
+
+    total = db.scalar(
+        select(func.count(ReviewLog.id)).where(
+            ReviewLog.user_id == user.id, ReviewLog.reviewed_at >= since
+        )
+    ) or 0
+    lapses = db.scalar(
+        select(func.count(ReviewLog.id)).where(
+            ReviewLog.user_id == user.id, ReviewLog.reviewed_at >= since,
+            ReviewLog.rating == 1,
+        )
+    ) or 0
+
+    weak_grammar = db.execute(
+        select(GrammarTopic.slug, GrammarTopic.title, GrammarMastery.mastery)
+        .join(GrammarMastery, GrammarMastery.topic_id == GrammarTopic.id)
+        .where(GrammarMastery.user_id == user.id, GrammarMastery.mastery < 0.7)
+        .order_by(GrammarMastery.mastery)
+        .limit(5)
+    ).all()
+
+    pron_avg = db.scalar(
+        select(func.avg(PronunciationAttempt.overall_score)).where(
+            PronunciationAttempt.user_id == user.id,
+            PronunciationAttempt.created_at >= since,
+        )
+    )
+    study_seconds = db.scalar(
+        select(func.coalesce(func.sum(LearningEvent.duration_seconds), 0.0)).where(
+            LearningEvent.user_id == user.id, LearningEvent.created_at >= since
+        )
+    ) or 0.0
+    events = db.scalar(
+        select(func.count(LearningEvent.id)).where(
+            LearningEvent.user_id == user.id, LearningEvent.created_at >= since
+        )
+    ) or 0
+
+    recommendations = []
+    for slug, title, mastery in weak_grammar:
+        recommendations.append({
+            "kind": "grammar",
+            "action": f"Redo “{title}” drills (mastery {int(mastery * 100)}%)",
+            "lesson_slug": f"grammar-{slug}",
+        })
+    if total and lapses / total > 0.2:
+        recommendations.append({
+            "kind": "reviews",
+            "action": "Your lapse rate is above 20% — shorter, more frequent "
+                      "review sessions beat marathons.",
+            "lesson_slug": None,
+        })
+    if lapsed:
+        recommendations.append({
+            "kind": "vocabulary",
+            "action": f"Drill your {len(lapsed)} most-forgotten words in the "
+                      "practice quiz.",
+            "lesson_slug": None,
+        })
+    if pron_avg is not None and pron_avg < 80:
+        recommendations.append({
+            "kind": "speaking",
+            "action": "Pronunciation scores are below 80% — use the practice "
+                      "queue to repeat weak words until mastered.",
+            "lesson_slug": None,
+        })
+    if not recommendations:
+        recommendations.append({
+            "kind": "keep-going",
+            "action": "No weak spots detected this period — advance to the "
+                      "next lesson or take a level exam.",
+            "lesson_slug": None,
+        })
+
+    return {
+        "period": period,
+        "reviews": {"total": total, "lapses": lapses,
+                    "accuracy": round(1 - lapses / total, 3) if total else None},
+        "forgotten_words": [
+            {"lemma": lemma, "stressed": stressed, "translation": translation,
+             "lapses": count}
+            for lemma, stressed, translation, count in lapsed
+        ],
+        "weak_grammar": [
+            {"slug": slug, "title": title, "mastery": round(m, 3)}
+            for slug, title, m in weak_grammar
+        ],
+        "pronunciation_avg": round(float(pron_avg), 1) if pron_avg is not None else None,
+        "study_minutes": round(study_seconds / 60, 1),
+        "activity_events": events,
+        "recommendations": recommendations,
+    }
 
 
 @router.get("/trends")

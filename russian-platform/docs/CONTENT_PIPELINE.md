@@ -2,6 +2,45 @@
 
 How Russian content gets into the platform, and how to extend it.
 
+## Bulk import (Phase 3 — the road to 6–8k words / 150+ texts)
+
+```bash
+cd backend
+python -m tools.import_vocabulary dataset.json          # validate (dry run)
+python -m tools.import_vocabulary dataset.json --apply  # validate + insert
+python -m tools.import_texts texts.json --apply
+```
+
+**Vocabulary dataset** — JSON array of compact rows, identical semantics
+to `seed/wordlist.py`:
+
+```json
+[
+  ["огуре́ц", "n", "cucumber", "food", "A2",
+   {"decl_overrides": {"gen_sg": "огурца́"},
+    "examples": [["Я купи́л огурцы́.", "I bought cucumbers."]]}]
+]
+```
+
+**Text dataset** — JSON array of objects, identical to `seed/library.py`
+entries (slug/title/kind/cefr_level/summary/sentences[{ru,en}]).
+Valid kinds: story, dialogue, fairy_tale, article, news, recipe, history,
+science, culture, blog.
+
+The validators (`app/services/content_import.py`) enforce every invariant
+the curated seed obeys — stress marks, POS/CEFR vocabularies, gender for
+-ь nouns, duplicate detection (in-file and against the DB), morphology
+dry-run expansion, sentence completeness — and refuse the batch on any
+error, so imported data is indistinguishable from first-party content to
+the SRS, курс builder, dictionary, exams, and writing coach.
+
+**Licensing note**: frequency-ranked wordlists and reader corpora are
+typically licensed (e.g. Sharoff/Lyashevskaya-Sharov lists, publisher
+graded readers). This pipeline is deliberately format-simple so licensed
+or native-reviewed community data drops in without code changes. Do not
+bulk-import machine-generated unreviewed entries — wrong stress or forms
+poison the SRS.
+
 ## Vocabulary
 
 Two tiers, one table:
