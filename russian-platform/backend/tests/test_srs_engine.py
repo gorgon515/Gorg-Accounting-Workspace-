@@ -1,5 +1,4 @@
 """Unit tests for the spaced-repetition memory model."""
-import math
 
 import pytest
 

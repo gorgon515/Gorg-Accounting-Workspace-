@@ -6,15 +6,18 @@ strengths of SRS systems (Anki/FSRS), structured courses (Assimil/Babbel),
 comprehensible input (LingQ/Refold), speaking practice (Pimsleur/iTalki),
 and AI conversation partners.
 
-**Status: Phase 3 complete** — see [docs/PHASE_3_REPORT.md](docs/PHASE_3_REPORT.md)
-(with acceptance-criteria evidence), the earlier phase reports, and
-[docs/ROADMAP.md](docs/ROADMAP.md).
+**Status: 1.0 — production release.** Four phases complete; see
+[docs/PHASE_4_REPORT.md](docs/PHASE_4_REPORT.md) for the final
+acceptance-criteria evidence and production-readiness checklist, and
+[docs/FINAL_ARCHITECTURE.md](docs/FINAL_ARCHITECTURE.md) for the finished
+shape. From here on: content packs and maintenance.
 
-**Headline numbers**: 320 lessons across 16 courses in 6 tracks · 663
-fully-specified dictionary entries + 5,300 indexed inflected forms · 40
-interactive grammar topics A0→C2 · CEFR exams with certificates · 12
-conversation scenarios · offline-capable PWA · 171 backend tests at 95%
-coverage · every content type bulk-importable via validated pipelines.
+**Headline numbers**: 320 lessons · 16 courses · 6 tracks · 663 dictionary
+entries + 5,300 indexed inflected forms · 40 grammar topics A0→C2 · CEFR
+exams with certificates · 12 conversation scenarios · offline-first PWA
+with local-AI support (llama.cpp/Ollama) · signed content packs with
+rollback · encrypted account backups · 200 backend tests at 95% coverage ·
+every endpoint under 30 ms median.
 
 ## What works today
 

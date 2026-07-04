@@ -5,6 +5,7 @@ added by seeding new rows, not by changing the schema. Russian is simply
 the first language (id/code "ru").
 """
 from app.models.analytics import LearningEvent, PronunciationAttempt, WritingSubmission
+from app.models.content_pack import InstalledPack
 from app.models.conversation import ConversationSession, ConversationTurn, Scenario
 from app.models.exam import ExamResult
 from app.models.gamification import Achievement, UserAchievement
@@ -33,6 +34,7 @@ __all__ = [
     "GrammarMastery",
     "GrammarTopic",
     "InflectionForm",
+    "InstalledPack",
     "Language",
     "LearningEvent",
     "Lesson",

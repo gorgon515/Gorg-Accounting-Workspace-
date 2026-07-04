@@ -29,6 +29,25 @@ export default function Review() {
 
   const card = queue[0];
 
+  // Keyboard flow: Space/Enter reveals, 1–4 rates (Again/Hard/Good/Easy).
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+      if (!card) return;
+      if (!revealed && (event.key === ' ' || event.key === 'Enter')) {
+        event.preventDefault();
+        setRevealed(true);
+      } else if (revealed && ['1', '2', '3', '4'].includes(event.key)) {
+        event.preventDefault();
+        void rate(Number(event.key));
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [card, revealed]);
+
   const rate = async (rating: number) => {
     if (!card) return;
     setRevealed(false);

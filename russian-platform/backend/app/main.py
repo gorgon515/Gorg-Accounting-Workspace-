@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
+    account,
     analytics,
     auth,
     conversation,
@@ -82,7 +83,8 @@ app.add_middleware(
 )
 
 for module in (auth, vocabulary, grammar, lessons, reviews, conversation,
-               practice, analytics, library, gamification, exams, writing):
+               practice, analytics, library, gamification, exams, writing,
+               account):
     app.include_router(module.router, prefix=settings.api_v1_prefix)
 
 

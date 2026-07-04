@@ -7,10 +7,11 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
 import { api, getToken, setToken } from './api/client';
 import { t } from './lib/i18n';
+import { prefetchCoreContent } from './lib/prefetch';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import type { User } from './types';
@@ -26,6 +27,7 @@ const Lessons = lazy(() => import('./pages/Lessons'));
 const Library = lazy(() => import('./pages/Library'));
 const Progress = lazy(() => import('./pages/Progress'));
 const Review = lazy(() => import('./pages/Review'));
+const Search = lazy(() => import('./pages/Search'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Vocabulary = lazy(() => import('./pages/Vocabulary'));
 const Writing = lazy(() => import('./pages/Writing'));
@@ -63,6 +65,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const refreshUser = useCallback(async () => {
     if (!getToken()) {
@@ -82,6 +85,34 @@ export default function App() {
     window.addEventListener('rli:logout', onLogout);
     return () => window.removeEventListener('rli:logout', onLogout);
   }, [refreshUser]);
+
+  // Offline-first: warm the service-worker cache once the user is known.
+  useEffect(() => {
+    if (user) prefetchCoreContent();
+  }, [user]);
+
+  // "/" jumps to global search from anywhere outside a text field.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (
+        event.key === '/' &&
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) &&
+        !target.isContentEditable
+      ) {
+        event.preventDefault();
+        navigate('/search');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [navigate]);
+
+  // Accessibility: move focus to the main region on navigation so screen
+  // readers and keyboard users land on the new page content.
+  useEffect(() => {
+    document.getElementById('main-content')?.focus({ preventScroll: true });
+  }, [location.pathname]);
 
   const logout = () => {
     setToken(null);
@@ -110,6 +141,12 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={{ user, refreshUser, logout }}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-brand-700 focus:px-3 focus:py-2 focus:text-white"
+      >
+        Skip to content
+      </a>
       <div className={rootClasses} style={{ fontSize: `${fontScale}rem` }}>
         <aside className="flex w-60 flex-col border-r border-slate-200 bg-white">
           <div className="border-b border-slate-100 p-4">
@@ -145,7 +182,12 @@ export default function App() {
             </button>
           </div>
         </aside>
-        <main className="flex-1 overflow-y-auto p-6" key={location.pathname}>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="flex-1 overflow-y-auto p-6 outline-none"
+          key={location.pathname}
+        >
           <Suspense fallback={<div className="text-slate-400">Загрузка…</div>}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
@@ -162,6 +204,7 @@ export default function App() {
               <Route path="/progress" element={<Progress />} />
               <Route path="/alphabet" element={<Alphabet />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/search" element={<Search />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

@@ -28,13 +28,20 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60 * 24 * 7
     algorithm: str = "HS256"
 
-    # LLM / speech provider abstraction. Empty key => deterministic
-    # offline providers are used (scripted conversation partner, no TTS).
-    llm_provider: str = "offline"  # offline | anthropic
+    # LLM / speech provider abstraction. Default = deterministic offline
+    # tier (scripted dialogues, template generation). Local inference is
+    # the preferred generative tier (offline-first, Phase 4).
+    llm_provider: str = "offline"  # offline | llama-cpp | llama-gguf | anthropic
+    llama_url: str | None = None  # OpenAI-compatible server, e.g. http://localhost:8080
+    llama_model: str = "local"
+    llama_model_path: str | None = None  # .gguf path for in-process loading
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-5"
     stt_provider: str = "offline"  # offline | whisper
     tts_provider: str = "offline"  # offline | external
+
+    # Content packs: shared HMAC key for pack signing/verification.
+    pack_key: str | None = None
 
     # SRS tuning
     srs_target_retention: float = 0.9
