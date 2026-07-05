@@ -223,7 +223,7 @@ function newAvailable(){
 function introducedToday(){ return (S.days[today()]||{}).intro||0; }
 
 /* ---------- router ---------- */
-const TABS=[["today","Сегодня"],["cards","Карточки"],["lessons","Уроки"],
+const TABS=[["today","Сегодня"],["plan","План"],["cards","Карточки"],["lessons","Уроки"],
   ["grammar","Грамматика"],["dict","Словарь"],["read","Читать"],
   ["speak","Говорить"],["train","Тренажёр"],["abc","Алфавит"]];
 let TAB="today";
@@ -258,6 +258,7 @@ VIEWS.today = ()=>{
   <div class="card"><h3 style="margin-top:0">План на сегодня</h3>
     <div class="row">
       <button class="btn pri" onclick="go('cards')">${due?`Повторить ${due}`:"Учить новые слова"}</button>
+      <button class="btn" onclick="go('plan')">${S.plan?"Неделя "+(Math.min(11,Math.floor((Date.now()-new Date(S.plan.start+"T00:00:00").getTime())/(7*864e5)))+1)+" →":"Программа 12 недель"}</button>
       <button class="btn" onclick="go('lessons')">Урок</button>
       <button class="btn" onclick="go('read')">Читать</button>
       <button class="btn" onclick="go('speak')">Говорить</button>
@@ -268,6 +269,103 @@ VIEWS.today = ()=>{
     <div class="heat">${weeks}</div></div>
   <div class="card small muted">В словаре ${WORDS.length} слов · ${DB.grammar.length} тем грамматики ·
     ${DB.texts.length} текстов · ${DB.scenarios.length} диалогов. Прогресс хранится локально в браузере.</div>`;
+};
+
+/* 12-week program (8 h/week) */
+const PLAN=[
+ {f:"Алфавит и первые фразы", d:"Читайте Кириллицу вслух каждый день. Уроки 1–2, буквы в Алфавите, тренажёр «Ударение».",
+  t:{reviews:80,lessons:2,grammar:3,train:40,read:0,speak:0,listen:0},
+  m:"Вы читаете любое русское слово вслух."},
+ {f:"Приветствия и знакомство", d:"Уроки 3–5. Диалог «Знакомство» до конца — минимум дважды. Карточки до нуля каждый день.",
+  t:{reviews:120,lessons:2,grammar:3,train:30,read:0,speak:12,listen:0},
+  m:"Вы представляетесь и поддерживаете первый разговор."},
+ {f:"Род, «это…» и семья", d:"Урок 6, темы «Род» и «Притяжательные». Первый текст «Моя семья» с диктантом.",
+  t:{reviews:140,lessons:1,grammar:4,train:40,read:12,speak:6,listen:4},
+  m:"~150 слов в памяти; вы описываете семью."},
+ {f:"Глаголы и «где вы живёте»", d:"Уроки A1: 1–2. Тема «Настоящее время». Тренажёр «Глаголы» ежедневно.",
+  t:{reviews:150,lessons:2,grammar:4,train:60,read:10,speak:8,listen:3},
+  m:"Вы спрягаете правильные глаголы не задумываясь."},
+ {f:"Кафе и винительный падеж", d:"Урок «В кафе», тема «Винительный». Диалоги «Кафе» и «Такси». Текст «В кафе».",
+  t:{reviews:150,lessons:1,grammar:4,train:50,read:12,speak:14,listen:5},
+  m:"Вы заказываете еду и такси по-русски."},
+ {f:"Числа и покупки", d:"Урок «Счёт и покупки». Диалог «Покупка одежды». Тренажёр «Падежи» — старт.",
+  t:{reviews:160,lessons:1,grammar:3,train:60,read:10,speak:10,listen:4},
+  m:"Цены, счёт, покупки — без паники."},
+ {f:"«У меня есть» и родительный", d:"Урок 5 A1 + тема «Родительный». Финальный урок-зачёт «Один день в Москве».",
+  t:{reviews:160,lessons:2,grammar:4,train:60,read:12,speak:8,listen:4},
+  m:"~350 слов; оба базовых курса пройдены."},
+ {f:"Прошедшее время и рассказ о себе", d:"Темы «Прошедшее время», «Вид глагола». Текст «Мой день» с диктантом.",
+  t:{reviews:170,lessons:0,grammar:5,train:60,read:14,speak:8,listen:6},
+  m:"Вы рассказываете, что делали вчера."},
+ {f:"Дательный и творительный", d:"Обе темы + тренажёр «Падежи» ежедневно. Диалог «У врача».",
+  t:{reviews:170,lessons:0,grammar:5,train:80,read:10,speak:10,listen:4},
+  m:"Все 6 падежей знакомы; 4 из 6 — уверенно."},
+ {f:"Движение и будущее", d:"Темы «Глаголы движения», «Будущее время». Текст «Погода в России». Диалог «Аэропорт».",
+  t:{reviews:170,lessons:0,grammar:5,train:60,read:14,speak:10,listen:5},
+  m:"Вы строите планы и описываете маршруты."},
+ {f:"Связная речь", d:"Темы «Порядок слов», «Который». Тексты «Разговор с таксистом» и «Письмо другу». Диалоги B1.",
+  t:{reviews:170,lessons:0,grammar:5,train:50,read:16,speak:14,listen:6},
+  m:"Сложные предложения; B1-текст со словарём."},
+ {f:"Финал: всё вместе", d:"Карточки до нуля, слабые темы грамматики заново, «Новости технологий» с диктантом, каждый диалог до конца.",
+  t:{reviews:180,lessons:0,grammar:6,train:60,read:16,speak:16,listen:8},
+  m:"~600 слов в долгой памяти, вся базовая грамматика — уверенный старт A2."},
+];
+const KINDS=[["reviews","Карточки","повторений"],["lessons","Уроки","уроков сдано"],
+  ["grammar","Грамматика","заданий"],["train","Тренажёр","ответов"],
+  ["read","Чтение","предложений"],["speak","Диалоги","реплик"],["listen","Диктанты","проверок"]];
+function weekCounts(wi){
+  if(!S.plan) return {};
+  const start=new Date(S.plan.start+"T00:00:00").getTime()+wi*7*864e5;
+  const out={};
+  for(let i=0;i<7;i++){ const d=new Date(start+i*864e5).toISOString().slice(0,10);
+    Object.entries(S.days[d]||{}).forEach(([k,v])=>out[k]=(out[k]||0)+v); }
+  return out;
+}
+VIEWS.plan = ()=>{
+  if(!S.plan){
+    M().innerHTML=`<h2>Программа: 12 недель × 8 часов</h2>
+    <div class="note amber"><b>Честно о целях.</b> 8 часов в неделю за пару месяцев — это ~70–100 часов.
+    Уровень носителя требует нескольких <i>тысяч</i> часов: Институт дипломатической службы США отводит
+    ~1100 аудиторных часов только до рабочего уровня русского. Что 96 часов дают <i>реально</i> при
+    дисциплине: уверенный A1 → ранний A2 — автоматическое чтение Кириллицы, выживание в бытовых
+    разговорах, ~600 слов в долгой памяти, вся базовая грамматика падежей и глагола. Эта программа
+    выжимает из ваших 8 часов максимум — и не обещает чудес.</div>
+    <div class="card"><h3 style="margin-top:0">Как устроена неделя (~8 ч)</h3>
+      <div class="tablewrap"><table>
+      <tr><td>Карточки — каждый день до нуля</td><td class="muted">~20 мин/день</td></tr>
+      <tr><td>Уроки и грамматика</td><td class="muted">3 сессии по 40 мин</td></tr>
+      <tr><td>Чтение + диктант</td><td class="muted">2 × 30 мин</td></tr>
+      <tr><td>Диалоги вслух</td><td class="muted">2 × 20 мин</td></tr>
+      <tr><td>Тренажёр (падежи/глаголы)</td><td class="muted">10 мин/день</td></tr></table></div>
+      <p class="small muted">Правило №1: карточки — святое; пропущенный день удваивает завтрашнюю очередь.
+      Правило №2: всё, что можно, — вслух. Правило №3: лучше 7 × 70 минут, чем один воскресный марафон.</p>
+      <button class="btn pri" onclick="S.plan={start:today()};save();render()">Начать программу сегодня</button></div>`;
+    return;
+  }
+  const wi=Math.max(0,Math.min(11,Math.floor((Date.now()-new Date(S.plan.start+"T00:00:00").getTime())/(7*864e5))));
+  const wk=PLAN[wi], got=weekCounts(wi);
+  const rows=KINDS.filter(([k])=>wk.t[k]>0).map(([k,name,unit])=>{
+    const g=got[k]||0, t=wk.t[k], pct=Math.min(100,Math.round(100*g/t));
+    return `<tr><td>${name}</td><td style="min-width:120px"><div class="bar"><i style="width:${pct}%"></i></div></td>
+      <td class="small muted" style="white-space:nowrap">${g}/${t} ${unit} ${g>=t?"✓":""}</td></tr>`;}).join("");
+  const doneKinds=KINDS.filter(([k])=>wk.t[k]>0), doneN=doneKinds.filter(([k])=>(got[k]||0)>=wk.t[k]).length;
+  M().innerHTML=`<h2>Неделя ${wi+1} из 12 <span class="pill acc">${doneN}/${doneKinds.length} целей</span></h2>
+  <div class="card"><b>${esc(wk.f)}</b><p class="small" style="margin:6px 0">${esc(wk.d)}</p>
+    <div class="tablewrap"><table>${rows}</table></div>
+    <div class="note green" style="margin-bottom:0">🎯 К концу недели: ${esc(wk.m)}</div></div>
+  <h3>Вся программа</h3>
+  <div class="list">${PLAN.map((p,i)=>{
+    const c=weekCounts(i), ks=KINDS.filter(([k])=>p.t[k]>0);
+    const dn=ks.filter(([k])=>(c[k]||0)>=p.t[k]).length;
+    const full=dn===ks.length&&i<=wi;
+    return `<div class="item" style="cursor:default">
+      <span>${i+1}. ${esc(p.f)}<br><span class="muted small">${esc(p.m)}</span></span>
+      <span class="pill ${full?'good':i===wi?'acc':''}">${i<wi||full?dn+"/"+ks.length:i===wi?"сейчас":"→"}</span></div>`;}).join("")}</div>
+  <div class="card small muted">После 12-й недели дорога продолжается: до B1 — ещё ~200 часов практики
+  (полная платформа с 320 уроками и экзаменами — в репозитории), а «как родной» — вопрос лет погружения,
+  не приложений. Но читать, выживать в разговоре и рассказывать о себе вы будете уже через эти 12 недель.
+  <br><button class="btn small" style="margin-top:8px"
+    onclick="if(confirm('Сбросить программу и начать заново?')){delete S.plan;save();render()}">Сбросить программу</button></div>`;
 };
 
 /* Flashcards */
