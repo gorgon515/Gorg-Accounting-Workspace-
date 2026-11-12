@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Career Desk</title>
+<style>
+:root{--bg:#f6f5f2;--panel:#fff;--ink:#1c1d21;--muted:#6b6d76;--line:#e2e0da;--accent:#2f5d50;--accent-ink:#fff;
+--warn:#a8620b;--bad:#a23a3a;--good:#2f6d45;--chip:#eeece6}
+@media (prefers-color-scheme:dark){:root{--bg:#141518;--panel:#1c1e22;--ink:#e9e7e1;--muted:#9a9ca6;--line:#2c2f35;
+--accent:#7fbfa9;--accent-ink:#10201b;--warn:#e0a44c;--bad:#e08080;--good:#86c79b;--chip:#272a30}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:2;flex-wrap:wrap}
+header h1{font-size:16px;margin:0;letter-spacing:.02em}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{background:none;border:0;color:var(--muted);padding:6px 10px;border-radius:6px;cursor:pointer;font:inherit}
+nav button.on{background:var(--accent);color:var(--accent-ink)}
+main{padding:20px;max-width:1280px;margin:0 auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.kpi b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.kpi span{color:var(--muted);font-size:12px}
+h2{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:24px 0 10px}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto}
+.chip{display:inline-block;background:var(--chip);border-radius:999px;padding:1px 9px;font-size:12px;white-space:nowrap}
+.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}.muted{color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+textarea{width:100%;min-height:160px;font-family:ui-monospace,monospace;font-size:12px}
+button.act{background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit}
+button.ghost{background:none;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:5px 10px;cursor:pointer;font:inherit}
+.pipe{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}
+.col{min-width:200px;flex:0 0 200px}
+.col h3{font-size:12px;margin:0 0 6px;color:var(--muted)}
+.col .card{margin-bottom:8px;padding:10px;font-size:13px}
+.banner{border-left:4px solid var(--warn);margin-bottom:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.bar{height:8px;background:var(--chip);border-radius:4px;overflow:hidden;min-width:120px}
+.bar i{display:block;height:100%;background:var(--accent)}
+pre{white-space:pre-wrap;word-break:break-word;background:var(--bg);padding:10px;border-radius:8px;max-height:420px;overflow:auto;font-size:12px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header><h1>Career Desk</h1><nav id="nav"></nav><span class="muted" id="stamp" style="margin-left:auto"></span></header>
+<main id="main">Loading…</main>
+<script>
+const TOKEN="__TOKEN__";
+const TABS=["Overview","Opportunities","Pipeline","Documents","Communications","Interviews","Analytics","Settings","Audit"];
+let S=null,tab=location.hash.slice(1)||"Overview",q="";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl=u=>/^https:\/\//.test(u||"")?esc(u):"#";
+const fmt=v=>v==null?"—":esc(v);
+const money=(a,b)=>a==null&&b==null?"—":[a,b].filter(x=>x!=null).map(x=>"$"+Math.round(x).toLocaleString()).join(" – ");
+const day=t=>t?esc(t.slice(0,10)):"—";
+async function post(path,body){
+  const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-Career-Token":TOKEN},body:JSON.stringify(body)});
+  const j=await r.json();if(!r.ok)alert(j.error||"Request failed");await load();
+}
+async function load(){S=await (await fetch("/api/state")).json();document.getElementById("stamp").textContent="Updated "+new Date().toLocaleTimeString();render();}
+function nav(){document.getElementById("nav").innerHTML=TABS.map(t=>`<button class="${t===tab?"on":""}" data-tab="${t}">${t}</button>`).join("");}
+document.getElementById("nav").onclick=e=>{if(e.target.dataset.tab){tab=e.target.dataset.tab;location.hash=tab;render();}};
+const kpi=(l,v)=>`<div class="card kpi"><b>${v==null?"—":esc(v)}</b><span>${esc(l)}</span></div>`;
+const pct=v=>v==null?null:v+"%";
+function setupBanner(){
+  const a=S.settings.approvals,items=[];
+  if(S.profile_missing.length)items.push("Career Profile incomplete — missing: "+S.profile_missing.join(", "));
+  for(const k in a)if(!a[k])items.push(k.replace(/_/g," ")+" not approved");
+  if(!items.length)return"";
+  return `<div class="card banner"><b>Setup not complete — no applications will be submitted.</b><ul>${items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></div>`;
+}
+const V={
+Overview(){const o=S.overview,pend=S.approvals.filter(a=>a.status==="pending");
+  return setupBanner()+`<div class="grid">${kpi("Applications submitted",o.total_applications)}${kpi("Submitted this week",o.submitted_this_week)}${kpi("Active opportunities",o.active_opportunities)}${kpi("Interview invitations",o.interview_invitations)}${kpi("Pending responses",o.pending_responses)}${kpi("Offers received",o.offers_received)}${kpi("Rejection rate",pct(o.rejection_rate))}${kpi("Interview conversion",pct(o.interview_conversion_rate))}${kpi("Offer conversion",pct(o.offer_conversion_rate))}${kpi("Jobs discovered",o.jobs_discovered)}</div>
+  <h2>Needs your decision (${pend.length})</h2>${pend.length?`<table><tr><th>Type</th><th>Question</th><th></th></tr>${pend.map(a=>`<tr><td><span class="chip">${esc(a.kind)}</span></td><td>${esc(a.question)}</td><td style="white-space:nowrap"><button class="act" data-appr="${a.id}" data-st="approved">Approve</button> <button class="ghost" data-appr="${a.id}" data-st="denied">Deny</button></td></tr>`).join("")}</table>`:`<p class="muted">Nothing waiting on you.</p>`}
+  <h2>Actions due (${S.actions.length})</h2>${S.actions.length?`<table><tr><th>Employer</th><th>Role</th><th>Action</th><th>Why</th></tr>${S.actions.map(a=>`<tr><td>${esc(a.employer)}</td><td>${esc(a.title)}</td><td><span class="chip">${esc(a.action.replace(/_/g," "))}</span></td><td>${esc(a.why)}</td></tr>`).join("")}</table>`:`<p class="muted">No follow-ups due.</p>`}`;},
+Opportunities(){const jobs=S.jobs.filter(j=>!q||(j.employer+" "+j.title+" "+(j.location||"")).toLowerCase().includes(q.toLowerCase()));
+  return `<div class="row"><input id="q" placeholder="Search employer, title, location" value="${esc(q)}" style="flex:1;min-width:220px"><span class="muted">${jobs.length} of ${S.jobs.length}</span></div>
+  <div class="scroll"><table><tr><th>Score</th><th>Role</th><th>Employer</th><th>Location</th><th>Pay</th><th>Class</th><th>Flags</th><th>Source</th></tr>${jobs.map(j=>{const d=j.score_detail||{},f=d.flags||{};const fl=[...(f.mandatory_missing||[]).map(x=>"missing required: "+x),...(f.preferred_missing||[]).map(x=>"missing preferred: "+x),d.provisional?"provisional — unrated: "+d.unrated.join(", "):null,j.closed_at?"closed":null,f.overqualified?"exceeds requirements":null].filter(Boolean);
+  return `<tr><td><b>${j.score==null?"—":j.score}</b></td><td><a href="${safeUrl(j.url)}" target="_blank" rel="noopener noreferrer">${esc(j.title)}</a></td><td>${esc(j.employer)}</td><td>${fmt(j.location)} ${j.arrangement?`<span class="chip">${esc(j.arrangement)}</span>`:""}</td><td>${money(j.comp_min,j.comp_max)}</td><td>${fmt(j.classification)}</td><td class="muted">${fl.map(esc).join("<br>")}</td><td>${esc(j.source)}</td></tr>`}).join("")||`<tr><td colspan="8" class="muted">No opportunities discovered yet.</td></tr>`}</table></div>`;},
+Pipeline(){const by={};S.applications.forEach(a=>(by[a.status]=by[a.status]||[]).push(a));
+  return `<div class="pipe">${S.statuses.map(s=>`<div class="col"><h3>${esc(s)} · ${(by[s]||[]).length}</h3>${(by[s]||[]).map(a=>`<div class="card"><b>${esc(a.title)}</b><br>${esc(a.employer)}<br><span class="muted">score ${a.score??"—"} · ${a.date_applied?"applied "+day(a.date_applied):"not applied"}</span>${a.next_action?`<br><span class="warn">${esc(a.next_action)}${a.next_action_due?" · "+day(a.next_action_due):""}</span>`:""}<div class="row"><select data-status="${a.id}">${S.statuses.filter(x=>x!=="Application submitted").map(x=>`<option${x===a.status?" selected":""}>${esc(x)}</option>`).join("")}</select></div></div>`).join("")}</div>`).join("")}</div>
+  <p class="muted">“Application submitted” cannot be set by hand — it is recorded only with the employer portal’s confirmation.</p>`;},
+Documents(){return `<div class="scroll"><table><tr><th>#</th><th>Kind</th><th>Name</th><th>Ver</th><th>Application</th><th>Fact check</th><th>Approved</th><th>Created</th><th></th></tr>${S.documents.map(d=>{const fc=d.fact_check?JSON.parse(d.fact_check):null;return `<tr><td>${d.id}</td><td><span class="chip">${esc(d.kind.replace(/_/g," "))}</span></td><td>${esc(d.name)}</td><td>v${d.version}</td><td>${fmt(d.application_id)}</td><td>${fc?(fc.ok?`<span class="good">passed</span>`:`<span class="bad">${fc.issues.length} issue(s)</span>`):"—"}</td><td>${d.approved?"yes":`<button class="ghost" data-docappr="${d.id}">Approve</button>`}</td><td>${day(d.created_at)}</td><td><button class="ghost" data-doc="${d.id}">Open</button></td></tr>`}).join("")||`<tr><td colspan="9" class="muted">No documents yet. Master resume and CV appear here once built from your source documents.</td></tr>`}</table></div><div id="docview"></div>`;},
+Communications(){return `<div class="scroll"><table><tr><th>Date</th><th>Dir</th><th>With</th><th>Subject</th><th>Type</th><th>Application</th></tr>${S.communications.map(c=>`<tr><td>${day(c.ts)}</td><td>${esc(c.direction)}</td><td>${fmt(c.counterpart)}</td><td>${fmt(c.subject)}</td><td>${c.classification?`<span class="chip">${esc(c.classification.replace(/_/g," "))}</span>`:"—"}</td><td>${fmt(c.application_id)}</td></tr>`).join("")||`<tr><td colspan="6" class="muted">No correspondence logged. Email monitoring is ${S.settings.automation.email_read?"on":"off"}.</td></tr>`}</table></div>`;},
+Interviews(){return `<div class="scroll"><table><tr><th>When</th><th>Employer</th><th>Role</th><th>Stage</th><th>Interviewer</th><th>Prep</th><th>Feedback</th></tr>${S.interviews.map(i=>`<tr><td>${fmt(i.scheduled_at)}</td><td>${esc(i.employer)}</td><td>${esc(i.title)}</td><td>${fmt(i.stage)}</td><td>${fmt(i.interviewer)}</td><td>${i.prep_doc_id?`<button class="ghost" data-doc="${i.prep_doc_id}">Open</button>`:`<span class="warn">not prepared</span>`}</td><td>${fmt(i.feedback)}</td></tr>`).join("")||`<tr><td colspan="7" class="muted">No interviews scheduled.</td></tr>`}</table></div><div id="docview"></div>`;},
+Analytics(){const o=S.overview,bars=(obj)=>{const e=Object.entries(obj).sort((a,b)=>b[1]-a[1]),m=Math.max(1,...e.map(x=>x[1]));return e.length?`<table>${e.map(([k,v])=>`<tr><td style="width:40%">${esc(k)}</td><td><div class="bar"><i style="width:${100*v/m}%"></i></div></td><td style="width:50px">${v}</td></tr>`).join("")}</table>`:`<p class="muted">No submitted applications yet.</p>`};
+  return `<div class="grid">${kpi("Avg days to interview",o.avg_days_to_interview)}${kpi("Avg days to offer",o.avg_days_to_offer)}${kpi("Interview success",pct(o.interview_conversion_rate))}</div>
+  <h2>Applications by industry</h2>${bars(o.by_industry)}<h2>Applications by employer</h2>${bars(o.by_employer)}
+  <h2>Pipeline by stage</h2>${bars(Object.fromEntries(Object.entries(o.by_status).filter(x=>x[1])))}
+  <h2>Resume versions</h2>${Object.keys(o.resume_versions).length?`<table><tr><th>Resume document</th><th>Submitted</th><th>Interviews</th></tr>${Object.entries(o.resume_versions).map(([k,v])=>`<tr><td>#${esc(k)}</td><td>${v.submitted}</td><td>${v.interviews}</td></tr>`).join("")}</table>`:`<p class="muted">No data yet.</p>`}`;},
+Settings(){const s=S.settings,a=s.approvals;
+  return setupBanner()+`<h2>Approvals</h2><div class="card">${Object.keys(a).map(k=>`<div class="row"><span style="min-width:180px">${esc(k.replace(/_/g," "))}</span>${a[k]?`<span class="good">approved</span>`:`<button class="act" data-approve="${k}">Approve</button>`}</div>`).join("")}<p class="muted">Editing the profile revokes its approval until you re-approve.</p></div>
+  <h2>Automation permissions</h2><div class="card">${Object.keys(s.automation).map(k=>`<label class="row"><input type="checkbox" data-auto="${k}" ${s.automation[k]?"checked":""}> ${esc(k.replace(/_/g," "))}</label>`).join("")}</div>
+  <h2>Thresholds and limits</h2><div class="card">${[["min_score_to_apply","Minimum score to apply"],["min_score_to_keep","Minimum score to keep"],["weekly_application_limit","Weekly application limit"]].map(([k,l])=>`<label class="row"><span style="min-width:220px">${l}</span><input type="number" data-num="${k}" value="${s[k]}" style="width:90px"></label>`).join("")}<label class="row"><input type="checkbox" data-bool="allow_multiple_per_employer" ${s.allow_multiple_per_employer?"checked":""}> Allow multiple applications per employer</label></div>
+  <h2>Scoring weights, follow-up rules, employer watchlist (JSON)</h2><div class="card">${["weights","followup","watchlist"].map(k=>`<p><b>${k}</b></p><textarea data-json="${k}" style="min-height:110px">${esc(JSON.stringify(s[k],null,2))}</textarea><div class="row"><button class="ghost" data-savejson="${k}">Save ${k}</button></div>`).join("")}</div>
+  <h2>Career Profile</h2><div class="card">${["identity","career_interests","employment_preferences","compensation","qualifications","personal_preferences","application_preferences"].map(k=>`<p><b>${k.replace(/_/g," ")}</b> ${S.profile[k]?"":`<span class="warn">empty</span>`}</p><textarea data-prof="${k}" style="min-height:90px">${esc(JSON.stringify(S.profile[k]||{},null,2))}</textarea><div class="row"><button class="ghost" data-saveprof="${k}">Save section</button></div>`).join("")}</div>`;},
+Audit(){return `<p>Audit chain: ${S.audit_intact?`<span class="good">intact</span>`:`<span class="bad">TAMPERED</span>`} · showing latest ${S.audit.length} entries</p><div class="scroll"><table><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th><th>Detail</th></tr>${S.audit.map(a=>`<tr><td style="white-space:nowrap">${esc(a.ts)}</td><td>${esc(a.actor)}</td><td>${esc(a.action)}</td><td>${fmt(a.target)}</td><td class="muted">${esc((a.detail||"").slice(0,200))}</td></tr>`).join("")}</table></div>`;}
+};
+function render(){nav();document.getElementById("main").innerHTML=V[tab]?V[tab]():V.Overview();const i=document.getElementById("q");if(i){i.oninput=e=>{q=e.target.value;const p=e.target.selectionStart;render();const n=document.getElementById("q");n.focus();n.setSelectionRange(p,p);};}}
+document.getElementById("main").addEventListener("click",async e=>{const d=e.target.dataset;
+  if(d.appr)post("/api/approval",{id:+d.appr,status:d.st});
+  else if(d.approve)post("/api/approve",{what:d.approve});
+  else if(d.docappr)post("/api/document/approve",{id:+d.docappr});
+  else if(d.doc){const j=await (await fetch("/api/document/"+d.doc)).json();document.getElementById("docview").innerHTML=`<h2>${esc(j.name)} v${j.version}</h2><pre>${esc(typeof j.content==="string"?j.content:JSON.stringify(j.content,null,2))}</pre>${j.fact_check&&!j.fact_check.ok?`<pre class="bad">${esc(JSON.stringify(j.fact_check.issues,null,2))}</pre>`:""}`;}
+  else if(d.savejson||d.saveprof){const k=d.savejson||d.saveprof,el=document.querySelector(d.savejson?`[data-json="${k}"]`:`[data-prof="${k}"]`);let v;try{v=JSON.parse(el.value)}catch(err){return alert("Invalid JSON: "+err.message)}
+    d.savejson?post("/api/settings",{key:k,value:v}):post("/api/profile",{section:k,value:v});}
+});
+document.getElementById("main").addEventListener("change",e=>{const d=e.target.dataset;
+  if(d.status)post("/api/status",{id:+d.status,status:e.target.value});
+  else if(d.auto){if(d.auto==="auto_submit"&&e.target.checked&&!confirm("Allow applications that pass every rule to be submitted without asking you first?")){e.target.checked=false;return}
+    post("/api/settings",{key:"automation",value:{...S.settings.automation,[d.auto]:e.target.checked}});}
+  else if(d.num)post("/api/settings",{key:d.num,value:+e.target.value});
+  else if(d.bool)post("/api/settings",{key:d.bool,value:e.target.checked});
+});
+load();setInterval(()=>{if(!["Settings","Opportunities"].includes(tab)&&!document.getElementById("docview")?.innerHTML)load()},30000);
+</script>
+</body>
+</html>
