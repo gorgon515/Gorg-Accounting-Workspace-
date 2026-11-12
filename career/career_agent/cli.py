@@ -21,6 +21,8 @@ def main(argv=None):
     s = sub.add_parser("gate"); s.add_argument("application", type=int)
     sub.add_parser("due")
     sub.add_parser("audit-verify")
+    s = sub.add_parser("export"); s.add_argument("json_file")
+    s = sub.add_parser("import"); s.add_argument("json_file")
     a = ap.parse_args(argv)
     conn = db.connect()
     out = None
@@ -52,6 +54,13 @@ def main(argv=None):
         out = followup.due_actions(conn)
     elif a.cmd == "audit-verify":
         out = {"audit_chain_intact": db.verify_audit(conn)}
+    elif a.cmd == "export":
+        with open(a.json_file, "w") as f:
+            json.dump(db.export_all(conn), f)
+        out = {"exported": a.json_file}
+    elif a.cmd == "import":
+        db.import_all(conn, json.load(open(a.json_file)))
+        out = {"imported": a.json_file, "audit_chain_intact": db.verify_audit(conn)}
     json.dump(out, sys.stdout, indent=2, default=str)
     print()
 

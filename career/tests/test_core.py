@@ -197,6 +197,18 @@ class TestFollowupAnalyticsAudit(Base):
         self.c.execute("UPDATE audit SET action='x' WHERE id=1")
         self.assertFalse(db.verify_audit(self.c))
 
+    def test_export_import_roundtrip(self):
+        _, app, doc = self.ready()
+        snap = db.export_all(self.c)
+        c2 = db.connect(":memory:")
+        db.import_all(c2, snap)
+        self.assertEqual(profile.get(c2), profile.get(self.c))
+        self.assertEqual(documents.get(c2, doc)["content"], documents.get(self.c, doc)["content"])
+        self.assertTrue(db.verify_audit(c2))
+        with self.assertRaises(ValueError):
+            db.import_all(c2, snap)
+        c2.close()
+
     def test_discovery_failure_is_reported_not_faked(self):
         rep = discovery.run_watchlist(self.c, [{"ats": "nope", "token": "t", "employer": "E"}])
         self.assertFalse(rep[0]["ok"])

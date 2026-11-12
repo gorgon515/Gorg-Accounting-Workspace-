@@ -122,3 +122,40 @@ def set_setting(conn, key, value, actor="user"):
                  "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
                  (key, json.dumps(value), now()))
     audit(conn, "setting.set", key, value, actor)
+
+
+ENCRYPTED = {"profile": ["value"], "communications": ["body"], "documents": ["content"]}
+TABLES = ["profile", "settings", "jobs", "applications", "events", "communications", "interviews", "documents",
+          "achievements", "skills", "approvals", "audit"]
+
+
+def export_all(conn) -> dict:
+    """Plain-JSON snapshot of every table (encrypted columns are decrypted). Protect the output yourself."""
+    out = {}
+    for t in TABLES:
+        rows = []
+        for r in conn.execute(f"SELECT * FROM {t}"):
+            d = dict(r)
+            for c in ENCRYPTED.get(t, []):
+                if d[c] is not None:
+                    d[c] = decrypt(d[c])
+            rows.append(d)
+        out[t] = rows
+    return {"version": 1, "exported_at": now(), "tables": out}
+
+
+def import_all(conn, snapshot: dict):
+    """Restore a snapshot into an empty database, re-encrypting with this machine's key."""
+    if conn.execute("SELECT COUNT(*) FROM audit").fetchone()[0] or conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]:
+        raise ValueError("refusing to import over a non-empty database")
+    conn.execute("PRAGMA foreign_keys=OFF")
+    for t in TABLES:
+        conn.execute(f"DELETE FROM {t}")
+        for d in snapshot["tables"].get(t, []):
+            for c in ENCRYPTED.get(t, []):
+                if d[c] is not None:
+                    d[c] = encrypt(d[c])
+            cols = list(d)
+            conn.execute(f"INSERT INTO {t}({','.join(cols)}) VALUES({','.join('?' * len(cols))})", [d[c] for c in cols])
+    conn.commit()
+    conn.execute("PRAGMA foreign_keys=ON")
