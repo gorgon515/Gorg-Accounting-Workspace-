@@ -95,7 +95,8 @@ def evaluate(conn, job_id, rated=None):
     job, st = get_job(conn, job_id), profile.settings(conn)
     res = scoring.score_job(job, profile.get(conn), st["weights"], rated)
     prof = profile.get(conn)
-    have = prof.get("qualifications", {}).get("years_experience") or 0
+    ap = prof.get("application_preferences", {})
+    have = max(prof.get("qualifications", {}).get("years_experience") or 0, ap.get("max_years_required") or 0)
     if (job.get("years_required") or 0) > have and str(
             prof.get("application_preferences", {}).get("experience_required_roles", "")).startswith("exclude"):
         res["excluded"] = f"requires {job['years_required']:g}+ years of experience"
