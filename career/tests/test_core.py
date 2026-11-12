@@ -142,6 +142,15 @@ class TestGate(Base):
         g = rules.gate(self.c, app, [{"question": "Favourite ERP?", "answer": None}])
         self.assertEqual(g["approval_items"][0]["kind"], "unverified_answer")
 
+    def test_experience_rule_excludes(self):
+        profile.set_section(self.c, "application_preferences", {"experience_required_roles": "exclude roles"})
+        q = dict(PROFILE["qualifications"], years_experience=0)
+        profile.set_section(self.c, "qualifications", q)
+        jid, _ = crm.upsert_job(self.c, dict(JOB, years_required=3))
+        r = crm.evaluate(self.c, jid, RATED)
+        self.assertEqual(r["classification"], "Excluded")
+        self.assertEqual(crm.application_for_job(self.c, jid)["status"], "Evaluated")
+
     def test_captcha_is_manual(self):
         _, app, _ = self.ready()
         db.set_setting(self.c, "automation", {"auto_submit": True})

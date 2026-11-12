@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS jobs(
   location TEXT, arrangement TEXT, url TEXT NOT NULL, description TEXT, industry TEXT,
   comp_min REAL, comp_max REAL, comp_currency TEXT, mandatory TEXT, preferred TEXT,
   discovered_at TEXT NOT NULL, last_seen_at TEXT NOT NULL, closed_at TEXT, desc_hash TEXT,
-  fingerprint TEXT NOT NULL UNIQUE, score REAL, score_detail TEXT, classification TEXT, verified INTEGER DEFAULT 0);
+  fingerprint TEXT NOT NULL UNIQUE, years_required REAL, score REAL, score_detail TEXT, classification TEXT, verified INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS applications(
   id INTEGER PRIMARY KEY, job_id INTEGER NOT NULL UNIQUE REFERENCES jobs(id), status TEXT NOT NULL,
   date_applied TEXT, confirmation TEXT, resume_doc_id INTEGER, cover_doc_id INTEGER,
@@ -84,6 +84,8 @@ def connect(path=None) -> sqlite3.Connection:
     conn.execute("PRAGMA foreign_keys=ON")
     conn.execute("PRAGMA journal_mode=WAL")
     conn.executescript(SCHEMA)
+    if "years_required" not in [r[1] for r in conn.execute("PRAGMA table_info(jobs)")]:
+        conn.execute("ALTER TABLE jobs ADD COLUMN years_required REAL")
     if str(path) != ":memory:":
         os.chmod(path, 0o600)
     return conn

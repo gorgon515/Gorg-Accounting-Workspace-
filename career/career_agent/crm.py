@@ -12,7 +12,7 @@ STATUSES = ["Identified", "Evaluated", "Qualified", "Application prepared", "App
 TERMINAL = {"Accepted", "Rejected", "Withdrawn"}
 SUBMITTED_IDX = STATUSES.index("Application submitted")
 JOB_FIELDS = ["source", "source_id", "employer", "title", "location", "arrangement", "url", "description",
-              "industry", "comp_min", "comp_max", "comp_currency"]
+              "industry", "comp_min", "comp_max", "comp_currency", "years_required"]
 
 
 def fingerprint(employer, title, location):
@@ -94,11 +94,18 @@ def close_missing(conn, source, employer, seen_ids):
 def evaluate(conn, job_id, rated=None):
     job, st = get_job(conn, job_id), profile.settings(conn)
     res = scoring.score_job(job, profile.get(conn), st["weights"], rated)
+    prof = profile.get(conn)
+    have = prof.get("qualifications", {}).get("years_experience") or 0
+    if (job.get("years_required") or 0) > have and str(
+            prof.get("application_preferences", {}).get("experience_required_roles", "")).startswith("exclude"):
+        res["excluded"] = f"requires {job['years_required']:g}+ years of experience"
+        res["classification"] = "Excluded"
     conn.execute("UPDATE jobs SET score=?, score_detail=?, classification=? WHERE id=?",
                  (res["score"], json.dumps(res), res["classification"], job_id))
     app = application_for_job(conn, job_id)
     if app["status"] in ("Identified", "Evaluated", "Qualified"):
-        ok = res["score"] >= st["min_score_to_apply"] and not res["provisional"] and not job["closed_at"]
+        ok = res["score"] >= st["min_score_to_apply"] and not res["provisional"] and not job["closed_at"] \
+            and not res.get("excluded")
         set_status(conn, app["id"], "Qualified" if ok else "Evaluated", note="scored", _force=True)
     conn.commit()
     return res

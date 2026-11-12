@@ -45,6 +45,8 @@ def gate(conn, app_id, questions=None, page_text=""):
         blocked.append("not scored")
     elif job["score"] < st["min_score_to_apply"]:
         blocked.append(f"score {job['score']} below threshold {st['min_score_to_apply']}")
+    if (job.get("score_detail") or {}).get("excluded"):
+        blocked.append("excluded by your rules: " + job["score_detail"]["excluded"])
     if (job.get("score_detail") or {}).get("provisional"):
         blocked.append("score is provisional (unrated categories)")
     if not app["resume_doc_id"] and not conn.execute(
