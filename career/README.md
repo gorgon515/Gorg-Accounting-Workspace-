@@ -26,6 +26,8 @@ Requires Python 3.10+ and `cryptography`. No other dependencies.
 | `crm.py` | Jobs, applications, statuses, communications, interviews, approval queue |
 | `rules.py` | Submission gate: `auto` / `approval` / `manual` / `blocked` |
 | `followup.py` | Due follow-up actions from timelines and correspondence |
+| `formfill.py`, `browser/fill.js` | Fills application forms from verified profile facts; submits only when the gate allows and records only portal-confirmed submissions |
+| `mail.py` | Classifies employer email, links it to applications, updates statuses; never sends |
 | `analytics.py` | Dashboard metrics, all derived from recorded rows |
 | `server.py`, `web/` | Localhost-only dashboard and JSON API |
 
@@ -59,5 +61,4 @@ with a key stored outside the data directory (`~/.config/career-agent/key`, or `
 
 ## Not built yet
 
-Browser form-filling driver (Playwright), Gmail/Calendar sync loop, interview-prep generator, market-intelligence
-reports, scheduled runs.
+Interview-prep generator, market-intelligence reports, multi-page and login-gated portals (handed over as manual).
